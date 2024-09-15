@@ -1,0 +1,57 @@
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+charge = "2Np1y3UXxnkQR9PgrMfhbK36149ycv9zNTQX8ZHTM5KQ"
+eat-food = "J1FvadCtRdRdW6hk9UhJbDick7cju2v5sBwPRT42pK3e"
+eat-player = "FmAvFeDZc48YZuKd3p8KDMz76ChCAwAkVJpkVPSTwv17"
+exit-game = "FsVq8vDeni8YS5tLSxYvyzkMZGeTrBZaqoS5ruoy5ASx"
+init-game = "HX4nb19tA6cDzK52gL6vfP8hpiCuZZNctwmmY3oF1Xzx"
+join-game = "AoPSrhHEsHT2XfED7cGCf4zKoGVtXkZQQoLxrVxVL1TG"
+map = "FHEY4vtDRd9BiBGR2QpzdB6RYa9Q9s3nhLLmJp55XyVn"
+move = "BDGj63jy76d1bQqvurDe4jPMBiCAE76DfkpqTjZfxPJU"
+player = "9tuJnpchAiRpqRadFNW6E6KVguZdRKPSCAkWp8sgSGSu"
+section = "5uea8yPtoiY6F4B4rTtY2y1LJPwLaejjpQrhnDrM6NYL"
+
+[programs.localnet]
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Devnet"
+wallet = "~/.config/solana/id.json"
+
+[workspace]
+members = ["programs-ecs/components/*", "programs-ecs/systems/*"]
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test]
+startup_wait = 5000
+shutdown_wait = 2000
+upgradeable = false
+
+[[test.genesis]]
+address = "WorLD15A7CrDwLcLy4fRqtaTb9fbd8o8iqiEMUDse2n"
+program = "tests/fixtures/world.so"
+upgradeable = false
+
+[[test.genesis]]
+address = "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+program = "tests/fixtures/dlp.so"
+upgradeable = false
+
+[test.validator]
+bind_address = "0.0.0.0"
+url = "devnet"
+ledger = ".anchor/test-ledger"
+rpc_port = 8899
+
+[[test.validator.account]]
+address = "EHLkWwAT9oebVv9ht3mtqrvHhRVMKrt54tF3MfHTey2K"
+filename = "tests/fixtures/registry.json"
