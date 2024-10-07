@@ -1,6 +1,6 @@
 use bolt_lang::*;
-use player1::Player1;
-use maplite::Maplite;
+use player::Player;
+use map::Map;
 use section::Section;
 
 declare_id!("J1FvadCtRdRdW6hk9UhJbDick7cju2v5sBwPRT42pK3e");
@@ -19,28 +19,27 @@ pub enum SupersizeError {
 pub mod eat_food {
 
     pub fn execute(ctx: Context<Components>, _args_p: Vec<u8>) -> Result<Components> {
-        let map = &mut ctx.accounts.maplite;
+        let map = &mut ctx.accounts.map;
         let section = &mut ctx.accounts.section;
-        let player1 = &mut ctx.accounts.player1;
+        let player = &mut ctx.accounts.player;
         let authority = *ctx.accounts.authority.key;
 
-        let player_mass = player1.mass as f64;
+        let player_mass = player.mass as f64;
         let player_radius = 4.0 + player_mass.sqrt() * 6.0;
-        let player_authority = player1.authority;
-        let player_x = player1.x;
-        let player_y = player1.y;
+        let player_authority = player.authority;
+        let player_x = player.x;
+        let player_y = player.y;
 
         require!(player_authority == Some(authority), SupersizeError::NotOwner);
         if map.players.iter().any(|player| *player == authority) {
             section.food.retain(|food| {
-                //if args.positions.contains(&(food.x, food.y)) {
                     let dx = (player_x as i16 - food.x as i16).abs();
                     let dy = (player_y as i16 - food.y as i16).abs();
                     if dx < player_radius.ceil() as i16 && dy < player_radius.ceil() as i16 {
                         let distance = ((dx as f64).powf(2.0) + (dy as f64).powf(2.0)).sqrt();
                         if distance < player_radius {
-                            player1.mass += 1;
-                            player1.score += map.entry_fee as f64 / 100.0;
+                            player.mass += 1;
+                            player.score += map.entry_fee as f64 / 100.0;
                             false 
                         } else {
                             true
@@ -48,9 +47,6 @@ pub mod eat_food {
                     } else {
                         true
                     }
-                //} else {
-                //    true
-                //}
             });
         }
         Ok(ctx.accounts)
@@ -58,14 +54,9 @@ pub mod eat_food {
 
     #[system_input]
     pub struct Components {
-        pub player1: Player1,
+        pub player: Player,
         pub section: Section,
-        pub maplite: Maplite,
+        pub map: Map,
     }
-
-    //#[arguments]
-    //pub struct Args {
-    //    pub positions: Vec<(u16, u16)>,
-    //}
 }
 

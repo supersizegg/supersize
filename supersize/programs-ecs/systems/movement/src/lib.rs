@@ -1,9 +1,9 @@
 use bolt_lang::*;
-use player1::Player1;
-use maplite::Maplite;
+use player::Player;
+use map::Map;
 use section::Section;
 
-declare_id!("BDGj63jy76d1bQqvurDe4jPMBiCAE76DfkpqTjZfxPJU");
+declare_id!("Bz7pg5H498CtxfMf9X2oHRknNx8WTn12aNaeh2NwwHzK");
 
 #[error_code]
 pub enum SupersizeError {
@@ -23,23 +23,12 @@ pub fn xorshift64(seed: u64) -> u64 {
     x
 }
 
-pub struct Player {
-    authority: u16,
-    x: u16,
-    y: u16,
-    target_x: Option<u16>,
-    target_y: Option<u16>,
-    score: f64,
-    mass: u16,
-    speed: f32,
-}
-
 #[system]
-pub mod player_movement {
+pub mod movement {
 
     pub fn execute(ctx: Context<Components>, args: Args) -> Result<Components> {
-        let map = &mut ctx.accounts.maplite;
-        let player = &mut ctx.accounts.player1;
+        let map = &mut ctx.accounts.map;
+        let player = &mut ctx.accounts.player;
         let section = &mut ctx.accounts.section;
         let authority = *ctx.accounts.authority.key;
         
@@ -85,7 +74,7 @@ pub mod player_movement {
                         let unit_x = dx / dist;
                         let unit_y = dy / dist;
                         if section.food.len() < 100 {
-                            for n in 0..steps {
+                            for _ in 0..steps {
                                 let slot = Clock::get()?.slot;
                                 let xorshift_output = xorshift64(slot);
                                 let seedx = (xorshift_output % 100 as u64) + 1; 
@@ -124,9 +113,9 @@ pub mod player_movement {
 
     #[system_input]
     pub struct Components {
-        pub player1: Player1,
+        pub player: Player,
         pub section: Section,
-        pub maplite: Maplite,
+        pub map: Map,
     }
 
     #[arguments]

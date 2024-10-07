@@ -20,5 +20,5 @@ idl-build = ["anchor-lang/idl-build"]
 bolt-lang = "0.1.8"
 anchor-lang = "0.30.1"
 serde = { version = "1.0", features = ["derive"] }
-player1 = { version = "0.1.8", path = "../../components/player1", features = ["cpi"] }
-maplite = { version = "0.1.8", path = "../../components/maplite", features = ["cpi"] }
+player = { version = "0.1.8", path = "../../components/player", features = ["cpi"] }
+map = { version = "0.1.8", path = "../../components/map", features = ["cpi"] }

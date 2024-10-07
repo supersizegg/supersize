@@ -1,5 +1,5 @@
 use bolt_lang::*;
-use maplite::Maplite;
+use map::Map;
 
 declare_id!("HX4nb19tA6cDzK52gL6vfP8hpiCuZZNctwmmY3oF1Xzx");
 
@@ -14,10 +14,10 @@ pub enum SupersizeError {
 }
 
 #[system]
-pub mod init_gamelite {
+pub mod init_game {
 
     pub fn execute(ctx: Context<Components>, args: Args) -> Result<Components> {
-        let map = &mut ctx.accounts.maplite;
+        let map = &mut ctx.accounts.map;
         let user_authority = *ctx.accounts.authority.key;
 
         require!(!map.settings_frozen, SupersizeError::MapFrozen);
@@ -38,19 +38,16 @@ pub mod init_gamelite {
         map.settings_frozen = args.frozen;
         map.entry_fee = args.entry_fee;
 
-        let emit_data = args.emit_data;
-        map.emit_type = match args.emit_type {
-            0 => maplite::FoodEmit::Flat { value: emit_data  as u16},
-            1 => maplite::FoodEmit::Curve { percent: emit_data as f64},
-            _ =>  maplite::FoodEmit::Flat { value: emit_data  as u16}, 
-        };
-
-        map.game_wallet = match args.game_wallet {
-            Some(game_wallet) => Some(game_wallet as Pubkey),
+        map.vault_token_account = match args.vault_token_account {
+            Some(vault_token_account) => Some(vault_token_account as Pubkey),
             None => None,
         };
         map.token = match args.token {
             Some(token) => Some(token as Pubkey),
+            None => None,
+        };
+        map.token_account_owner_pda = match args.token_account_owner_pda {
+            Some(token_account_owner_pda) => Some(token_account_owner_pda as Pubkey),
             None => None,
         };
 
@@ -59,7 +56,7 @@ pub mod init_gamelite {
 
     #[system_input]
     pub struct Components {
-        pub maplite: Maplite,
+        pub map: Map,
     }
 
     #[arguments]
@@ -69,10 +66,9 @@ pub mod init_gamelite {
         height: u16,
         entry_fee: u64,
         max_players: u8,
-        game_wallet: Option<Pubkey>,
+        vault_token_account: Option<Pubkey>,
         token: Option<Pubkey>,
-        emit_type: u8,
-        emit_data: f64,
+        token_account_owner_pda: Option<Pubkey>,
         frozen: bool,
     }
 }

@@ -4,7 +4,7 @@ declare_id!("9tuJnpchAiRpqRadFNW6E6KVguZdRKPSCAkWp8sgSGSu");
 
 #[component(delegate)]
 #[derive(Default)]
-pub struct Player1 {
+pub struct Player {
     #[max_len(20)]
     pub name: String,
     pub authority: Option<Pubkey>,
@@ -16,4 +16,5 @@ pub struct Player1 {
     pub mass: u16,
     pub speed: f32,
     pub charge_start: Option<i64>,
+    pub scheduled_removal_time: Option<i64>,
 }

@@ -1,6 +1,6 @@
 use bolt_lang::*;
-use player1::Player1;
-use maplite::Maplite;
+use player::Player;
+use map::Map;
 use section::Section;
 
 declare_id!("2Np1y3UXxnkQR9PgrMfhbK36149ycv9zNTQX8ZHTM5KQ");
@@ -25,11 +25,11 @@ pub fn xorshift64(seed: u64) -> u64 {
 }
 
 #[system]
-pub mod do_charge {
+pub mod charge {
 
     pub fn execute(ctx: Context<Components>, _args_p: Vec<u8>) -> Result<Components> {
-        let map = &mut ctx.accounts.maplite;
-        let player = &mut ctx.accounts.player1;
+        let map = &mut ctx.accounts.map;
+        let player = &mut ctx.accounts.player;
         let section = &mut ctx.accounts.section;
         let authority = *ctx.accounts.authority.key;
         
@@ -105,9 +105,9 @@ pub mod do_charge {
 
     #[system_input]
     pub struct Components {
-        pub player1: Player1,
+        pub player: Player,
         pub section: Section,
-        pub maplite: Maplite,
+        pub map: Map,
     }
 }
 
