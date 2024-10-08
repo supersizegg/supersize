@@ -786,6 +786,97 @@ overflow: hidden;
 .footer-social-link:hover {
   color: #aaa;
 }
+
+.game-select {
+  display: flex;
+  height: 86vh;
+}
+.logo-image{
+  position: relative;
+  width: 30vw;
+  height: auto;
+  top: -8vw;
+  left: -11vw;
+  opacity: 0.3;
+  z-index: -1;
+  transform: none;
+}
+
+.superStartInfo{
+  font-family: 'Terminus';
+  padding: 0;
+  margin: 0px;
+  text-align: center;
+  color: white;
+  font-size: 14px;
+}
+.superStartInfoSub{
+  font-family: 'Terminus';
+  margin-bottom: 0;
+  margin-top: 1em;
+  text-align: center;
+  color: white;
+  font-size: 12px;    
+}
+.checkmark {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #15bd12;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px #15bd12;
+  fill: none;
+  animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+}
+
+.checkmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #15bd12;
+  fill: none;
+  animation: stroke .6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;
+}
+
+.checkmark__check {
+  stroke: white;
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke .3s cubic-bezier(0.650, 0.000, 0.450, 1.000) .8s forwards;
+}
+
+#returnButton{
+  font-family: 'Terminus';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  box-sizing: border-box;
+  font-size: 14px;
+  cursor: pointer;  
+  color: black;
+  text-decoration: none;
+  background: white;
+  float: right;
+  border: 1px solid white;
+  border-radius: 100px;
+  padding: 10px 15px; 
+  margin: 10px;
+  transition: background 0.3s ease 0s, color 0.3s ease 0s;
+}
+#returnButton:active, #returnButton:hover {
+  background: black;
+  color:white;
+  outline: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -800,5 +891,91 @@ overflow: hidden;
   }
   50% {
     transform: translateY(5px);
+  }
+}
+
+@keyframes stroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes scale {
+  0%, 100% {
+    transform: none;
+  }
+  50% {
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+@keyframes fill {
+  100% {
+    box-shadow: inset 0px 0px 0px 30px #15bd12; /* Replace $green with actual color */
+  }
+}
+
+/* Mobile styles (for devices with screen width of 768px or less) */
+@media only screen and (max-width: 1000px) {
+ .game-select {
+    display: flex;
+    height: 75vh;
+    margin-top: 9vh;
+  }
+  .logo-image{
+    position: relative;
+    width: 40vw;
+    height: auto;
+    top: -9vw;
+    left: -18vw;
+    opacity: 0.3;
+    z-index: -1;
+    transform: none;
+  }
+
+  .titleBackground{
+    color: #eee;
+    font-family: 'Conthrax' !important;
+    font-size: 6vw;
+    margin-left: -40.5vw;
+    margin-top: -16vw;
+  }
+
+  .table{
+    backdrop-filter: brightness(0.95);
+    display: grid;
+    grid-template-rows: auto auto;
+    grid-template-columns: 2fr 1fr 1fr;
+    width: 40vw;
+    position: fixed;
+    margin-top: 1vw;
+  }
+
+  .playerName{
+    background-color: #FFF;
+    grid-column: span 3;
+    display: flex;
+    margin-bottom: 0.5em;
+    height: 2.5em;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid #DCDCDC;
+    text-align: left;
+    margin-top: 3em;
+    font-size: 1rem;
+    font-family: 'Terminus';
+    overflow: hidden;
+  }
+
+  .topbar {
+    padding-top: 1em;
+  }
+  .info-scrolling-text{
+    font-size: 3em;
+    margin-top: 0.5em;
+  }
+  .info-footer{
+    top: 95vh;
   }
 }
