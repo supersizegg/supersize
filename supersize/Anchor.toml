@@ -5,16 +5,27 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-charge = "2Np1y3UXxnkQR9PgrMfhbK36149ycv9zNTQX8ZHTM5KQ"
-eat-food = "J1FvadCtRdRdW6hk9UhJbDick7cju2v5sBwPRT42pK3e"
-eat-player = "FmAvFeDZc48YZuKd3p8KDMz76ChCAwAkVJpkVPSTwv17"
-exit-game = "FsVq8vDeni8YS5tLSxYvyzkMZGeTrBZaqoS5ruoy5ASx"
-init-game = "HX4nb19tA6cDzK52gL6vfP8hpiCuZZNctwmmY3oF1Xzx"
-join-game = "AoPSrhHEsHT2XfED7cGCf4zKoGVtXkZQQoLxrVxVL1TG"
-map = "FHEY4vtDRd9BiBGR2QpzdB6RYa9Q9s3nhLLmJp55XyVn"
-movement = "Bz7pg5H498CtxfMf9X2oHRknNx8WTn12aNaeh2NwwHzK"
-player = "9tuJnpchAiRpqRadFNW6E6KVguZdRKPSCAkWp8sgSGSu"
-section = "5uea8yPtoiY6F4B4rTtY2y1LJPwLaejjpQrhnDrM6NYL"
+anteroom = "6PWyQF9YxtQLCZeYtJhPftVg4qXv2pHGyT5NteJVjacJ"
+buy-in = "BTLTqowYeJ2tRTTB8mcbbmAwZBDAJG3MUioGNdsTsX13"
+buy-inb = "7xHzX2a5VzBkRayf1uyVPTLmwNwNE2Hh4qS1CbEAjPsJ"
+cash-out = "Cj5YjoZTXnkbhBmoMNVhp2QfKkAnLS5bpWNDcJNYfGZ4"
+cashout-test = "BbsN5y3HkHw11DnfpmbmvRYH9Tag8XNbE91WikaARjEP"
+cashout-testb = "A7MW7nu1Mc2y47aW1F1c8LQb5H51f3MXiKezaFsH3mxt"
+cashout-testc = "8x4pQTDyoRe49NLiASjebyasW2shv1pRMCTwngSB5ari"
+eat-food = "B1M7AtzCds9MyoibMA3UhhrZMJ46BTJvFadvkCr7J71U"
+eat-player = "VZ7h6UCzrrWtCm3xBghYSAVXBvHecc34qnyeyeyjASh"
+exit-game = "4PvV5ZSgXpUGbzBpDVmaguzG1gWZw2LKpuevYcPPVPtk"
+init-anteroom = "5oEk3USUXwmriWFsH5cKzyfmbetYuWvRQpk4ZTzdqs47"
+init-map = "68caW8nVmZnUSunBotTTM5wuYQ3aymEsEHuTnsXgec65"
+init-players = "84UTvkLscZVoznsgC4ppfQ3xSjBxod617g1nwTqEiMLM"
+init-section = "6vFNtK3uopAUxJ4AhXbsfKyb9JZPkKnPvkFXEpUwNSEc"
+map = "73x8SGXgkhk84Yk943eJRAVAW3yGoQz5m1Q2sb2THLsA"
+movement = "EhLPnGqecy61peHT7j1WRsEWGqUZ11MZzYR4Xxm5RHRj"
+player = "39c3gAHBe74wPgfhP5wBRCdcNHuMBY53awGBBjJUeWSw"
+players = "DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq"
+section = "2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N"
+spawn-food = "EKSX8KynuiQCkvAZiyiVuYJcEAb77WBUaSUFkhZUqASk"
+spawn-player = "BaTXEmj1rf1Jq5uGHLBVrBihLqTA6gSd2ZddmD4rLdaD"
 
 [programs.localnet]
 

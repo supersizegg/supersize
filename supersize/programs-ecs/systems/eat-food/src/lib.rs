@@ -3,16 +3,16 @@ use player::Player;
 use map::Map;
 use section::Section;
 
-declare_id!("J1FvadCtRdRdW6hk9UhJbDick7cju2v5sBwPRT42pK3e");
+declare_id!("B1M7AtzCds9MyoibMA3UhhrZMJ46BTJvFadvkCr7J71U");
 
 #[error_code]
 pub enum SupersizeError {
-    #[msg("Wallet not owner of this blob.")]
+    #[msg("Not owner of this player.")]
     NotOwner,
-    #[msg("Wallet not in game.")]
+    #[msg("Player not in game.")]
     NotInGame,
-    #[msg("Player id not found.")]
-    AuthorityNotFound,
+    #[msg("Component doesn't belong to map.")]
+    MapKeyMismatch,
 }
 
 #[system]
@@ -24,31 +24,35 @@ pub mod eat_food {
         let player = &mut ctx.accounts.player;
         let authority = *ctx.accounts.authority.key;
 
-        let player_mass = player.mass as f64;
-        let player_radius = 4.0 + player_mass.sqrt() * 6.0;
+        require!(map.key() == player.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
+        require!(map.key() == section.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
+        require!(player.mass != 0, SupersizeError::NotInGame);
+
+        let player_mass = player.mass as f64 / 10.0;
+        let player_radius : f64 = 4.0 + player_mass.sqrt() * 6.0;
         let player_authority = player.authority;
         let player_x = player.x;
         let player_y = player.y;
 
         require!(player_authority == Some(authority), SupersizeError::NotOwner);
-        if map.players.iter().any(|player| *player == authority) {
-            section.food.retain(|food| {
-                    let dx = (player_x as i16 - food.x as i16).abs();
-                    let dy = (player_y as i16 - food.y as i16).abs();
-                    if dx < player_radius.ceil() as i16 && dy < player_radius.ceil() as i16 {
-                        let distance = ((dx as f64).powf(2.0) + (dy as f64).powf(2.0)).sqrt();
-                        if distance < player_radius {
-                            player.mass += 1;
-                            player.score += map.entry_fee as f64 / 100.0;
-                            false 
-                        } else {
-                            true
-                        }
+
+        section.food.retain(|food| {
+                let dx = (player_x as i16 - food.x as i16).abs();
+                let dy = (player_y as i16 - food.y as i16).abs();
+                if dx < player_radius.ceil() as i16 && dy < player_radius.ceil() as i16 {
+                    let distance = ((dx as f64).powf(2.0) + (dy as f64).powf(2.0)).sqrt();
+                    if distance < player_radius {
+                        player.mass += 1;
+                        player.score += map.base_buyin as f64 / 1000.0;
+                        false 
                     } else {
                         true
                     }
-            });
-        }
+                } else {
+                    true
+                }
+        });
+        
         Ok(ctx.accounts)
     }
 
@@ -59,4 +63,3 @@ pub mod eat_food {
         pub map: Map,
     }
 }
-

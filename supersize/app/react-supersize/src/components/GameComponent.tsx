@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {PublicKey} from "@solana/web3.js";
+import BN from 'bn.js';
+
 const foodImage = new Image();
 foodImage.src = `${process.env.PUBLIC_URL}/coin.png`; // Update with your image path
 
@@ -12,7 +14,7 @@ interface Blob {
     mass: number;
     score: number;
     speed: number;
-    charging: number;
+    removal: BN;
     target_x: number;
     target_y: number;
 }
@@ -320,6 +322,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     let glowSize = 0;
     let glowIntensity = 'rgba(19, 241, 149, 0)'; // Default no glow
    // console.log(Date.now()/1000 - blob.charging, blob.charging)
+   /*
     if (blob.speed > 10 || (Date.now()/1000 - blob.charging > 1 && blob.charging !=0)) {
         glowSize = 40 * scale; // Significant glow at speed 10
         glowIntensity = 'rgba(19, 241, 149, 0.5)';
@@ -336,6 +339,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
         glowSize = 100 * scale; // Maximum glow at speed 25+
         glowIntensity = 'rgba(19, 241, 149, 1.0)';
     }
+    */
 
     ctx.shadowBlur = glowSize;
     ctx.shadowColor = glowIntensity;

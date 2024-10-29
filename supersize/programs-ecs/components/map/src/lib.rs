@@ -1,6 +1,6 @@
 use bolt_lang::*;
 
-declare_id!("FHEY4vtDRd9BiBGR2QpzdB6RYa9Q9s3nhLLmJp55XyVn");
+declare_id!("73x8SGXgkhk84Yk943eJRAVAW3yGoQz5m1Q2sb2THLsA");
 
 #[component(delegate)]
 pub struct Map {
@@ -9,32 +9,37 @@ pub struct Map {
     pub authority: Option<Pubkey>,
     pub width: u16,
     pub height: u16,
-    pub entry_fee: u64,
+    pub base_buyin: f64,
+    pub max_buyin: f64,
+    pub min_buyin: f64,
     pub max_players: u8,
-    pub token: Option<Pubkey>,
-    pub vault_token_account: Option<Pubkey>,
-    pub token_account_owner_pda: Option<Pubkey>,
-    pub sections: u8,
-    #[max_len(100)]
-    pub players: Vec<Pubkey>,
-    pub settings_frozen: bool,
+    pub total_active_buyins: f64,
+    pub food_queue: u16,
+    pub next_food: Option<Food>,
+    pub frozen: bool,
+}
+
+#[component_deserialize(delegate)]
+pub struct Food{
+    pub x: u16,
+    pub y: u16,
 }
 
 impl Default for Map {
     fn default() -> Self {
         Self::new(MapInit{
-            name: "unnamed game".to_string(),
+            name: "ffa".to_string(),
             authority: None,
-            width: 3000,
-            height: 3000,
-            entry_fee: 100,
-            max_players: 10,
-            token: None,
-            vault_token_account: None,
-            token_account_owner_pda: None,
-            sections: 10,
-            players: Vec::new(),
-            settings_frozen: false,
+            width: 4000,
+            height: 4000,
+            base_buyin: 1000.0,
+            max_buyin: 1000.0,
+            min_buyin: 1000.0,
+            max_players: 20,
+            total_active_buyins: 0.0,
+            food_queue: 0, 
+            next_food: None,
+            frozen: false,
         })
     }
 }

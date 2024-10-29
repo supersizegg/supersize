@@ -1,9 +1,10 @@
 use bolt_lang::*;
 
-declare_id!("5uea8yPtoiY6F4B4rTtY2y1LJPwLaejjpQrhnDrM6NYL");
+declare_id!("2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N");
 
 #[component(delegate)]
 pub struct Section {
+    pub map: Option<Pubkey>,
     #[max_len(100)]
     pub food: Vec<Food>,
 }
@@ -16,7 +17,8 @@ pub struct Food{
 
 impl Default for Section {
     fn default() -> Self {
-        Self::new(SectionInit{
+        Self::new(SectionInit {
+            map: None,
             food: Vec::new(),
         })
     }
