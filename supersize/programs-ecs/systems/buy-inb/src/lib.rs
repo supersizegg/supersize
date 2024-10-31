@@ -3,7 +3,7 @@ use anteroom::Anteroom;
 use player::Player;
 use anchor_spl::token::{TokenAccount, Transfer};
 
-declare_id!("7xHzX2a5VzBkRayf1uyVPTLmwNwNE2Hh4qS1CbEAjPsJ");
+declare_id!("5uHMpZkSyXmERUusARBzf6ACAam9u3EXYa9EA7VW5t2B");
 
 #[error_code]
 pub enum SupersizeError {
@@ -41,7 +41,7 @@ pub mod buy_inb {
             &mut (ctx.vault_token_account()?.to_account_info().data.borrow()).as_ref()
         )?;
 
-        let exit_pid: Pubkey = pubkey!("8x4pQTDyoRe49NLiASjebyasW2shv1pRMCTwngSB5ari"); 
+        let exit_pid: Pubkey = pubkey!("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS"); 
         let map_pubkey = ctx.accounts.anteroom.map.expect("Expected map key to be set");
         let token_account_owner_pda_seeds = &[b"token_account_owner_pda", map_pubkey.as_ref()];
         let (derived_token_account_owner_pda, _bump) = Pubkey::find_program_address(token_account_owner_pda_seeds, &exit_pid);
@@ -56,7 +56,7 @@ pub mod buy_inb {
 
         let decimals = ctx.accounts.anteroom.token_decimals.ok_or(SupersizeError::MissingTokenDecimals)?;
         let wallet_balance = vault_token_account.amount / 10_u64.pow(decimals);
-        let player_payout_account = Some(ctx.sender_token_account()?.key());
+        let player_payout_account = Some(ctx.payout_token_account()?.key());
         let transfer_instruction = Transfer {
             from: ctx.sender_token_account()?.to_account_info(),
             to: ctx.vault_token_account()?.to_account_info(),
@@ -102,6 +102,8 @@ pub mod buy_inb {
         vault_token_account: Account<'info, TokenAccount>,
         #[account(mut)]
         sender_token_account: Account<'info, TokenAccount>,
+        #[account(mut)]
+        payout_token_account: Account<'info, TokenAccount>,
         #[account(mut)]
         signer: Signer<'info>,
         system_program: Program<'info, System>,

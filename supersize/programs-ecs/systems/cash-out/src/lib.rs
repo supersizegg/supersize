@@ -3,7 +3,7 @@ use anteroom::Anteroom;
 use player::Player;
 use anchor_spl::token::{TokenAccount, Transfer};
 
-declare_id!("Cj5YjoZTXnkbhBmoMNVhp2QfKkAnLS5bpWNDcJNYfGZ4");
+declare_id!("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS");
 
 #[error_code]
 pub enum SupersizeError {
@@ -15,6 +15,8 @@ pub enum SupersizeError {
     InvalidGameVault,
     #[msg("Payout account mismatch.")]
     InvalidPayoutAccount,
+    #[msg("Invalid pda.")]
+    InvalidPda,
     #[msg("Invalid game vault owner.")]
     InvalidGameVaultOwner,
     #[msg("Invalid supersize payout account.")]
@@ -42,21 +44,25 @@ pub mod cash_out {
 
         require!(
             ctx.sender_token_account()?.key() == ctx.accounts.player.payout_token_account.expect("Player payout account not set"),
-            SupersizeError::InvalidMint
+            SupersizeError::InvalidPayoutAccount
         );
         require!(
             ctx.accounts.anteroom.vault_token_account.expect("Vault token account not set") == ctx.vault_token_account()?.key(),
-            SupersizeError::InvalidPayoutAccount
+            SupersizeError::InvalidGameVault
         );
 
         let vault_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
             &mut (ctx.vault_token_account()?.to_account_info().data.borrow()).as_ref()
         )?;
-        let exit_pid: Pubkey = pubkey!("Cj5YjoZTXnkbhBmoMNVhp2QfKkAnLS5bpWNDcJNYfGZ4"); 
+        let exit_pid: Pubkey = pubkey!("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS"); 
         let map_pubkey = ctx.accounts.anteroom.map.expect("Expected map Pubkey to be Some");
         let token_account_owner_pda_seeds = &[b"token_account_owner_pda", map_pubkey.as_ref()];
         let (derived_token_account_owner_pda, bump) = Pubkey::find_program_address(token_account_owner_pda_seeds, &exit_pid);
         
+        require!(
+            derived_token_account_owner_pda == ctx.token_account_owner_pda()?.key(),
+            SupersizeError::InvalidPda
+        );
         require!(
             derived_token_account_owner_pda == vault_token_account.owner,
             SupersizeError::InvalidGameVaultOwner
@@ -66,7 +72,7 @@ pub mod cash_out {
             SupersizeError::InvalidMint
         );
 
-        let supersize_parent_account: Pubkey = pubkey!("DxHJj9xM6Gg7GxFqkzzJAM6E3Xv3ueCNg83hWBwqKxef");
+        let supersize_parent_account: Pubkey = pubkey!("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB");
         let supersize_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
             &mut (ctx.supersize_token_account()?.to_account_info().data.borrow()).as_ref()
         )?;
@@ -80,7 +86,7 @@ pub mod cash_out {
         );
 
         let seeds = &[b"token_account_owner_pda".as_ref(), map_pubkey.as_ref(), &[bump]];
-        let signer = &[&seeds[..]];
+        let pda_signer = &[&seeds[..]];
         
         let decimals = ctx.accounts.anteroom.token_decimals.ok_or(SupersizeError::MissingTokenDecimals)?;
         let scale_factor = 10_u64.pow(decimals);
@@ -95,37 +101,37 @@ pub mod cash_out {
         let transfer_instruction_player = Transfer {
             from: ctx.vault_token_account()?.to_account_info(),
             to: ctx.sender_token_account()?.to_account_info(),
-            authority: ctx.signer()?.to_account_info(),
+            authority: ctx.token_account_owner_pda()?.to_account_info(),
         };
     
         let cpi_ctx_player = CpiContext::new_with_signer(
             ctx.token_program()?.to_account_info(),
             transfer_instruction_player,
-            signer,
+            pda_signer,
         );
         
         let transfer_instruction_owner = Transfer {
             from: ctx.vault_token_account()?.to_account_info(),
             to: ctx.game_owner_token_account()?.to_account_info(),
-            authority: ctx.signer()?.to_account_info(),
+            authority: ctx.token_account_owner_pda()?.to_account_info(),
         };
     
         let cpi_ctx_owner = CpiContext::new_with_signer(
             ctx.token_program()?.to_account_info(),
             transfer_instruction_owner,
-            signer,
+            pda_signer,
         );
 
         let transfer_instruction_supersize = Transfer {
             from: ctx.vault_token_account()?.to_account_info(),
             to: ctx.supersize_token_account()?.to_account_info(),
-            authority: ctx.signer()?.to_account_info(),
+            authority: ctx.token_account_owner_pda()?.to_account_info(),
         };
     
         let cpi_ctx_supersize = CpiContext::new_with_signer(
             ctx.token_program()?.to_account_info(),
             transfer_instruction_supersize,
-            signer,
+            pda_signer,
         );
         anchor_spl::token::transfer(cpi_ctx_player, scaled_final_score)?;
         anchor_spl::token::transfer(cpi_ctx_owner, scaled_game_owner_amount)?;
@@ -156,6 +162,8 @@ pub mod cash_out {
         game_owner_token_account: Account<'info, TokenAccount>,
         #[account(mut)]
         supersize_token_account: Account<'info, TokenAccount>,
+        #[account(mut)]
+        token_account_owner_pda: AccountInfo<'info>,
         #[account(mut)]
         signer: Signer<'info>,
         system_program: Program<'info, System>,

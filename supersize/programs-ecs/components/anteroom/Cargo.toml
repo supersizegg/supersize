@@ -1,6 +1,6 @@
 [package]
 name = "anteroom"
-version = "0.1.8"
+version = "0.1.10"
 description = "Created with Bolt"
 edition = "2021"
 
@@ -17,5 +17,5 @@ default = []
 idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
-bolt-lang = "0.1.8"
+bolt-lang = "0.1.10"
 anchor-lang = "0.30.1"

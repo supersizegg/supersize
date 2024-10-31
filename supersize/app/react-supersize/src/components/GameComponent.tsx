@@ -117,14 +117,23 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     const deg = Math.atan2(dy, dx);
   
     // Determine slowdown based on mass
+    let effective_mass = 100.0;
+    let true_mass  = player.mass / 10;
+    if (true_mass > 100.0) {
+      effective_mass = true_mass;
+    }
     let slow_down = 1.0;
     if (player.speed <= 6.25) {
-      slow_down = Math.log(player.mass / 10) / 1.504 - 0.531;
+      slow_down = Math.log(effective_mass / 10) / 1.504 - 0.531;
     }
-  
+    
+    let scale_up = 3.0;
+    if (true_mass < 100.0) {
+      scale_up = -0.01 * true_mass + 4.0;
+    }
     // Calculate movement based on speed, direction, and slow_down factor
-    const delta_y = (player.speed * 3.0 * Math.sin(deg) * (dt / 1000)) / slow_down;
-    const delta_x = (player.speed * 3.0 * Math.cos(deg) * (dt / 1000)) / slow_down;
+    const delta_y = (player.speed * scale_up * Math.sin(deg) * (dt / 1000)) / slow_down;
+    const delta_x = (player.speed * scale_up * Math.cos(deg) * (dt / 1000)) / slow_down;
   
     // Update player position
     player.y = Math.round(player_y + delta_y);

@@ -1,6 +1,6 @@
 use bolt_lang::*;
 
-declare_id!("6PWyQF9YxtQLCZeYtJhPftVg4qXv2pHGyT5NteJVjacJ");
+declare_id!("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW");
 
 #[component]
 pub struct Anteroom {

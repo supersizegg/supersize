@@ -2,7 +2,7 @@ use bolt_lang::*;
 use players::Players;
 use map::Map;
 
-declare_id!("84UTvkLscZVoznsgC4ppfQ3xSjBxod617g1nwTqEiMLM");
+declare_id!("Ru2cmntBkvmUGcg6E7rrDFYrx6ujf1zVJs7hEDq3uT3");
 
 #[error_code]
 pub enum SupersizeError {

@@ -3,7 +3,7 @@ use player::Player;
 use players::Players;
 use map::Map;
 
-declare_id!("4PvV5ZSgXpUGbzBpDVmaguzG1gWZw2LKpuevYcPPVPtk");
+declare_id!("5hVB37dXEFmEvtu2TST8iXAxvd8VXq3JQmGGLNprMVyo");
 
 #[error_code]
 pub enum SupersizeError {

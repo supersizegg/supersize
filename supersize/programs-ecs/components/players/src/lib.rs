@@ -1,6 +1,6 @@
 use bolt_lang::*;
 
-declare_id!("DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq");
+declare_id!("DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB");
 
 #[component(delegate)]
 pub struct Players {

@@ -2,7 +2,7 @@ use bolt_lang::*;
 use section::Section;
 use map::Map;
 
-declare_id!("6vFNtK3uopAUxJ4AhXbsfKyb9JZPkKnPvkFXEpUwNSEc");
+declare_id!("3YdRbDukWkyE2tBPoUhPSJzB1MCE1gKnoNjx5WdEq6aE");
 
 #[error_code]
 pub enum SupersizeError {

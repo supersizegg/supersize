@@ -3,7 +3,7 @@ use std::str::FromStr;
 use map::Map;
 use anteroom::Anteroom;
 
-declare_id!("5oEk3USUXwmriWFsH5cKzyfmbetYuWvRQpk4ZTzdqs47");
+declare_id!("DbKbkJC5Dw6RvQUkaM4CH7Z5hTcWGP51t7hZ3Hu42rXp");
 
 #[error_code]
 pub enum SupersizeError {

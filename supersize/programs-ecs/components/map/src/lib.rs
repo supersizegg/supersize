@@ -1,6 +1,6 @@
 use bolt_lang::*;
 
-declare_id!("73x8SGXgkhk84Yk943eJRAVAW3yGoQz5m1Q2sb2THLsA");
+declare_id!("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb");
 
 #[component(delegate)]
 pub struct Map {

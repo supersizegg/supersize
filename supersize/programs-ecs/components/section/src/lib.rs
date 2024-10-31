@@ -1,6 +1,6 @@
 use bolt_lang::*;
 
-declare_id!("2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N");
+declare_id!("Dnh8jDMM6HDY1bXHt55Fi2yKfUPiu4TMhAJiotfb4oHq");
 
 #[component(delegate)]
 pub struct Section {

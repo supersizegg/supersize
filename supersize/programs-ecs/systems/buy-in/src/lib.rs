@@ -3,7 +3,7 @@ use anteroom::Anteroom;
 use player::Player;
 use anchor_spl::token::{TokenAccount, Transfer};
 
-declare_id!("BTLTqowYeJ2tRTTB8mcbbmAwZBDAJG3MUioGNdsTsX13");
+declare_id!("8JLhyUt84DQxbvQQz1UwXBPRWwQFHc3YDetxrFZZN67n");
 
 #[error_code]
 pub enum SupersizeError {
@@ -41,7 +41,7 @@ pub mod buy_in {
             &mut (ctx.vault_token_account()?.to_account_info().data.borrow()).as_ref()
         )?;
 
-        let exit_pid: Pubkey = pubkey!("Cj5YjoZTXnkbhBmoMNVhp2QfKkAnLS5bpWNDcJNYfGZ4"); 
+        let exit_pid: Pubkey = pubkey!("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS"); 
         let map_pubkey = ctx.accounts.anteroom.map.expect("Expected map key to be set");
         let token_account_owner_pda_seeds = &[b"token_account_owner_pda", map_pubkey.as_ref()];
         let (derived_token_account_owner_pda, _bump) = Pubkey::find_program_address(token_account_owner_pda_seeds, &exit_pid);

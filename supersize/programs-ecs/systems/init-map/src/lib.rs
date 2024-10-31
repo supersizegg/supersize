@@ -1,7 +1,7 @@
 use bolt_lang::*;
 use map::Map;
 
-declare_id!("68caW8nVmZnUSunBotTTM5wuYQ3aymEsEHuTnsXgec65");
+declare_id!("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");
 
 #[error_code]
 pub enum SupersizeError {
