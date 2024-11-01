@@ -31,10 +31,9 @@ interface GameComponentProps {
   currentPlayer: Blob | null;
   screenSize: { width: number; height: number };
   scale: number;
-  chargeStart: number;
 }
 
-const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleFood, currentPlayer, screenSize, scale, chargeStart }) => {
+const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleFood, currentPlayer, screenSize, scale }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [lastTime, setLastTime] = useState<number>(0);
   const currentPlayerRef = useRef(currentPlayer);
@@ -180,7 +179,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
 
           // Draw players
           playersRef.current.forEach(blob => {
-            drawPlayer(ctx, blob, scale, 0);
+            drawPlayer(ctx, blob, scale);
           });
 
           // Draw food
@@ -195,7 +194,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
               x: screenSize.width / 2,
               y: screenSize.height / 2,
             };
-            drawPlayer(ctx, centeredPlayer, scale, chargeStart);
+            drawPlayer(ctx, centeredPlayer, scale);
             drawBorder(ctx, currentPlayerRef.current, screenSize, scale);
           }
         }
@@ -303,7 +302,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
 
           // Draw players
           players.forEach(blob => {
-            drawPlayer(ctx, blob, scale, 0);
+            drawPlayer(ctx, blob, scale);
           });
 
           // Draw food
@@ -318,7 +317,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
               x: screenSize.width / 2,
               y: screenSize.height / 2,
             };
-            drawPlayer(ctx, centeredPlayer, scale, chargeStart);
+            drawPlayer(ctx, centeredPlayer, scale);
             drawBorder(ctx, currentPlayer, screenSize, scale);
           }
         }
@@ -326,7 +325,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     }
   }, [gameId, players, visibleFood, currentPlayer, screenSize, scale]);
 
-  const drawPlayer = (ctx: CanvasRenderingContext2D, blob: Blob, scale: number, chargeStart: number) => {
+  const drawPlayer = (ctx: CanvasRenderingContext2D, blob: Blob, scale: number) => {
     // Determine glow intensity based on speed
     let glowSize = 0;
     let glowIntensity = 'rgba(19, 241, 149, 0)'; // Default no glow
