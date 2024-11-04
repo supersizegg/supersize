@@ -3,6 +3,8 @@ import {AnimatePresence, motion} from "framer-motion";
 import Button from "./components/Button";
 import CreateGame from "./components/CreateGame";
 import GameComponent from "./components/GameComponent";
+import CreateGameComponent from "./components/CreateGameComponent";
+import Alert from "./components/Alert";
 
 import {
     AddEntity,
@@ -26,16 +28,24 @@ import {
 import {WalletNotConnectedError} from '@solana/wallet-adapter-base';
 import {useConnection, useWallet} from '@solana/wallet-adapter-react';
 import {WalletMultiButton} from "@solana/wallet-adapter-react-ui";
-import Alert from "./components/Alert";
-import {AccountInfo, Commitment, PublicKey} from "@solana/web3.js";
+import {Connection, 
+    SYSVAR_RENT_PUBKEY, 
+    clusterApiUrl, 
+    Keypair, 
+    LAMPORTS_PER_SOL, 
+    Transaction, 
+    sendAndConfirmTransaction,
+    SystemProgram,
+    SystemInstruction, 
+    AccountInfo, 
+    Commitment, 
+    PublicKey} from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import {Idl, Program, Provider, Wallet, AnchorProvider} from "@coral-xyz/anchor";
 import {SimpleProvider} from "./components/Wallet";
-import { Connection, clusterApiUrl, Keypair, LAMPORTS_PER_SOL, Transaction, sendAndConfirmTransaction,SystemProgram,SystemInstruction } from '@solana/web3.js';
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import BN from 'bn.js';
 import * as splToken from '@solana/spl-token';
-
 import {
     getAccount,
     getOrCreateAssociatedTokenAccount,
@@ -43,16 +53,12 @@ import {
     createAssociatedTokenAccount,
     createTransferInstruction,
     createCloseAccountInstruction,
+    getAssociatedTokenAddress,
+    TOKEN_PROGRAM_ID,
   } from "@solana/spl-token";
-import { keypairIdentity, token, Metaplex } from "@metaplex-foundation/js";
-import { SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
-  
-//import { Map } from "../../../target/types/map";
-const bs58 = require('bs58');
+import { LIQUIDITY_STATE_LAYOUT_V4 } from "@raydium-io/raydium-sdk";
 
-const WORLD_INSTANCE_ID = 4;
+const bs58 = require('bs58');
 
 //new
 const FOOD_COMPONENT = new PublicKey("Dnh8jDMM6HDY1bXHt55Fi2yKfUPiu4TMhAJiotfb4oHq"); //2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N, DEmfhh4qTaeXsJztECTtiU61m5ygTGrQPC4CnvQwqnVA
@@ -86,12 +92,12 @@ interface Blob {
     radius: number;
     mass: number;
     score: number;
+    tax: number;
     speed: number;
     removal: BN;
     target_x: number;
     target_y: number;
 }
-
 
 type ActiveGame = {
     worldPda: PublicKey;
@@ -115,64 +121,9 @@ const App: React.FC = () => {
         "https://supersize.magicblock.app",
       ];
       
-      // Function to ping an endpoint and return the ping time
-      const pingEndpoint = async (url: string): Promise<number> => {
-        const startTime = performance.now();
-        try {
-          await fetch(url, { method: "HEAD" });
-        } catch (error) {
-          console.error(`Failed to ping ${url}:`, error);
-        }
-        const endTime = performance.now();
-        return endTime - startTime;
-      };
-      const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
-      const [enpointDone, setEndpointDone] = useState<boolean>(false);
-      useEffect(() => {
-        const checkEndpoints = async () => {
-          const results: Record<string, number> = {};
-          setEndpointDone(false);
-          for (const endpoint of endpoints) {
-            const pingTime = await pingEndpoint(endpoint);
-            results[endpoint] = pingTime;
-          }
-    
-          // Set the endpoint with the lowest ping
-          const lowestPingEndpoint = Object.keys(results).reduce((a, b) => (results[a] < results[b] ? a : b));
-          setFastestEndpoint(lowestPingEndpoint);
-          // Construct the wsEndpoint by replacing "https" with "wss"
-          const wsUrl = lowestPingEndpoint.replace("https", "wss");
-        };
-    
-        checkEndpoints();
-      }, []);
-      
-    useEffect(() => {
-      if (publicKey) {
-        setSavedPublicKey(publicKey); // Save publicKey to the state variable when it updates
-      }
-    }, [publicKey]);
-
+    const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
+    const [enpointDone, setEndpointDone] = useState<boolean>(false);
     const [wallet] = useState<Keypair>(() => Keypair.generate());
-      
-    const provider = new anchor.AnchorProvider(
-        connection,
-        new NodeWallet(wallet),
-        {
-            preflightCommitment: 'processed',
-            commitment: 'processed',
-        }
-    );
-
-    const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
-        new anchor.web3.Connection("https://supersize.magicblock.app", {
-        wsEndpoint: "wss://supersize.magicblock.app",
-        }),
-        new NodeWallet(wallet) 
-    ));
-
-    anchor.setProvider(provider);
-
     const [playerKey, setPlayerKey] = useState<PublicKey>(wallet.publicKey);
     const walletRef = useRef<Keypair>(wallet);
     const [players, setPlayers] = useState<Blob[]>([]);
@@ -209,25 +160,6 @@ const App: React.FC = () => {
         },
       };
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
-
-    useEffect(() => {
-        if (fastestEndpoint) {
-          const wsUrl = fastestEndpoint.replace("https", "wss");
-          providerEphemeralRollup.current = new anchor.AnchorProvider(
-            new anchor.web3.Connection(fastestEndpoint, {
-              wsEndpoint: wsUrl,
-            }),
-            new NodeWallet(wallet)
-          );
-      
-          console.log('Updated providerEphemeralRollup:', providerEphemeralRollup.current);
-          const { worldId, worldPda } = endpointToWorldMap[fastestEndpoint];
-          setActiveGames([{ worldId: worldId, worldPda: worldPda} as ActiveGame]);
-          setEndpointDone(true);
-          console.log(fastestEndpoint);
-        }
-      }, [fastestEndpoint]); 
-
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
     let entityMatch = useRef<PublicKey | null>(null);
     let playerEntities = useRef<PublicKey[]>([]);
@@ -239,10 +171,6 @@ const App: React.FC = () => {
     const [gameId, setGameId] = useState<PublicKey | null>(null);
     
     const [exitHovered, setExitHovered] = useState(false);
-
-    const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setPlayerName(event.target.value);
-    };
 
     let playersComponentSubscriptionId = useRef<number[] | null>([]);
     let playersListsComponentSubscriptionId = useRef<number[] | null>([]);
@@ -266,9 +194,100 @@ const App: React.FC = () => {
    const [gameEnded, setGameEnded] = useState(0);
    const [playerCashout, setPlayerCashout] = useState(0);
    const [playerTax, setPlayerTax] = useState(0);
+   const playerRemovalTimeRef = useRef<BN | null>(null);
    const [cashoutTx, setCashoutTx] = useState<string| null>(null);
+   const [reclaimTx, setReclaimTx] = useState<string| null>(null);
+   const [cashingOut, setCashingOut] = useState<boolean>(false);
    const [playerCashoutAddy, setPlayerCashoutAddy] = useState<PublicKey| null>(null);
    const [nextFood, setNextFood] = useState({x: -1,y: -1});
+
+   const [inputValue, setInputValue] = useState<string>('');  
+   const [footerVisible, setFooterVisible] = useState(false);
+   const [playerExiting, setPlayerExiting] = useState(false);
+   const [countdown, setCountdown] = useState(5);
+   const [buyIn, setBuyIn] = useState(1.0); 
+
+   const SOL_USDC_POOL_ID = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2"; // Your pool ID
+
+   const provider = new anchor.AnchorProvider(
+    connection,
+    new NodeWallet(wallet),
+    {
+        preflightCommitment: 'processed',
+        commitment: 'processed',
+    }
+    );
+
+    const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
+        new anchor.web3.Connection("https://supersize.magicblock.app", {
+        wsEndpoint: "wss://supersize.magicblock.app",
+        }),
+        new NodeWallet(wallet) 
+    ));
+
+    anchor.setProvider(provider);
+
+        // Function to ping an endpoint and return the ping time
+    const pingEndpoint = async (url: string): Promise<number> => {
+            const startTime = performance.now();
+            try {
+                await fetch(url, { method: "HEAD" });
+            } catch (error) {
+                console.error(`Failed to ping ${url}:`, error);
+            }
+            const endTime = performance.now();
+            return endTime - startTime;
+    };
+
+    useEffect(() => {
+        const checkEndpoints = async () => {
+        const results: Record<string, number> = {};
+        setEndpointDone(false);
+        for (const endpoint of endpoints) {
+            const pingTime = await pingEndpoint(endpoint);
+            results[endpoint] = pingTime;
+        }
+
+        const lowestPingEndpoint = Object.keys(results).reduce((a, b) => (results[a] < results[b] ? a : b));
+        setFastestEndpoint(lowestPingEndpoint);
+        const wsUrl = lowestPingEndpoint.replace("https", "wss");
+        };
+
+        checkEndpoints();
+    }, []);
+  
+    useEffect(() => {
+    if (publicKey) {
+        setSavedPublicKey(publicKey); 
+    }
+    }, [publicKey]);
+
+    useEffect(() => {
+        if (buyIn > 10) {
+            setBuyIn(10.0); 
+        }
+        if (buyIn < 0.1){
+            setBuyIn(0.1);
+        }
+    }, [buyIn]);
+
+    useEffect(() => {
+        if (fastestEndpoint) {
+        const wsUrl = fastestEndpoint.replace("https", "wss");
+        providerEphemeralRollup.current = new anchor.AnchorProvider(
+            new anchor.web3.Connection(fastestEndpoint, {
+            wsEndpoint: wsUrl,
+            }),
+            new NodeWallet(wallet)
+        );
+    
+        console.log('Updated providerEphemeralRollup:', providerEphemeralRollup.current);
+        const { worldId, worldPda } = endpointToWorldMap[fastestEndpoint];
+        setActiveGames([{ worldId: worldId, worldPda: worldPda} as ActiveGame]);
+        setEndpointDone(true);
+        console.log(fastestEndpoint);
+        }
+    }, [fastestEndpoint]); 
 
     const openDocs = useCallback(() => {
         window.open('https://docs.supersize.app/', '_blank');
@@ -277,6 +296,18 @@ const App: React.FC = () => {
         window.open('https://x.com/SUPERSIZEgg', '_blank');
     }, []); 
 
+    const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPlayerName(event.target.value);
+    };
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(event.target.value);
+    };
+    const handleSliderChange = (event: any) => {
+        let value = parseFloat(event.target.value);
+        value = value > 10 ? 10 : value;
+        value = value > 0.1 ? parseFloat(value.toFixed(1)) : value;
+        setBuyIn(value);
+    };
 
     const getComponentsClientBasic = useCallback(async (component: PublicKey): Promise<Program> => {
         const idl = await Program.fetchIdl(component);
@@ -335,6 +366,7 @@ const App: React.FC = () => {
             radius: 4 + Math.sqrt(player.mass / 10) * 6,
             mass: player.mass,
             score: player.score,
+            tax: player.tax,
             speed: player.speed,
             removal: player.scheduledRemovalTime,
             target_x: player.target_x,
@@ -374,16 +406,25 @@ const App: React.FC = () => {
 
       
     const updateMyPlayerCashout = useCallback((player: any) => {
+        console.log('updating cashout data', player);
         setPlayerCashout(player.score);
         setPlayerTax(player.tax);
+        setPlayerCashoutAddy(player.payoutTokenAccount)
     }, [setCurrentPlayer, playerKey, allFood]);
 
     const updateMyPlayer = useCallback((player: any) => {
-        console.log(player);
-        if(player && player.score != 0){
-            setPlayerCashout(player.score);
-            setPlayerTax(player.tax);
-            setPlayerCashoutAddy(player.payoutTokenAccount)
+        console.log(player, currentPlayer?.target_x, currentPlayer?.target_y)
+        if(player.scheduledRemovalTime){
+            //console.log(player.scheduledRemovalTime, player.scheduledRemovalTime.toNumber());
+            playerRemovalTimeRef.current = player.scheduledRemovalTime;
+        }
+        if(Math.sqrt(player.mass) == 0 &&
+        player.x === 50000 &&
+        player.y === 50000 &&
+        player.score == 0.0 &&
+        !cashingOut){
+            setGameEnded(1);
+            setGameId(null);
         }
         setCurrentPlayer({ 
             name: player.name, 
@@ -393,6 +434,7 @@ const App: React.FC = () => {
             radius: 4 + Math.sqrt(player.mass / 10) * 6,
             mass: player.mass,
             score: player.score,
+            tax: player.tax,
             speed: player.speed,
             removal: player.scheduledRemovalTime,
             target_x: player.targetX,
@@ -420,6 +462,7 @@ const App: React.FC = () => {
                         radius: 4 + Math.sqrt(playerx.mass / 10) * 6,
                         mass: playerx.mass,
                         score: playerx.score,
+                        tax: playerx.tax,
                         speed: playerx.speed,
                         removal: playerx.removal,
                         target_x: playerx.target_x,
@@ -498,6 +541,7 @@ const App: React.FC = () => {
                         radius: 4 + Math.sqrt(player.mass / 10) * 6,
                         mass: player.mass,
                         score: player.score,
+                        tax: player.tax,
                         speed: player.speed,
                         removal: player.removal,
                         target_x: player.targetX,
@@ -725,341 +769,6 @@ const App: React.FC = () => {
     }, [connection, isSubmitting, sendTransaction]);
 
     /**
-     * Create a new game transaction
-     */
-    const newGameTx = useCallback(async (width: number, height: number, entry_fee: number, max_players: number, emit_type: number, emit_data: number, frozen: boolean, game_name: string) => {
-        if (!publicKey) throw new WalletNotConnectedError();
-
-        const initNewWorld = await InitializeNewWorld({
-            payer:  publicKey, 
-            connection: connection,
-          });
-        const txSign = await submitTransactionUser(initNewWorld.transaction); 
-        const worldPda = initNewWorld.worldPda;
-
-        const mapseed = "origin"; 
-        const newmapentityPda = FindEntityPda({
-            worldId: initNewWorld.worldId,
-            entityId: new anchor.BN(0),
-            seed: mapseed
-        })
-        const addMapEntityIx = await createAddEntityInstruction(
-            {
-                payer: publicKey,
-                world: worldPda,
-                entity: newmapentityPda,
-            },
-            { extraSeed: mapseed }
-        )
-        const transaction = new anchor.web3.Transaction().add(addMapEntityIx);
-        
-        const newfoodEntityPdas: any[] = [];
-        const newfoodComponentPdas: any[] = [];
-        for (let i = 1; i < 5; i++) {
-            const seed = i.toString().repeat(20);
-            
-            const newfoodEntityPda = FindEntityPda({
-                worldId: initNewWorld.worldId,
-                entityId: new anchor.BN(0),
-                seed: seed
-            });
-            
-            newfoodEntityPdas.push(newfoodEntityPda);
-
-            const addEntityIx = await createAddEntityInstruction(
-                {
-                    payer: publicKey,
-                    world: worldPda,
-                    entity: newfoodEntityPda,
-                },
-                { extraSeed: seed }
-            );
-        
-            transaction.add(addEntityIx);
-        }
-        const signaturefoodmap = await submitTransactionUser(transaction);
-        console.log(
-            `Food+map entity signature: ${signaturefoodmap}`
-        );
-
-        const newplayerEntityPdas: any[] = [];
-        const newplayerComponentPdas: any[] = [];
-        const playercomponentstransaction = new anchor.web3.Transaction();
-        for (let i = 1; i < 4; i++) {
-            const seed = 'player' + i.toString();
-            
-            const newplayerEntityPda = FindEntityPda({
-                worldId: initNewWorld.worldId,
-                entityId: new anchor.BN(0),
-                seed: seed
-            });
-            
-            newplayerEntityPdas.push(newplayerEntityPda);
-
-            const addEntityIx = await createAddEntityInstruction(
-                {
-                    payer: publicKey,
-                    world: worldPda,
-                    entity: newplayerEntityPda,
-                },
-                { extraSeed: seed }
-            );
-        
-            playercomponentstransaction.add(addEntityIx);
-        }
-
-        const anteroomseed = "ante"; 
-        const newanteentityPda = FindEntityPda({
-            worldId: initNewWorld.worldId,
-            entityId: new anchor.BN(0),
-            seed: anteroomseed
-        })
-        const addAnteEntityIx = await createAddEntityInstruction(
-            {
-                payer: publicKey,
-                world: worldPda,
-                entity: newanteentityPda,
-            },
-            { extraSeed: anteroomseed }
-        )
-        playercomponentstransaction.add(addAnteEntityIx);
-        const signatureplayerscomponents = await submitTransactionUser(playercomponentstransaction);
-        console.log(
-            `Players + anteroom entity signature: ${signatureplayerscomponents}`
-        );
-
-        const initeverycomponenttransaction = new anchor.web3.Transaction();
-        const initMapIx = await InitializeComponent({
-            payer: publicKey,
-            entity: newmapentityPda,
-            componentId: MAP_COMPONENT,
-        });
-
-        initeverycomponenttransaction.add(initMapIx.transaction);
-
-        for (const foodPda of newfoodEntityPdas) {
-            const initComponent = await InitializeComponent({
-                payer: publicKey,
-                entity: foodPda,
-                componentId: FOOD_COMPONENT,
-              });
-              initeverycomponenttransaction.add(initComponent.transaction);
-            newfoodComponentPdas.push(initComponent.componentPda);
-        }
-        const signature1 = await submitTransactionUser(initeverycomponenttransaction);
-        console.log(
-            `Init food + map component signature: ${signature1}`
-        );
-
-        const initallplayerscomponenttransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas) {
-            const initPlayerComponent = await InitializeComponent({
-                payer: publicKey,
-                entity: playerPda,
-                componentId: PLAYERS_COMPONENT,
-              });
-              initallplayerscomponenttransaction.add(initPlayerComponent.transaction);
-            newplayerComponentPdas.push(initPlayerComponent.componentPda);
-        }
-
-        const initAnteIx = await InitializeComponent({
-            payer: publicKey,
-            entity: newanteentityPda,
-            componentId: ANTEROOM_COMPONENT,
-        });
-        initallplayerscomponenttransaction.add(initAnteIx.transaction);
-        const signatureinitplayers = await submitTransactionUser(initallplayerscomponenttransaction);
-        console.log(
-            `Init players + anteroom component signature: ${signatureinitplayers}`
-        );
-
-        //set up vault
-        const decimals = 9;
-        let vault_program_id = new PublicKey("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS");
-        let mint_of_token = new PublicKey("AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp");
-        let map_component_id = initMapIx.componentPda;
-        console.log('map component', map_component_id)
-        let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("token_account_owner_pda"), map_component_id.toBuffer()],
-        vault_program_id
-        );
-        const owner_token_account = new PublicKey("BDcjDpR9i62tqxVCB62fpa37kvcAWeciWQC2VfUjXvZu");
-        const tokenVault = await getAssociatedTokenAddress(mint_of_token, tokenAccountOwnerPda, true);
-        const createTokenAccountTx = createAssociatedTokenAccountInstruction(
-            publicKey,
-            tokenVault,
-            tokenAccountOwnerPda,
-            mint_of_token,
-        );
-        const combinedTx = new Transaction()
-        .add(createTokenAccountTx); 
-        const createvaultsig = await submitTransactionUser(combinedTx);
-        console.log(
-            `Created pda + vault signature: ${createvaultsig}`
-        );
-        
-        console.log(
-            width,
-            height,
-            entry_fee,
-            max_players,
-            tokenVault.toString(), 
-            mint_of_token.toString(), 
-            9,
-            tokenAccountOwnerPda.toString(),
-            owner_token_account.toString(), 
-            frozen,
-        )
-        const inittransaction = new anchor.web3.Transaction();
-        const initGame = await ApplySystem({
-            authority: publicKey,
-            world: worldPda,
-            entities: [
-              {
-                entity: newmapentityPda,
-                components: [{ componentId: MAP_COMPONENT }],
-              },
-            ],
-            systemId: INIT_GAME,
-            args: {
-                name:game_name,
-                size: width,
-                entry_fee: 1.0,
-                entry_fee_upper_bound_mul: 10,
-                entry_fee_lower_bound_mul: 100,
-                frozen: frozen,
-            },
-          });
-          inittransaction.add(initGame.transaction);
-          for (const foodPda of newfoodEntityPdas) {
-            // Perform operations on each foodPda
-            const initFood = await ApplySystem({
-                authority: publicKey,
-                world: worldPda,
-                entities: [
-                    {
-                        entity: foodPda,
-                        components: [{ componentId:FOOD_COMPONENT}],
-                      },
-                      {
-                        entity: newmapentityPda,
-                        components: [{ componentId:MAP_COMPONENT }],
-                      },
-                ],
-                systemId: INIT_FOOD,
-              });
-              inittransaction.add(initFood.transaction);
-            }
-        const signature = await submitTransactionUser(inittransaction); 
-        console.log(
-            `Init func game + food signature: ${signature}`
-        );
-
-        const initplayertransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas) {
-            const initPlayer = await ApplySystem({
-                authority: publicKey,
-                world: worldPda,
-                entities: [
-                    {
-                        entity: playerPda,
-                        components: [{ componentId:PLAYERS_COMPONENT}],
-                      },
-                      {
-                        entity: newmapentityPda,
-                        components: [{ componentId:MAP_COMPONENT }],
-                      },
-                ],
-                systemId: INIT_PLAYERS,
-              });
-              initplayertransaction.add(initPlayer.transaction);
-            }
-
-            const initAnteroom = await ApplySystem({
-                authority: publicKey,
-                world: worldPda,
-                entities: [
-                  {
-                    entity: newanteentityPda,
-                    components: [{ componentId: ANTEROOM_COMPONENT }],
-                  },
-                  {
-                    entity: newmapentityPda,
-                    components: [{ componentId: MAP_COMPONENT }],
-                  },
-                ],
-                systemId: INIT_ANTEROOM,
-                args: {
-                    vault_token_account_string: tokenVault.toString(), 
-                    token_string: mint_of_token.toString(), 
-                    token_decimals: 9,
-                    gamemaster_wallet_string: owner_token_account.toString(), 
-                },
-              });
-              initplayertransaction.add(initAnteroom.transaction);
-        const signatureplayerdinited = await submitTransactionUser(initplayertransaction); 
-        console.log(
-            `Init func players + anteroom signature: ${signatureplayerdinited}`
-        );
-
-        sendSol(playerKey);
-        const mapdelegateIx = createDelegateInstruction({
-        entity: newmapentityPda,
-        account: initMapIx.componentPda,
-        ownerProgram: MAP_COMPONENT,
-        payer: playerKey,
-        });
-        const maptx = new anchor.web3.Transaction().add(mapdelegateIx);
-        const delsignature = await submitTransaction(maptx, "confirmed", true); 
-        console.log(
-            `Delegation signature map: ${delsignature}`
-        );
-
-        const playertx = new anchor.web3.Transaction();
-
-        newfoodEntityPdas.forEach((foodEntityPda, index) => {
-            const fooddelegateIx = createDelegateInstruction({
-                entity: foodEntityPda,
-                account: newfoodComponentPdas[index],
-                ownerProgram: FOOD_COMPONENT,
-                payer: playerKey,
-                });
-                playertx.add(fooddelegateIx);
-        });
-        
-        const delsignature2 = await submitTransaction(playertx, "confirmed", true); 
-        console.log(
-            `Delegation signature food: ${delsignature2}`
-        );
-
-        const realplayertx = new anchor.web3.Transaction();
-
-        newplayerEntityPdas.forEach((playerEntityPda, index) => {
-            const playerdelegateIx = createDelegateInstruction({
-                entity: playerEntityPda,
-                account: newplayerComponentPdas[index],
-                ownerProgram: PLAYERS_COMPONENT,
-                payer: playerKey,
-                });
-                realplayertx.add(playerdelegateIx);
-        });
-        
-        const delsignature3 = await submitTransaction(realplayertx, "confirmed", true);
-        console.log(
-            `Delegation signature players: ${delsignature3}`
-        );
-
-        if (signature != null) {
-            const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: max_players, size: width}
-            console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
-            setNewGameCreated(newGameInfo);
-            const copiedActiveGameIds: ActiveGame[] = [...activeGames];
-            copiedActiveGameIds.push(newGameInfo);  
-            setActiveGames(copiedActiveGameIds);
-        }
-    }, [playerKey, connection]);
-
-    /**
      * Create a new join game transaction
      */
     const joinGameTx = useCallback(async (selectGameId: ActiveGame) => {
@@ -1141,6 +850,7 @@ const App: React.FC = () => {
         const foodEntityPdas: any[] = [];
         let targetfoodid = 0;
         let lowestfood = 100;
+        const foodComponentClient= await getComponentsClient(FOOD_COMPONENT);
         for (let i = 1; i < 5; i++) {
             const foodseed = i.toString().repeat(20);
             const foodEntityPda =  FindEntityPda({
@@ -1154,7 +864,6 @@ const App: React.FC = () => {
                 componentId: FOOD_COMPONENT,
                 entity: foodEntityPda,
             });
-            const foodComponentClient= await getComponentsClient(FOOD_COMPONENT);
             const foodacc = await providerEphemeralRollup.current.connection.getAccountInfo(
                 foodComponentPda, "processed"
             );
@@ -1173,6 +882,7 @@ const App: React.FC = () => {
         let targetplayersid = 0;
         const playersPerList: number[] = [];
         let lowestplayers = 10;
+        const playersListsClient = await getComponentsClient(PLAYERS_COMPONENT);
         for (let i = 1; i < 4; i++) {
             const playerentityseed = 'player' + i.toString();
             const playerEntityPda =  FindEntityPda({
@@ -1185,7 +895,6 @@ const App: React.FC = () => {
                 componentId: PLAYERS_COMPONENT,
                 entity: playerEntityPda,
             });
-            const playersListsClient = await getComponentsClient(PLAYERS_COMPONENT);
             const playersacc = await providerEphemeralRollup.current.connection.getAccountInfo(
                 playersComponentPda, "processed"
             );
@@ -1203,8 +912,38 @@ const App: React.FC = () => {
                 currentValue < arr[lowestIndex] ? currentIndex : lowestIndex, 0);
         console.log(totalplayers, targetplayersid)
     
+
+        let newplayerEntityPda : any = null;
+        const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
+        for (let i = 1; i < 4; i++) {
+            const myplayerentityseed = 'myplayer' + i.toString();
+            const myplayerEntityPda =  FindEntityPda({
+                worldId: gameInfo.worldId,
+                entityId: new anchor.BN(0),
+                seed: myplayerentityseed
+            })
+            const myplayersComponentPda = FindComponentPda({
+                componentId: PLAYER_COMPONENT,
+                entity: myplayerEntityPda,
+            });
+            const playersacc = await provider.connection.getAccountInfo(
+                myplayersComponentPda, "processed"
+            );
+            if(playersacc){
+                const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
+                console.log('player', i, playersParsedData)
+                if(playersParsedData.authority == null){
+                    newplayerEntityPda = myplayerEntityPda;
+                    break;
+                }
+            }else{
+                newplayerEntityPda = myplayerEntityPda;
+                break;
+            }
+            }
+
             const playerseed = playerKey.toString().substring(0, 7); 
-            const newplayerEntityPda =  FindEntityPda({
+            newplayerEntityPda =  FindEntityPda({
                 worldId: gameInfo.worldId,
                 entityId: new anchor.BN(0),
                 seed: playerseed
@@ -1486,6 +1225,7 @@ const App: React.FC = () => {
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = walletRef.current.publicKey;
         transaction.sign(walletRef.current);
+        setCashingOut(true);
         const signature = await providerEphemeralRollup.current.sendAndConfirm(transaction); 
         console.log('exiting', signature)
         if (signature != null) {
@@ -1496,12 +1236,91 @@ const App: React.FC = () => {
     }, [playerKey, submitTransaction, subscribeToGame]);
 
     useEffect(() => {
+        const waitSignatureConfirmation = async (
+            signature: string,
+            connection: anchor.web3.Connection,
+            commitment: anchor.web3.Commitment
+        ): Promise<void> => {
+            return new Promise((resolve, reject) => {
+                connection.onSignature(
+                    signature,
+                    (result) => {
+                        if (result.err) {
+                            console.error(`Error with signature ${signature}`, result.err);
+                            reject(result.err);
+                        } else {
+                            console.log("undelegation finalized");
+                            setTimeout(() => resolve(), 1000); // Adds a 1-second delay before resolving
+                        }
+                    },
+                    commitment
+                );
+            });
+        };
+        const checkTransactionStatus = async (
+            connection: anchor.web3.Connection,
+            signature: string
+        ): Promise<boolean> => {
+            try {
+                const status = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
+        
+                // Check if the status is confirmed and has no errors
+                if (status && status.value && status.value.confirmationStatus === "confirmed" && status.value.err === null) {
+                    console.log("Transaction succeeded:", signature);
+                    return true; // Transaction was successful
+                } else {
+                    console.warn("Transaction still pending or failed:", signature);
+                    return false; // Transaction not successful yet
+                }
+            } catch (error) {
+                console.error("Error checking transaction status:", error);
+                return false; // If an error occurs, treat it as a failure
+            }
+        };
+        const retrySubmitTransaction = async (
+            transaction: Transaction,
+            connection: anchor.web3.Connection,
+            commitment: anchor.web3.Commitment,
+            maxRetries = 5,
+            delay = 1000 // 1 second delay between retries
+        ): Promise<string | null> => {
+            let attempts = 0;
+            let signature: string | null = null;
+        
+            while (attempts < maxRetries) {
+                try {
+                    // Submit the transaction
+                    signature = await submitTransaction(transaction, commitment, true);
+                    console.log("cashout attempt:", signature);
+        
+                    // Check transaction status
+                    if(signature){
+                    const success = await checkTransactionStatus(connection, signature);
+                    if (success) {
+                        console.log("Transaction confirmed successfully");
+                        return signature; // Return the successful transaction signature
+                    }
+                    }
+                } catch (error) {
+                    console.error(`Attempt ${attempts + 1} failed:`, error);
+                }
+        
+                // Increment attempt count and wait before retrying
+                attempts++;
+                await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+        
+            console.error("Max retries reached. Transaction failed to confirm.");
+            return null; // Return null if all retries fail
+        };
         const cleanUp = async () => {
                 if (
                     currentPlayer &&
                     Math.sqrt(currentPlayer.mass) == 0 &&
                     currentPlayer.x === 50000 &&
-                    currentPlayer.y === 50000
+                    currentPlayer.y === 50000 && 
+                    ((cashingOut && gameEnded==2) ||
+                    !cashingOut)
                 ) {
                     if(currentWorldId.current==null){
                         throw new Error("world not found");
@@ -1512,6 +1331,10 @@ const App: React.FC = () => {
                             componentId: PLAYER_COMPONENT,
                             entity: currentPlayerEntity.current,
                         });
+                        let newplayersComponentClient = await getComponentsClient(PLAYER_COMPONENT);
+                        (newplayersComponentClient.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayerCashout).catch((error: any) => {
+                            console.error("Failed to fetch account:", error);
+                            });
                         const undelegateIx = createUndelegateInstruction({
                             payer: playerKey,
                             delegatedAccount: myplayerComponent,
@@ -1526,6 +1349,11 @@ const App: React.FC = () => {
                         tx.feePayer = walletRef.current.publicKey;
                         tx.sign(walletRef.current);
                         const playerdelsignature = await providerEphemeralRollup.current.sendAndConfirm(tx, [], { skipPreflight: false });
+                        await waitSignatureConfirmation(
+                            playerdelsignature,
+                            providerEphemeralRollup.current.connection,
+                            "finalized"
+                          );
                         console.log('undelegate', playerdelsignature)
                         
                         const anteComponentPda = FindComponentPda({
@@ -1561,18 +1389,15 @@ const App: React.FC = () => {
                               ); 
                             let playerTokenAccount = await getAssociatedTokenAddress(mint_of_token_being_sent, playerKey);
                             sender_token_account = usertokenAccountInfo;
-                            if (playerCashoutAddy){
-                                sender_token_account = playerCashoutAddy;
-                            }
                             let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
                                 [Buffer.from("token_account_owner_pda"), mapComponent.toBuffer()],
                                 vault_program_id
                                 );
-                            let newplayersComponentClient = await getComponentsClient(PLAYER_COMPONENT);
-                            (newplayersComponentClient.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayerCashout).catch((error: any) => {
-                                console.error("Failed to fetch account:", error);
-                                });
-                            console.log('cashout data', sender_token_account.toString(), playerCashoutAddy?.toString());
+                            if (playerCashoutAddy){
+                                sender_token_account = playerCashoutAddy;
+                            }
+                            //console.log('cashout data', sender_token_account.toString(), playerCashoutAddy?.toString());
+                           if(cashingOut && gameEnded==2){
                             const applyCashOutSystem = await ApplySystem({
                                 authority: playerKey,
                                 world: currentWorldId.current,
@@ -1636,9 +1461,13 @@ const App: React.FC = () => {
                                   ],
                               });
                             const cashouttx = new anchor.web3.Transaction().add(applyCashOutSystem.transaction);
-                            const cashoutsignature = await submitTransaction(cashouttx, "confirmed", true);
+                            //const cashoutsignature = await submitTransaction(cashouttx, "confirmed", true);
+                            const cashoutsignature = await retrySubmitTransaction(cashouttx, connection, "confirmed");
                             console.log('cashout', cashoutsignature);
-
+                            if (cashoutsignature){
+                                setCashoutTx(cashoutsignature);
+                            }
+                            }
                             const reclaim_transaction = new Transaction();
                             const playerbalance = await connection.getBalance(playerKey, 'processed');
                             const accountInfo = await getAccount(connection, playerTokenAccount);
@@ -1668,8 +1497,7 @@ const App: React.FC = () => {
                             console.log("get winnings", reclaimsig, accountInfo.amount, playerbalance);
 
                             if(reclaimsig){
-                                setGameEnded(3);
-                                setCashoutTx(reclaimsig);
+                                setReclaimTx(reclaimsig);
                             }else{
                                 setGameEnded(4);
                             }
@@ -1685,9 +1513,9 @@ const App: React.FC = () => {
                         }
 
                         setGameId(null);
-                        if(gameEnded==0){
-                            setGameEnded(1);
-                        }
+                        //if(gameEnded==0){
+                        //    setGameEnded(1);
+                        //}
                         
                         if (mapComponentSubscriptionId?.current) {
                             await providerEphemeralRollup.current.connection.removeAccountChangeListener(mapComponentSubscriptionId.current);
@@ -1890,7 +1718,7 @@ const App: React.FC = () => {
                 alltransaction.feePayer = walletRef.current.publicKey;
                 alltransaction.sign(walletRef.current);
                 let signature = await processSessionEphemTransaction(alltransaction).catch((error) => {
-                    console.log(error)
+                    //console.log(error)
                 });
                 
                 if (gameId && entityMatch.current) {   
@@ -2048,6 +1876,52 @@ const App: React.FC = () => {
         }
     }, [gameId, nextFood, currentPlayer]);
 
+    const handleExitClick = () => {
+        preExitGameTx();
+        setPlayerExiting(true);
+        
+        const interval = setInterval(() => {
+          setCountdown((prev) => prev - 1);
+        }, 1000);
+        
+        /*
+        setTimeout(() => {
+          console.log("Timeout triggered");
+          exitGameTx();
+          clearInterval(interval);
+        }, 6000);*/
+          // Set the removal timestamp
+        
+        const startTime = Date.now();
+        // Set up an interval to continually check if 6 seconds have passed
+        const checkRemovalTime = setInterval(() => {
+            if (playerRemovalTimeRef.current && !playerRemovalTimeRef.current.isZero()) { // Ensure it's not zero
+              const startTime = playerRemovalTimeRef.current.toNumber() * 1000; // Convert to ms
+              clearInterval(checkRemovalTime); // Stop checking for `playerRemovalTime`
+        
+              const timeoutinterval = setInterval(() => {
+                const currentTime = Date.now();
+                const elapsedTime = currentTime - startTime;
+        
+                if (elapsedTime >= 6000) {
+                  console.log("5 seconds have passed");
+                  exitGameTx();
+                  clearInterval(timeoutinterval);
+                  clearInterval(interval);
+                } else {
+                  console.log("Waiting...", elapsedTime);
+                }
+              }, 1000);
+            }
+          }, 100); // Check every 100ms if `playerRemovalTime` has been updated
+      };
+    
+      useEffect(() => {
+        if (!playerExiting) {
+          setCountdown(5);
+        }
+      }, [playerExiting]);
+
     useEffect(() => {
         if(entityMatch || gameId){ 
             const handleMouseMove = (event: MouseEvent) => {
@@ -2074,32 +1948,7 @@ const App: React.FC = () => {
         }
     }, [playerKey, gameId, entityMatch, currentPlayer, screenSize]);  
 
-    useEffect(() => {
-        if(gameId){ 
-
-            const handleMouseMove = (event: MouseEvent) => {
-                setMousePosition({x:event.clientX, y: event.clientY}); 
-            };  
-
-            const handleMouseDown = (event: MouseEvent) => { 
-                setIsMouseDown(true);
-            };
-
-            const handleMouseUp = () => {
-                setIsMouseDown(false);
-            };
-            
-            window.addEventListener('mousedown', handleMouseDown);
-            window.addEventListener('mouseup', handleMouseUp);
-            window.addEventListener('mousemove', handleMouseMove); 
-
-            return () => {
-                window.removeEventListener('mousemove', handleMouseMove);
-                window.removeEventListener('mousedown', handleMouseDown);
-                window.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-            
+    useEffect(() => {        
         function translateLargerRectangle() {
             const largerRectangle = document.getElementsByClassName('game')[0] as HTMLElement;;
             const smallerRectangle = document.getElementsByClassName('gameWrapper')[0] as HTMLElement;;
@@ -2119,75 +1968,37 @@ const App: React.FC = () => {
         translateLargerRectangle();
         
     }, [gameId, setGameId, screenSize]);  
-
-    // Function to send SOL
-    async function sendSol(destWallet: PublicKey) {
-        const privateKey = "FSYbuTybdvfrBgDWSHuZ3F3fMg7mTZd1pJSPXHM6QkamDbbQkykV94n3y8XhLwRvuvyvoUmEPJf9Qz8abzaWBtv"; 
-        if (!privateKey || !destWallet) {
-            throw new Error("Key is not defined in the environment variables");
-        }
-
-        const secretKey = bs58.decode(privateKey); //Uint8Array.from(JSON.parse(privateKey));
-        const senderKeypair = Keypair.fromSecretKey(secretKey);
-
-        const recipientPublicKey = destWallet;
-        const senderPublicKey = senderKeypair.publicKey;
-
-        const {
-            context: { slot: minContextSlot },
-            value: { blockhash, lastValidBlockHeight }
-        } = await connection.getLatestBlockhashAndContext();
-        const transaction = new Transaction();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = senderPublicKey;
-        transaction.add(SystemProgram.transfer({
-            fromPubkey: senderPublicKey,
-            toPubkey: recipientPublicKey,
-            lamports: 0.05 * LAMPORTS_PER_SOL, // Amount in SOL (1 SOL in this example)
-        }));
-
-        transaction.sign(senderKeypair);
-        const signature = await connection.sendRawTransaction(transaction.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'processed',
-        });
-
-        // Confirm the transaction
-        await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature }, "processed");
-
-        console.log('Transaction successful with signature:', signature);
-    }
       
       useEffect(() => {
         const getTPS = async () => {
-            if(playerKey){
                 const recentSamples = await connection.getRecentPerformanceSamples(4);
                 const totalTransactions = recentSamples.reduce((total, sample) => total + sample.numTransactions, 0);
                 const averageTransactions = totalTransactions / recentSamples.length;
                 setCurrentTPS(Math.round(averageTransactions));
                 //console.log(recentSamples[0].numTransactions);
-            }
         };
-            
         getTPS();
       }, []);
 
+        async function getTokenBalance(connection: Connection, vault: PublicKey, decimals: number): Promise<number> {
+        const balance = await connection.getTokenAccountBalance(vault);
+        return parseFloat(balance.value.amount) / Math.pow(10, decimals); // Adjust the balance for the token's decimals
+        }
+        async function parsePoolInfo() {
+        const  mainnet_connection =  new Connection("https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+        const info = await mainnet_connection.getAccountInfo(new PublicKey(SOL_USDC_POOL_ID));
+        if (!info) return;
+        const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(info.data);        
+        const baseTokenDecimals = 9; // Decimals for SOL
+        const quoteTokenDecimals = 6; // Decimals for USDC
+        const baseTokenBalance = await getTokenBalance(mainnet_connection, poolState.baseVault, baseTokenDecimals);
+        const quoteTokenBalance = await getTokenBalance(mainnet_connection, poolState.quoteVault, quoteTokenDecimals);        
+        const priceOfBaseInQuote = quoteTokenBalance / baseTokenBalance;
+        setPrice(priceOfBaseInQuote);
+        }
+
         useEffect(() => {
-            const fetchPrice = async () => {
-                try {
-                const response = await fetch('https://api.raydium.io/v2/main/price');
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                const specificPrice = data["So11111111111111111111111111111111111111112"];
-                setPrice(specificPrice); // Set the specific price to the state
-                } catch (error) {
-                console.error('Error fetching the price:', error);
-            }
-        };
-    
-        fetchPrice();
+        parsePoolInfo();
         }, []);
 
         const handleClick = (index: number) => {
@@ -2198,6 +2009,26 @@ const App: React.FC = () => {
         });
         };
 
+        const handleImageClick = async () => {
+            if (inputValue.trim() !== '') {
+                try {
+                    const worldId = {worldId: new anchor.BN(inputValue.trim())};
+                    const worldPda = await FindWorldPda( worldId);
+                    const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "test", active_players: 0, max_players: 0, size: 0}
+                    console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
+                    setNewGameCreated(newGameInfo);
+                    setActiveGames([newGameInfo, ...activeGames]);
+                    setOpenGameInfo(new Array(activeGames.length).fill(false));
+                } catch (error) {
+                    console.error("Invalid PublicKey:", error);
+                }
+            }
+        };
+        const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+          if (event.key === 'Enter') {
+              handleImageClick();
+          }
+        };
         useEffect(() => {
             const fetchAndLogMapData = async () => {
         
@@ -2243,79 +2074,6 @@ const App: React.FC = () => {
             fetchAndLogMapData();
         
         }, [openGameInfo, enpointDone]);
-        
-        useEffect(() => {
-        const renderPanel = (buildViewer: number) => {
-            switch (buildViewer) {
-              case 2:
-                return (
-                  <div className="panel" style={{ display: "flex", justifyContent: 'center', width: "100%", height: "100%", color:"white" }}>
-                    <div style={{ marginTop: "2vw", width: "60%" }}>
-                    <h1 style={{ margin: "2vw", marginLeft:"4vw", fontFamily: "conthrax", fontSize: "36px" }}>Earn Fees</h1>
-                    <p style={{ marginLeft: "4vw", fontFamily: "terminus", fontSize: "20px", width: "80%" }}>
-                      Supersize will be playable using SPL tokens. For paid games, a fee will be charged on each player buy-in. 
-                      The game owner will recieve the majority of game fees. Fees accumulate in each game’s chosen SPL token.
-                    </p>
-                    </div>
-                    <img src={`${process.env.PUBLIC_URL}/Group6.png`} width="100vw" height="auto" alt="Image" style={{ width: "25vw",height: "25vw", marginRight:"1vw", alignSelf:"center" }}/>
-                  </div>
-                );
-              case 3:
-                return (
-                  <div className="panel" style={{display: "flex", width: "100%", height: "100%", color:"white", flexDirection:"column" }}>
-                    <h1 style={{ margin: "2vw", marginLeft: "2vw", fontFamily: "conthrax", fontSize: "35px" }}>Mod Your Game</h1>
-                    <p style={{ marginLeft: "2vw", fontFamily: "terminus", fontSize: "24px", width: "80%" }}>
-                      Make your game stand out. Add everything from custom features and gameplay mechanics to in-game drops.
-                      Supersize is a real-time fully onchain game powered by Magicblock engine. 
-                      <br /><br />
-                      Here are some resources to start modding realtime fully onchain games: 
-                    </p>
-                    <div style={{display: "flex", flexDirection:"column", marginLeft:"2vw", marginTop:"1vw"}}>
-                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/Logomark_white.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"20px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://docs.magicblock.gg/Forever%20Games', '_blank');}}> docs.magicblock.gg/Forever%20Games </a></div>
-                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/GitBook.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"10px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://docs.supersize.app', '_blank');}}> docs.supersize.app</a></div>
-                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/github-mark-white.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"10px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://github.com/magicblock-labss', '_blank');}}> github.com/magicblock-labs </a></div>
-                    </div>
-                  </div>
-                );
-              case 4:
-                return (
-                  <div className="panel" style={{display: "flex", justifyContent: 'center', alignItems:"center", height: "100%", color:"white", flexDirection:"column"}}>
-                    <div>
-                    <h1 style={{ margin: "2vw", marginLeft: "2vw", fontFamily: "conthrax", fontSize: "38px"}}>Get In Touch</h1>
-                    <p style={{ marginLeft: "2vw", fontFamily: "terminus", fontSize: "24px"}}>
-                      Interested in building or partnering with Supersize? <br />
-                      Reach out to lewis@supersize.gg 
-                    </p>
-                    </div>
-                  </div>
-                );
-                case 5:
-                    return (
-                      <div className="panel" style={{ display: "flex", justifyContent: 'center', width: "100%", height: "100%", color:"white" }}>
-                        <div style={{ marginTop: "1vw", width: "60%" }}>
-                          <h1 style={{ marginTop: "2vw", marginBottom: "2vw", marginLeft: "1.5vw", fontFamily: "conthrax", fontSize: "36px" }}>Launch Your Game</h1>
-                          <p style={{ marginLeft: "1.5vw", fontFamily: "terminus", fontSize: "20px", width: "80%" }}>
-                              Deploy and customize your own Supersize game. <br /><br />
-                            <span style={{ opacity: "0.7" }}>
-                              Deploying a game generates a new Supersize world that lives forever and is owned by you. 
-                              Game deployment costs 0.05 sol. Currently, games can only be deployed to devnet.
-                            </span>
-                            <br /><br />
-                             <span className="free-play" style={{display:newGameCreated?'flex':'none', width: 'fit-content', padding:"10px", fontSize:"15px", marginTop:"1vh"}}>New Game ID: {newGameCreated?.worldId.toString()}</span>
-                          </p>
-                        </div>
-                        <div style={{ marginRight: "1.5vw", marginTop:"3vw" }}>
-                          <CreateGame initFunction={newGameTx} />
-                        </div>
-                      </div>
-                    );
-              default:
-                return null;
-            }
-        };
-        
-        setPanelContent(renderPanel(buildViewerNumber));
-      }, [buildViewerNumber, newGameCreated]);
 
       useEffect(() => {
         const scrollableElement = document.querySelector('.info-text-container');
@@ -2339,65 +2097,6 @@ const App: React.FC = () => {
             scrollableElement.removeEventListener('scroll', handleScroll);
         };
       }, [buildViewerNumber]);
-
-      const [inputValue, setInputValue] = useState<string>('');  
-      const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-          setInputValue(event.target.value);
-      };
-  
-      const handleImageClick = async () => {
-          if (inputValue.trim() !== '') {
-              try {
-                  const worldId = {worldId: new anchor.BN(inputValue.trim())};
-                  const worldPda = await FindWorldPda( worldId);
-                  const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "test", active_players: 0, max_players: 0, size: 0}
-                  console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
-                  setNewGameCreated(newGameInfo);
-                  setActiveGames([newGameInfo, ...activeGames]);
-                  setOpenGameInfo(new Array(activeGames.length).fill(false));
-              } catch (error) {
-                  console.error("Invalid PublicKey:", error);
-              }
-          }
-      };
-      const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
-            handleImageClick();
-        }
-    };
-
-    const [footerVisible, setFooterVisible] = useState(false);
-    const [playerExiting, setPlayerExiting] = useState(false);
-    const [countdown, setCountdown] = useState(5);
-    const [buyIn, setBuyIn] = useState(1.0); 
-
-    const handleSliderChange = (event: any) => {
-        let value = parseFloat(event.target.value);
-        value = value > 10 ? 10 : value;
-        value = value > 0.1 ? parseFloat(value.toFixed(1)) : value;
-        setBuyIn(value);
-    };
-
-    const handleExitClick = () => {
-      preExitGameTx();
-      setPlayerExiting(true);
-  
-      const interval = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-  
-      setTimeout(() => {
-        console.log("Timeout triggered");
-        exitGameTx();
-        clearInterval(interval);
-      }, 6000);
-    };
-  
-    useEffect(() => {
-      if (!playerExiting) {
-        setCountdown(5);
-      }
-    }, [playerExiting]);
 
     useEffect(() => {
         let scrollY = 0;
@@ -2536,7 +2235,7 @@ const App: React.FC = () => {
                 </div>)
             }
             <div className="left-side" style={{alignItems : "center", justifyContent:"center", display: 'flex', zIndex: 9999999 }}>
-            <div
+            {/*<div
                 style={{
                     width: '45px',
                     height: '45px',
@@ -2576,7 +2275,7 @@ const App: React.FC = () => {
                     }}
                     />
                 )}
-            </div>
+            </div>*/}
             <>
             {buildViewerNumber != 1 ? (
                 <div className="wallet-buttons" style={{ marginTop:"0vh", zIndex: 9999999}}>
@@ -2611,21 +2310,23 @@ const App: React.FC = () => {
                     </div>
                     <div className="buyInField">
                         <div className="buyInInfo" style={{marginLeft:"5px", width: "30%", display: "flex", alignItems: "center" }}>
-                        <img src={`${process.env.PUBLIC_URL}/Solana_logo.png`} width="20px" height="auto" alt="Image" style={{alignItems:"center", justifyContent: "center"}}/>
-                        <div style={{height:"20px", display: 'inline', marginLeft:"8px", marginTop:"3px"}}>SOL</div>
+                        <img src={`${process.env.PUBLIC_URL}/agld.jpg`} width="20px" height="auto" alt="Image" style={{alignItems:"center", justifyContent: "center"}}/>
+                        <div style={{height:"20px", display: 'inline', marginLeft:"8px", marginTop:"3px"}}>AGLD</div>
                         </div>
                         <input 
                             className="BuyInText"
-                            type="text" 
+                            type="number" 
                             value={buyIn}
-                            onChange={handleSliderChange} 
-                            placeholder="Enter your name"
+                            onChange={(e) => setBuyIn(parseFloat(e.target.value))} 
+                            placeholder="0.1"
+                            step="0.01"
+                            min="0.1"
                         />
                     </div>
                     <div className="buyInSlider">
                     <input 
                         type="range" 
-                        min="0.01" 
+                        min="0.1" 
                         max="10.01" 
                         step="0.1" 
                         value={buyIn} 
@@ -2840,12 +2541,22 @@ const App: React.FC = () => {
           </div>
             ):(
                 <div className="game-select" style={{display: gameId == null && gameEnded == 0 ? 'flex' : 'none', height: '86vh', alignItems: 'center', justifyContent: 'center', flexDirection:'column'}}>
-                <div className="buildViewer" style={{display:"flex", alignItems: 'center', justifyContent: 'center'}}>
-                    {panelContent}
-                 </div>
-                <div className="buildSelect">
-                <div className= {buildViewerNumber==5 ? "circleOn" : "circle"} onClick={() => setbuildViewerNumber(5)}></div><div className={buildViewerNumber==2 ? "circleOn" : "circle"} onClick={() => setbuildViewerNumber(2)}></div><div className={buildViewerNumber==3 ? "circleOn" : "circle"} onClick={() => setbuildViewerNumber(3)}></div>
-                </div>
+                <CreateGameComponent 
+                connection={connection}
+                playerKey={playerKey}
+                walletRef={walletRef}
+                provider={provider}
+                buildViewerNumber={buildViewerNumber}
+                isSubmitting={isSubmitting}
+                newGameCreated={newGameCreated}
+                activeGames={activeGames}
+                setTransactionError={setTransactionError}
+                setTransactionSuccess={setTransactionSuccess}
+                setIsSubmitting={setIsSubmitting}
+                setActiveGames={setActiveGames}
+                setbuildViewerNumber={setbuildViewerNumber}
+                setNewGameCreated={setNewGameCreated}
+                />
                 </div>
             )}
             </>
@@ -2935,8 +2646,9 @@ const App: React.FC = () => {
                         cursor: "pointer",
                         alignItems : "center", 
                         justifyContent:"center",
+                        borderRight: "1px solid #FFFFFF4D",
                         paddingLeft: "3px",
-                        paddingRight:"0px",
+                        paddingRight:"3px",
                     }}
                     onMouseEnter={() => setIsHovered([false,false,true,false,false])}
                     onMouseLeave={() => setIsHovered([false,false,false,false,false])}
@@ -2975,7 +2687,7 @@ const App: React.FC = () => {
                         cursor: "pointer",
                         alignItems : "center", 
                         justifyContent:"center",
-                        paddingLeft: "0px",
+                        paddingLeft: "5px",
                         paddingRight:"5px",
                         borderRight: "1px solid #FFFFFF4D",
                     }}
@@ -3009,7 +2721,6 @@ const App: React.FC = () => {
                         />
                     )}
                 </div>
-                {/*
                 <div
                     style={{
                         width: '35px',
@@ -3018,14 +2729,15 @@ const App: React.FC = () => {
                         alignItems : "center", 
                         justifyContent:"center",
                         borderRight: "1px solid #FFFFFF4D",
-                        paddingLeft: "0px",
+                        paddingLeft: "10px",
                         paddingRight:"10px",
+                        cursor: "pointer",
                     }}
-                    onMouseEnter={() => setIsHovered([false,false,false,false,false])}
+                    onMouseEnter={() => setIsHovered([false,false,false,false,true])}
                     onMouseLeave={() => setIsHovered([false,false,false,false,false])}
                     >
                     <img
-                        src={`${process.env.PUBLIC_URL}/discord.png`}
+                        src={`${process.env.PUBLIC_URL}/tg2.png`}
                         width="23px"
                         height="auto"
                         alt="Image"
@@ -3037,7 +2749,7 @@ const App: React.FC = () => {
                     />
                     {isHovered[4] && (
                         <img
-                        src={`${process.env.PUBLIC_URL}/discordhighlight.png`}
+                        src={`${process.env.PUBLIC_URL}/tg.png`}
                         width="23px"
                         height="auto"
                         alt="Highlighted Image"
@@ -3048,7 +2760,7 @@ const App: React.FC = () => {
                         }}
                         />
                     )}
-                </div>*/}
+                </div>
                 <div className="csupersize">© Supersize Inc. 2024</div>
             </div>
         </div>
@@ -3114,39 +2826,22 @@ const App: React.FC = () => {
                     }}
                 >
                     <div className="exitBox" style={{ background: 'black', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <p className="superStartInfo">You got eaten!</p>
-                        <button id="returnButton" onClick={() => window.location.reload()}>Return home</button>
-                    </div>
-                </div>
-            )}
-            {gameEnded === 2 && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgb(0, 0, 0)',
-                        zIndex: 9999,
-                    }}
-                >
-                    <div className="exitBox" style={{ background: 'black', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', userSelect: 'text' }}>
-                        <p className="superExitInfo">Final score: {playerCashout + playerTax}</p>
-                        <p className="superExitInfo">Exit tax: {playerTax}</p>
-                        <p className="superExitInfo">Payout: {playerCashout}</p>
+                        <p className="superExitInfo">You got eaten!</p>
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
-                            href={`https://explorer.solana.com/tx/${cashoutTx}?cluster=devnet`} 
+                            href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=devnet`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                         >
-                            Transaction
-                        </a>                     
+                            Reclaim Sol 
+                        </a>
+                        {reclaimTx != null ? (
+                        <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{display:"inline", marginLeft:"5px", marginTop:"2px" }}>
+                            <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                            <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                        </svg>     
+                        ) : (            
                         <svg width="52" height="52" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff" style={{ display:"inline", marginLeft:"5px", marginTop:"2px", height:"20px", width:"20px"}}>
                             <g fill="none" fillRule="evenodd">
                                 <g transform="translate(1 1)" strokeWidth="2">
@@ -3157,12 +2852,13 @@ const App: React.FC = () => {
                                 </g>
                             </g>
                         </svg>
+                        )}
                         </div>
-                        <button id="returnButton" onClick={() => {window.location.reload(); setPlayerCashout(0);}}>Return home</button>
+                        <button id="returnButton" onClick={() => window.location.reload()}>Return home</button>
                     </div>
                 </div>
             )}
-            {gameEnded === 3 && (
+            {(gameEnded === 2 || gameEnded === 3) && (
                 <div
                     style={{
                         position: 'fixed',
@@ -3178,9 +2874,9 @@ const App: React.FC = () => {
                     }}
                 >
                     <div className="exitBox" style={{ background: 'black', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', userSelect: 'text' }}>
-                        <p className="superExitInfo">Final score: {playerCashout + playerTax}</p>
-                        <p className="superExitInfo">Exit tax: {playerTax}</p>
-                        <p className="superExitInfo">Payout: {playerCashout}</p>
+                        <p className="superExitInfo">Final score: {currentPlayer?.score}</p>
+                        <p className="superExitInfo">Exit tax: {currentPlayer?.tax}</p>
+                        <p className="superExitInfo">Payout: {currentPlayer ? currentPlayer?.score - currentPlayer?.tax : playerCashout}</p>
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
@@ -3188,14 +2884,54 @@ const App: React.FC = () => {
                             target="_blank" 
                             rel="noopener noreferrer"
                         >
-                            Transaction
-                        </a> 
+                            Cashout transaction
+                        </a>
+                        {cashoutTx != null? (
                         <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{display:"inline", marginLeft:"5px", marginTop:"2px" }}>
                             <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
                             <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                        </svg>     
+                        ) : (            
+                        <svg width="52" height="52" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff" style={{ display:"inline", marginLeft:"5px", marginTop:"2px", height:"20px", width:"20px"}}>
+                            <g fill="none" fillRule="evenodd">
+                                <g transform="translate(1 1)" strokeWidth="2">
+                                    <circle strokeOpacity=".5" cx="18" cy="18" r="18" />
+                                    <path d="M36 18c0-9.94-8.06-18-18-18">
+                                        <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
+                                    </path>
+                                </g>
+                            </g>
                         </svg>
+                        )}
                         </div>
-                        <button id="returnButton" onClick={() => {window.location.reload(); setPlayerCashout(0); }}>Return home</button>
+                        <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
+                        <a 
+                            className="superExitInfo"
+                            href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=devnet`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                        >
+                            Reclaim Sol 
+                        </a>
+                        {reclaimTx != null ? (
+                        <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{display:"inline", marginLeft:"5px", marginTop:"2px" }}>
+                            <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                            <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                        </svg>     
+                        ) : (            
+                        <svg width="52" height="52" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff" style={{ display:"inline", marginLeft:"5px", marginTop:"2px", height:"20px", width:"20px"}}>
+                            <g fill="none" fillRule="evenodd">
+                                <g transform="translate(1 1)" strokeWidth="2">
+                                    <circle strokeOpacity=".5" cx="18" cy="18" r="18" />
+                                    <path d="M36 18c0-9.94-8.06-18-18-18">
+                                        <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
+                                    </path>
+                                </g>
+                            </g>
+                        </svg>
+                        )}
+                        </div>
+                        <button id="returnButton" onClick={() => {window.location.reload(); setPlayerCashout(0);}}>Return home</button>
                     </div>
                 </div>
             )}

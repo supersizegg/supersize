@@ -23,6 +23,7 @@ players = "DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB"
 section = "Dnh8jDMM6HDY1bXHt55Fi2yKfUPiu4TMhAJiotfb4oHq"
 spawn-food = "A3LybrLCJfYL2F1wrBVaaK1rUnhzpMoGD6Lp5VTqEFNG"
 spawn-player = "QMpMFne3WkDRWEvY8LGKQB6n5ox6dvdhsoB8jZFjjmX"
+spawn-playerb = "8ahq6aWuNttiBiFjPAMRqhfyhMb85BefnpdZVUVYesyh"
 
 [programs.localnet]
 

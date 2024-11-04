@@ -78,7 +78,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     while (accumulator >= timeStep) {
       // Before updating, store the previous position for interpolation
       previousPlayerPos = currentPlayerPos;
-  
+      
       // Simulate updating the current player position based on the game logic
       if(currentPlayerPos){
         //maybe update target to prediction
@@ -90,7 +90,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
   
     // Calculate interpolation factor (alpha)
     const alpha = accumulator / timeStep;
-  
+    
     // Interpolate between previous and current player positions
     if(previousPlayerPos && currentPlayerPos){
       renderWithInterpolation(previousPlayerPos, currentPlayerPos, alpha);
@@ -108,7 +108,6 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
   ) => {
     const player_x = player.x;
     const player_y = player.y;
-  
     // Calculate the difference between target and current position
     const dx = target_x - player_x;
     const dy = target_y - player_y;
@@ -393,7 +392,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     } else {
       // Fallback to drawing a circle if the image is not loaded
       ctx.beginPath();
-      ctx.arc(food.x * scale, food.y * scale, 10 * scale, 0, 2 * Math.PI); // Circle radius is 10 * scale
+      ctx.arc(food.x * scale, food.y * scale, 10, 0, 2 * Math.PI); // Circle radius is 10 * scale
       ctx.fillStyle = 'white';
       ctx.fill();
       ctx.stroke();

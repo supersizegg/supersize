@@ -69,7 +69,7 @@ interface GameComponentProps {
     activeGames: ActiveGame[];
     setTransactionError: SetState<string | null>;
     setTransactionSuccess: SetState<string | null>;
-    setIsSubmitting: SetState<boolean | null>;
+    setIsSubmitting: SetState<boolean>;
     setActiveGames: SetState<ActiveGame[]>;
     setbuildViewerNumber: SetState<number>;
     setNewGameCreated: SetState<ActiveGame | null>;
@@ -296,6 +296,36 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             `Players + anteroom entity signature: ${signatureplayerscomponents}`
         );
 
+        //myplayer entities 
+        const newmyplayerEntityPdas: any[] = [];
+        const myplayercomponentstransaction = new anchor.web3.Transaction();
+        for (let i = 1; i < 4; i++) {
+            const seed = 'myplayer' + i.toString();
+            
+            const newmyplayerEntityPda = FindEntityPda({
+                worldId: initNewWorld.worldId,
+                entityId: new anchor.BN(0),
+                seed: seed
+            });
+            
+            newmyplayerEntityPdas.push(newmyplayerEntityPda);
+
+            const addEntityIx = await createAddEntityInstruction(
+                {
+                    payer: publicKey,
+                    world: worldPda,
+                    entity: newmyplayerEntityPda,
+                },
+                { extraSeed: seed }
+            );
+        
+            myplayercomponentstransaction.add(addEntityIx);
+        }
+        const signaturemyplayerscomponents = await submitTransactionUser(myplayercomponentstransaction);
+        console.log(
+            `MyPlayers entity signature: ${signaturemyplayerscomponents}`
+        );
+
         const initeverycomponenttransaction = new anchor.web3.Transaction();
         const initMapIx = await InitializeComponent({
             payer: publicKey,
@@ -339,6 +369,20 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         const signatureinitplayers = await submitTransactionUser(initallplayerscomponenttransaction);
         console.log(
             `Init players + anteroom component signature: ${signatureinitplayers}`
+        );
+
+        const initallmyplayerscomponenttransaction = new anchor.web3.Transaction();
+        for (const myplayerPda of newmyplayerEntityPdas) {
+            const initMyPlayerComponent = await InitializeComponent({
+                payer: publicKey,
+                entity: myplayerPda,
+                componentId: PLAYER_COMPONENT,
+              });
+              initallmyplayerscomponenttransaction.add(initMyPlayerComponent.transaction);
+        }
+        const signatureinitmyplayers = await submitTransactionUser(initallmyplayerscomponenttransaction);
+        console.log(
+            `Init MyPlayers signature: ${signatureinitmyplayers}`
         );
 
         //set up vault
