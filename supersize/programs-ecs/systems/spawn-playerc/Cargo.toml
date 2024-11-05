@@ -1,12 +1,12 @@
 [package]
-name = "spawn-playerb"
+name = "spawn-playerc"
 version = "0.1.8"
 description = "Created with Bolt"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "spawn_playerb"
+name = "spawn_playerc"
 
 [features]
 no-entrypoint = []

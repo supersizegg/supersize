@@ -1,12 +1,12 @@
 [package]
-name = "spawn-playerb"
+name = "buy-ind"
 version = "0.1.8"
 description = "Created with Bolt"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "spawn_playerb"
+name = "buy_ind"
 
 [features]
 no-entrypoint = []
@@ -19,6 +19,7 @@ idl-build = ["anchor-lang/idl-build"]
 [dependencies]
 bolt-lang = "0.1.10"
 anchor-lang = "0.30.1"
+anchor-spl = "0.30.1" 
 serde = { version = "1.0", features = ["derive"] }
-map = { version = "0.1.10", path = "../../components/map", features = ["cpi"] }
+anteroom = { version = "0.1.10", path = "../../components/anteroom", features = ["cpi"] }
 player = { version = "0.1.10", path = "../../components/player", features = ["cpi"] }

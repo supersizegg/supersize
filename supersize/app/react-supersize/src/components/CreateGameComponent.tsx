@@ -41,12 +41,12 @@ const bs58 = require('bs58');
 const FOOD_COMPONENT = new PublicKey("Dnh8jDMM6HDY1bXHt55Fi2yKfUPiu4TMhAJiotfb4oHq"); //2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N, DEmfhh4qTaeXsJztECTtiU61m5ygTGrQPC4CnvQwqnVA
 const MAP_COMPONENT = new PublicKey("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb"); //73x8SGXgkhk84Yk943eJRAVAW3yGoQz5m1Q2sb2THLsA, 6YbpcyDerGUMFXnW8rAP6rg7Xknp3knLeXLmZNpVgCzv
 const PLAYER_COMPONENT = new PublicKey("2ewyq31Atu7yLcYMg51CEa22HmcCSJwM4jjHH8kKVAJw");  //39c3gAHBe74wPgfhP5wBRCdcNHuMBY53awGBBjJUeWSw, Hc3Mh3NYXrEy8yHdLXeCmejFtr8e98AE9j3NApkZv7Yf
-const PLAYERS_COMPONENT = new PublicKey("DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB"); //DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq, AjK6CRGGmcVSvcCd7PQZJuPqewjoqRtLxno8qvhuTCQR
+//const PLAYERS_COMPONENT = new PublicKey("DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB"); //DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq, AjK6CRGGmcVSvcCd7PQZJuPqewjoqRtLxno8qvhuTCQR
 const ANTEROOM_COMPONENT = new PublicKey("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW");  //6PWyQF9YxtQLCZeYtJhPftVg4qXv2pHGyT5NteJVjacJ, 334RfoujN9JQqxXQ3Cx4ZW9Xs6QnoiPm4eQE94XKxrXn
 
 const INIT_ANTEROOM = new PublicKey("DbKbkJC5Dw6RvQUkaM4CH7Z5hTcWGP51t7hZ3Hu42rXp"); //5oEk3USUXwmriWFsH5cKzyfmbetYuWvRQpk4ZTzdqs47, 9rcYNGJ2xmAtdSDfXM86DhGxKxLmigYKChScFT1R2QE3
 const INIT_GAME = new PublicKey("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");  //68caW8nVmZnUSunBotTTM5wuYQ3aymEsEHuTnsXgec65, 3afF5EsmrUyzAukV5gK8VcCtHFaroEigQC5LZtSLSooQ
-const INIT_PLAYERS = new PublicKey("Ru2cmntBkvmUGcg6E7rrDFYrx6ujf1zVJs7hEDq3uT3"); //84UTvkLscZVoznsgC4ppfQ3xSjBxod617g1nwTqEiMLM, 4Viwh8k4jYCuxWF1ogTA484y4UaTspbFhBph9UhJ2o4A
+const INIT_PLAYER = new PublicKey("58N5j49P3u351T6DSFKhPeKwBiXGnXwaYE1nWjtVkRZQ"); //84UTvkLscZVoznsgC4ppfQ3xSjBxod617g1nwTqEiMLM, 4Viwh8k4jYCuxWF1ogTA484y4UaTspbFhBph9UhJ2o4A
 const INIT_FOOD = new PublicKey("3YdRbDukWkyE2tBPoUhPSJzB1MCE1gKnoNjx5WdEq6aE"); //6vFNtK3uopAUxJ4AhXbsfKyb9JZPkKnPvkFXEpUwNSEc, 57ZASAqcrm2ErhB9cJ5eBJWNWxu2B7xiy1BqMwYN6ywT
 
 type ActiveGame = {
@@ -197,7 +197,20 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
      */
     const newGameTx = useCallback(async (width: number, height: number, entry_fee: number, max_players: number, emit_type: number, emit_data: number, frozen: boolean, game_name: string) => {
         if (!publicKey) throw new WalletNotConnectedError();
-
+        let maxplayer = 20;
+        let foodcomponents = 32;
+        if(width==4000){
+            maxplayer=20;
+            foodcomponents = 32;
+        }
+        if(width==6000){
+            maxplayer=40;
+            foodcomponents = 64;
+        }
+        if(width==10000){
+            maxplayer=100;
+            foodcomponents = 200;
+        }
         const initNewWorld = await InitializeNewWorld({
             payer:  publicKey, 
             connection: connection,
@@ -220,11 +233,17 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             { extraSeed: mapseed }
         )
         const transaction = new anchor.web3.Transaction().add(addMapEntityIx);
-        
+        const signaturemap = await submitTransactionUser(transaction);
+        console.log(
+            `Map entity signature: ${signaturemap}`
+        );
+
+        const transactionfood = new anchor.web3.Transaction();
         const newfoodEntityPdas: any[] = [];
         const newfoodComponentPdas: any[] = [];
-        for (let i = 1; i < 5; i++) {
-            const seed = i.toString().repeat(20);
+        for (let i = 1; i < 17; i++) {
+            const seed = 'food' + i.toString();
+            //const seed = i.toString().repeat(20);
             
             const newfoodEntityPda = FindEntityPda({
                 worldId: initNewWorld.worldId,
@@ -243,17 +262,17 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 { extraSeed: seed }
             );
         
-            transaction.add(addEntityIx);
+            transactionfood.add(addEntityIx);
         }
-        const signaturefoodmap = await submitTransactionUser(transaction);
+        const signaturefood = await submitTransactionUser(transactionfood);
         console.log(
-            `Food+map entity signature: ${signaturefoodmap}`
+            `Food entity signature: ${signaturefood}`
         );
 
         const newplayerEntityPdas: any[] = [];
         const newplayerComponentPdas: any[] = [];
         const playercomponentstransaction = new anchor.web3.Transaction();
-        for (let i = 1; i < 4; i++) {
+        for (let i = 1; i < 17; i++) {
             const seed = 'player' + i.toString();
             
             const newplayerEntityPda = FindEntityPda({
@@ -275,7 +294,12 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         
             playercomponentstransaction.add(addEntityIx);
         }
+        const signatureplayerscomponents = await submitTransactionUser(playercomponentstransaction);
+        console.log(
+            `Players entity signature: ${signatureplayerscomponents}`
+        );
 
+        const anteroomcomponenttransaction = new anchor.web3.Transaction();
         const anteroomseed = "ante"; 
         const newanteentityPda = FindEntityPda({
             worldId: initNewWorld.worldId,
@@ -290,104 +314,70 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             },
             { extraSeed: anteroomseed }
         )
-        playercomponentstransaction.add(addAnteEntityIx);
-        const signatureplayerscomponents = await submitTransactionUser(playercomponentstransaction);
+        anteroomcomponenttransaction.add(addAnteEntityIx);
+        const signatureanteroomcomponents = await submitTransactionUser(anteroomcomponenttransaction);
         console.log(
-            `Players + anteroom entity signature: ${signatureplayerscomponents}`
+            `Anteroom entity signature: ${signatureanteroomcomponents}`
         );
 
-        //myplayer entities 
-        const newmyplayerEntityPdas: any[] = [];
-        const myplayercomponentstransaction = new anchor.web3.Transaction();
-        for (let i = 1; i < 4; i++) {
-            const seed = 'myplayer' + i.toString();
-            
-            const newmyplayerEntityPda = FindEntityPda({
-                worldId: initNewWorld.worldId,
-                entityId: new anchor.BN(0),
-                seed: seed
-            });
-            
-            newmyplayerEntityPdas.push(newmyplayerEntityPda);
-
-            const addEntityIx = await createAddEntityInstruction(
-                {
-                    payer: publicKey,
-                    world: worldPda,
-                    entity: newmyplayerEntityPda,
-                },
-                { extraSeed: seed }
-            );
-        
-            myplayercomponentstransaction.add(addEntityIx);
-        }
-        const signaturemyplayerscomponents = await submitTransactionUser(myplayercomponentstransaction);
-        console.log(
-            `MyPlayers entity signature: ${signaturemyplayerscomponents}`
-        );
-
-        const initeverycomponenttransaction = new anchor.web3.Transaction();
+        const initmapomponenttransaction = new anchor.web3.Transaction();
         const initMapIx = await InitializeComponent({
             payer: publicKey,
             entity: newmapentityPda,
             componentId: MAP_COMPONENT,
         });
 
-        initeverycomponenttransaction.add(initMapIx.transaction);
+        initmapomponenttransaction.add(initMapIx.transaction);
+        const signature1map = await submitTransactionUser(initmapomponenttransaction);
+        console.log(
+            `Init map component signature: ${signature1map}`
+        );
 
-        for (const foodPda of newfoodEntityPdas) {
+        const initfoodcomponenttransaction = new anchor.web3.Transaction();
+        for (const foodPda of newfoodEntityPdas.slice(0, 12)) {
             const initComponent = await InitializeComponent({
                 payer: publicKey,
                 entity: foodPda,
                 componentId: FOOD_COMPONENT,
               });
-              initeverycomponenttransaction.add(initComponent.transaction);
+              initfoodcomponenttransaction.add(initComponent.transaction);
             newfoodComponentPdas.push(initComponent.componentPda);
         }
-        const signature1 = await submitTransactionUser(initeverycomponenttransaction);
+        const signature1food = await submitTransactionUser(initfoodcomponenttransaction);
         console.log(
-            `Init food + map component signature: ${signature1}`
+            `Init food component signature: ${signature1food}`
         );
 
-        const initallplayerscomponenttransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas) {
+        const initplayerscomponenttransaction = new anchor.web3.Transaction();
+        for (const playerPda of newplayerEntityPdas.slice(0, 12)) {
             const initPlayerComponent = await InitializeComponent({
                 payer: publicKey,
                 entity: playerPda,
-                componentId: PLAYERS_COMPONENT,
+                componentId: PLAYER_COMPONENT,
               });
-              initallplayerscomponenttransaction.add(initPlayerComponent.transaction);
+              initplayerscomponenttransaction.add(initPlayerComponent.transaction);
             newplayerComponentPdas.push(initPlayerComponent.componentPda);
         }
+        const signature1players = await submitTransactionUser(initplayerscomponenttransaction);
+        console.log(
+            `Init players component signature: ${signature1players}`
+        );
 
+        const initantecomponenttransaction = new anchor.web3.Transaction();
         const initAnteIx = await InitializeComponent({
             payer: publicKey,
             entity: newanteentityPda,
             componentId: ANTEROOM_COMPONENT,
         });
-        initallplayerscomponenttransaction.add(initAnteIx.transaction);
-        const signatureinitplayers = await submitTransactionUser(initallplayerscomponenttransaction);
+        initantecomponenttransaction.add(initAnteIx.transaction);
+        const signature1ante = await submitTransactionUser(initantecomponenttransaction);
         console.log(
-            `Init players + anteroom component signature: ${signatureinitplayers}`
-        );
-
-        const initallmyplayerscomponenttransaction = new anchor.web3.Transaction();
-        for (const myplayerPda of newmyplayerEntityPdas) {
-            const initMyPlayerComponent = await InitializeComponent({
-                payer: publicKey,
-                entity: myplayerPda,
-                componentId: PLAYER_COMPONENT,
-              });
-              initallmyplayerscomponenttransaction.add(initMyPlayerComponent.transaction);
-        }
-        const signatureinitmyplayers = await submitTransactionUser(initallmyplayerscomponenttransaction);
-        console.log(
-            `Init MyPlayers signature: ${signatureinitmyplayers}`
+            `Init anteroom component signature: ${signature1ante}`
         );
 
         //set up vault
         const decimals = 9;
-        let vault_program_id = new PublicKey("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS");
+        let vault_program_id = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk");
         let mint_of_token = new PublicKey("AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp");
         let map_component_id = initMapIx.componentPda;
         console.log('map component', map_component_id)
@@ -443,7 +433,13 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             },
           });
           inittransaction.add(initGame.transaction);
-          for (const foodPda of newfoodEntityPdas) {
+          const signatureinitgame = await submitTransactionUser(inittransaction); 
+          console.log(
+              `Init func game signature: ${signatureinitgame}`
+          );
+
+          const initfoodtransaction = new anchor.web3.Transaction();
+          for (const foodPda of newfoodEntityPdas.slice(0, 12)) {
             // Perform operations on each foodPda
             const initFood = await ApplySystem({
                 authority: publicKey,
@@ -460,33 +456,38 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 ],
                 systemId: INIT_FOOD,
               });
-              inittransaction.add(initFood.transaction);
+              initfoodtransaction.add(initFood.transaction);
             }
-        const signature = await submitTransactionUser(inittransaction); 
+        const signatureinitfood = await submitTransactionUser(initfoodtransaction); 
         console.log(
-            `Init func game + food signature: ${signature}`
+            `Init func food signature: ${signatureinitfood}`
         );
 
         const initplayertransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas) {
+        for (const playerPda of newplayerEntityPdas.slice(0, 12)) {
             const initPlayer = await ApplySystem({
                 authority: publicKey,
                 world: worldPda,
                 entities: [
                     {
                         entity: playerPda,
-                        components: [{ componentId:PLAYERS_COMPONENT}],
+                        components: [{ componentId:PLAYER_COMPONENT}],
                       },
                       {
                         entity: newmapentityPda,
                         components: [{ componentId:MAP_COMPONENT }],
                       },
                 ],
-                systemId: INIT_PLAYERS,
+                systemId: INIT_PLAYER,
               });
               initplayertransaction.add(initPlayer.transaction);
             }
+            const signatureplayerdinited = await submitTransactionUser(initplayertransaction); 
+            console.log(
+                `Init func players signature: ${signatureplayerdinited}`
+            );
 
+            const initantetransaction = new anchor.web3.Transaction();
             const initAnteroom = await ApplySystem({
                 authority: publicKey,
                 world: worldPda,
@@ -508,10 +509,10 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                     gamemaster_wallet_string: owner_token_account.toString(), 
                 },
               });
-              initplayertransaction.add(initAnteroom.transaction);
-        const signatureplayerdinited = await submitTransactionUser(initplayertransaction); 
+              initantetransaction.add(initAnteroom.transaction);
+        const signatureanteinited = await submitTransactionUser(initantetransaction); 
         console.log(
-            `Init func players + anteroom signature: ${signatureplayerdinited}`
+            `Init func anteroom signature: ${signatureanteinited}`
         );
 
         sendSol(playerKey);
@@ -528,7 +529,6 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         );
 
         const playertx = new anchor.web3.Transaction();
-
         newfoodEntityPdas.forEach((foodEntityPda, index) => {
             const fooddelegateIx = createDelegateInstruction({
                 entity: foodEntityPda,
@@ -544,13 +544,13 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             `Delegation signature food: ${delsignature2}`
         );
 
-        const realplayertx = new anchor.web3.Transaction();
+        /*const realplayertx = new anchor.web3.Transaction();
 
         newplayerEntityPdas.forEach((playerEntityPda, index) => {
             const playerdelegateIx = createDelegateInstruction({
                 entity: playerEntityPda,
                 account: newplayerComponentPdas[index],
-                ownerProgram: PLAYERS_COMPONENT,
+                ownerProgram: PLAYER_COMPONENT,
                 payer: playerKey,
                 });
                 realplayertx.add(playerdelegateIx);
@@ -559,9 +559,9 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         const delsignature3 = await submitTransaction(realplayertx, "confirmed", true);
         console.log(
             `Delegation signature players: ${delsignature3}`
-        );
+        );*/
 
-        if (signature != null) {
+        if (delsignature2 != null) {
             const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: max_players, size: width}
             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
             setNewGameCreated(newGameInfo);

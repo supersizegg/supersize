@@ -7,7 +7,7 @@ foodImage.src = `${process.env.PUBLIC_URL}/coin.png`; // Update with your image 
 
 interface Blob {
     name: string;
-    authority: PublicKey;
+    authority: PublicKey | null;
     x: number;
     y: number;
     radius: number;

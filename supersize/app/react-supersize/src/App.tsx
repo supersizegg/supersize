@@ -64,21 +64,21 @@ const bs58 = require('bs58');
 const FOOD_COMPONENT = new PublicKey("Dnh8jDMM6HDY1bXHt55Fi2yKfUPiu4TMhAJiotfb4oHq"); //2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N, DEmfhh4qTaeXsJztECTtiU61m5ygTGrQPC4CnvQwqnVA
 const MAP_COMPONENT = new PublicKey("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb"); //73x8SGXgkhk84Yk943eJRAVAW3yGoQz5m1Q2sb2THLsA, 6YbpcyDerGUMFXnW8rAP6rg7Xknp3knLeXLmZNpVgCzv
 const PLAYER_COMPONENT = new PublicKey("2ewyq31Atu7yLcYMg51CEa22HmcCSJwM4jjHH8kKVAJw");  //39c3gAHBe74wPgfhP5wBRCdcNHuMBY53awGBBjJUeWSw, Hc3Mh3NYXrEy8yHdLXeCmejFtr8e98AE9j3NApkZv7Yf
-const PLAYERS_COMPONENT = new PublicKey("DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB"); //DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq, AjK6CRGGmcVSvcCd7PQZJuPqewjoqRtLxno8qvhuTCQR
+//const PLAYERS_COMPONENT = new PublicKey("DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB"); //DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq, AjK6CRGGmcVSvcCd7PQZJuPqewjoqRtLxno8qvhuTCQR
 const ANTEROOM_COMPONENT = new PublicKey("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW");  //6PWyQF9YxtQLCZeYtJhPftVg4qXv2pHGyT5NteJVjacJ, 334RfoujN9JQqxXQ3Cx4ZW9Xs6QnoiPm4eQE94XKxrXn
 
 const INIT_ANTEROOM = new PublicKey("DbKbkJC5Dw6RvQUkaM4CH7Z5hTcWGP51t7hZ3Hu42rXp"); //5oEk3USUXwmriWFsH5cKzyfmbetYuWvRQpk4ZTzdqs47, 9rcYNGJ2xmAtdSDfXM86DhGxKxLmigYKChScFT1R2QE3
 const INIT_GAME = new PublicKey("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");  //68caW8nVmZnUSunBotTTM5wuYQ3aymEsEHuTnsXgec65, 3afF5EsmrUyzAukV5gK8VcCtHFaroEigQC5LZtSLSooQ
 const EAT_FOOD = new PublicKey("J7R4J1RnFMGdXgEBqwseTR9ZFruAiT1wMAYYc2Hnxsre"); //B1M7AtzCds9MyoibMA3UhhrZMJ46BTJvFadvkCr7J71U, 4AGtQVGThaBqFVNnc4dH5jdk4of554LtaV2EapcxQsJ6
-const EAT_PLAYER = new PublicKey("8Gm1Lz8L4dAEypGyctPVnT7p9Y5NapQKvhLdE9dGQLKA"); //VZ7h6UCzrrWtCm3xBghYSAVXBvHecc34qnyeyeyjASh, 3MPgnXAdJTwMtTWFxAycUgcmfcJbc9V4jMTTUxooMbXY
-const JOIN_GAME = new PublicKey("QMpMFne3WkDRWEvY8LGKQB6n5ox6dvdhsoB8jZFjjmX"); //BaTXEmj1rf1Jq5uGHLBVrBihLqTA6gSd2ZddmD4rLdaD, ENb3WCgfjeEUEAAn7QxutqvDCa1Xc3irRERRKKZS7Q1i
+const EAT_PLAYER = new PublicKey("CjuTzhsJNQeQ7hrdT2p5wUizdXUqY4cXBoyPWdQVe1o6"); //VZ7h6UCzrrWtCm3xBghYSAVXBvHecc34qnyeyeyjASh, 3MPgnXAdJTwMtTWFxAycUgcmfcJbc9V4jMTTUxooMbXY
+const JOIN_GAME = new PublicKey("7GSaPMeqDopBN2yKX8pSQrNwaajUM1qFZcA6aRitH8LL"); //BaTXEmj1rf1Jq5uGHLBVrBihLqTA6gSd2ZddmD4rLdaD, ENb3WCgfjeEUEAAn7QxutqvDCa1Xc3irRERRKKZS7Q1i
 const MOVEMENT = new PublicKey("C9yoUrN6yhiKF1DEWV9QPcwaJRrTCCtMVtbJKipVTrEi");  //EhLPnGqecy61peHT7j1WRsEWGqUZ11MZzYR4Xxm5RHRj, 3Zq52bMtNsPVZgUmtAcm3jdrL3dSPPtjGfFdN2ijKFgW
-const EXIT_GAME = new PublicKey("5hVB37dXEFmEvtu2TST8iXAxvd8VXq3JQmGGLNprMVyo"); //4PvV5ZSgXpUGbzBpDVmaguzG1gWZw2LKpuevYcPPVPtk, 3okUSUfqGYbP2zrDrGTjyRCoMVkSte2w3q6379SSTb3H
+const EXIT_GAME = new PublicKey("GuNYSdedUpgh8osyUaZTvSuz5pDNUtQcVeLmEZKDgfCQ"); //4PvV5ZSgXpUGbzBpDVmaguzG1gWZw2LKpuevYcPPVPtk, 3okUSUfqGYbP2zrDrGTjyRCoMVkSte2w3q6379SSTb3H
 const SPAWN_FOOD = new PublicKey("A3LybrLCJfYL2F1wrBVaaK1rUnhzpMoGD6Lp5VTqEFNG"); //EKSX8KynuiQCkvAZiyiVuYJcEAb77WBUaSUFkhZUqASk, 6mzy9FQyryvthEewwZJeG1aR6GNeafwpJoyG1wCiNiJk
 const INIT_PLAYERS = new PublicKey("Ru2cmntBkvmUGcg6E7rrDFYrx6ujf1zVJs7hEDq3uT3"); //84UTvkLscZVoznsgC4ppfQ3xSjBxod617g1nwTqEiMLM, 4Viwh8k4jYCuxWF1ogTA484y4UaTspbFhBph9UhJ2o4A
 const INIT_FOOD = new PublicKey("3YdRbDukWkyE2tBPoUhPSJzB1MCE1gKnoNjx5WdEq6aE"); //6vFNtK3uopAUxJ4AhXbsfKyb9JZPkKnPvkFXEpUwNSEc, 57ZASAqcrm2ErhB9cJ5eBJWNWxu2B7xiy1BqMwYN6ywT
-const BUY_IN = new PublicKey("5uHMpZkSyXmERUusARBzf6ACAam9u3EXYa9EA7VW5t2B"); //7xHzX2a5VzBkRayf1uyVPTLmwNwNE2Hh4qS1CbEAjPsJ, bdmYHm1gmB1QRELBAfBbGu2aNm2uzHGjotLM7ye58Dg
-const CASH_OUT = new PublicKey("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS"); //8x4pQTDyoRe49NLiASjebyasW2shv1pRMCTwngSB5ari
+const BUY_IN = new PublicKey("7eq2fy2VfYiRAdsHA7bQuZDNMtEfkdzCZEJk86ASdqsw"); //7xHzX2a5VzBkRayf1uyVPTLmwNwNE2Hh4qS1CbEAjPsJ, bdmYHm1gmB1QRELBAfBbGu2aNm2uzHGjotLM7ye58Dg
+const CASH_OUT = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk"); //8x4pQTDyoRe49NLiASjebyasW2shv1pRMCTwngSB5ari
 
 interface Food {
     x: number;
@@ -86,7 +86,7 @@ interface Food {
 }
 interface Blob {
     name: string;
-    authority: PublicKey;
+    authority: PublicKey | null;
     x: number;
     y: number;
     radius: number;
@@ -163,7 +163,6 @@ const App: React.FC = () => {
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
     let entityMatch = useRef<PublicKey | null>(null);
     let playerEntities = useRef<PublicKey[]>([]);
-    let playerListEntities = useRef<PublicKey[]>([]);
     let foodEntities = useRef<PublicKey[]>([]);
     let currentPlayerEntity = useRef<PublicKey | null>(null);
     let currentWorldId = useRef<PublicKey | null>(null);
@@ -173,7 +172,6 @@ const App: React.FC = () => {
     const [exitHovered, setExitHovered] = useState(false);
 
     let playersComponentSubscriptionId = useRef<number[] | null>([]);
-    let playersListsComponentSubscriptionId = useRef<number[] | null>([]);
     let foodComponentSubscriptionId = useRef<number[] | null>([]);
     let myplayerComponentSubscriptionId = useRef<number | null>(null);
     let mapComponentSubscriptionId= useRef<number | null>(null);
@@ -182,7 +180,6 @@ const App: React.FC = () => {
     const playersComponentClient = useRef<Program | null>(null);
     const mapComponentClient = useRef<Program | null>(null);
     const foodComponentClient = useRef<Program | null>(null); 
-    const playersListsClient = useRef<Program | null>(null); 
 
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [mousePosition, setMousePosition] = useState({x: 0,y: 0});
@@ -413,7 +410,7 @@ const App: React.FC = () => {
     }, [setCurrentPlayer, playerKey, allFood]);
 
     const updateMyPlayer = useCallback((player: any) => {
-        console.log(player, currentPlayer?.target_x, currentPlayer?.target_y)
+        //console.log(player, currentPlayer?.target_x, currentPlayer?.target_y)
         if(player.scheduledRemovalTime){
             //console.log(player.scheduledRemovalTime, player.scheduledRemovalTime.toNumber());
             playerRemovalTimeRef.current = player.scheduledRemovalTime;
@@ -444,8 +441,16 @@ const App: React.FC = () => {
 
     useEffect(() => {
         if(currentPlayer){
-        updateLeaderboard(allplayers);
-        const newVisiblePlayers: Blob[] = allplayers.reduce((accumulator: Blob[], playerx) => {
+        //const playersWithAuthority = allplayers.filter((player) => player.authority !== null);
+        const playersWithAuthority = allplayers.filter(
+            (player) =>
+                player.authority !== null &&
+                player.x !== 50000 &&
+                player.y !== 50000 &&
+                Math.sqrt(player.mass) !== 0
+        );
+        updateLeaderboard(playersWithAuthority);
+        const newVisiblePlayers: Blob[] = playersWithAuthority.reduce((accumulator: Blob[], playerx) => {
             if (currentPlayer && playerx.authority && currentPlayer.authority){
                 if(currentPlayer.authority.toString() != playerx.authority.toString()) {
                 const halfWidth = screenSize.width / 2;
@@ -477,49 +482,6 @@ const App: React.FC = () => {
         }
       }, [currentPlayer, allplayers]);
 
-    const updatePlayersList = useCallback((players: any, players_index: number) => {
-        const playerArray = players.playerkeys as any[];
-        const playerData: PublicKey[] = [];
-        playerArray.forEach((playerItem) => {
-            playerData.push(playerItem);
-        });
-        setPlayersLists((prevPlayersList) => {
-            const updatedPlayersList = [...prevPlayersList];
-            updatedPlayersList[players_index] = playerArray;
-            return updatedPlayersList;
-        });
-        setPlayersListsLen((prevPlayersListLen) => {
-            const updatedPlayersListLen = [...prevPlayersListLen];
-            
-            updatedPlayersListLen[players_index] = playerData.length;
-            
-            return updatedPlayersListLen;
-            });
-        
-    },[setPlayers, setCurrentPlayer, playerKey]);
-
-    useEffect(() => {
-        let current_players = playersLists.flat();
-        const playerEntityIds = current_players.map((player, index) => {
-            const seed = player.toString().substring(0, 7);
-            const newPlayerEntityPda = FindEntityPda({
-                worldId: activeGames[0].worldId,
-                entityId: new anchor.BN(0),
-                seed: seed,
-            });
-            return newPlayerEntityPda;
-        });
-
-        setAllPlayers((prevPlayers) => {
-            const filteredPlayers = prevPlayers.filter(prevPlayer =>
-                current_players.some(player => prevPlayer?.authority && player.toString() == prevPlayer.authority.toString())
-            );
-            return filteredPlayers; 
-             });
-
-        playerEntities.current = playerEntityIds;
-    }, [playersLists, currentPlayer]);
-
     const updateMap = useCallback((map: any) => {
         const playerArray = map.players as any[];
         if(activeGames[0]){
@@ -529,10 +491,9 @@ const App: React.FC = () => {
         }
     }, [setPlayers, setCurrentPlayer, playerKey, allFood]);
 
-    const updatePlayers = useCallback((player: any) => {
-        if (currentPlayer && player && player.authority && currentPlayer.authority) {
+    const updatePlayers = useCallback((player: any, player_index: number) => {
+        if (player) {
                 setAllPlayers((prevPlayers) => {
-                    const playerIndex = prevPlayers.findIndex(p => p.authority.equals(player.authority));
                     const newPlayer: Blob = {
                         name: player.name,
                         authority: player.authority,
@@ -543,28 +504,21 @@ const App: React.FC = () => {
                         score: player.score,
                         tax: player.tax,
                         speed: player.speed,
-                        removal: player.removal,
+                        removal: player.scheduledRemovalTime,
                         target_x: player.targetX,
                         target_y: player.targetY,
                     }; 
-                    if(player.scheduledRemovalTime){
-                        newPlayer.removal = player.scheduledRemovalTime;
-                    }
-                    if (playerIndex !== -1) {
-                        const updatedPlayers = [...prevPlayers];
-                        updatedPlayers[playerIndex] = newPlayer
-                        return updatedPlayers;
-                    } else {
-                        return [...prevPlayers, newPlayer];
-                    }
+                    const updatedPlayers = [...prevPlayers];
+                    updatedPlayers[player_index] = newPlayer;
+                    return updatedPlayers;
                 });
             
         }
     }, [setAllPlayers, screenSize, currentPlayer]);
     
-    const handlePlayersComponentChange = useCallback((accountInfo: AccountInfo<Buffer>) => {
+    const handlePlayersComponentChange = useCallback((accountInfo: AccountInfo<Buffer>, index: number) => {
         const parsedData = playersComponentClient.current?.coder.accounts.decode("player", accountInfo.data);
-        updatePlayers(parsedData);
+        updatePlayers(parsedData, index);
     }, [updatePlayers]);
 
     const handleFoodComponentChange = useCallback((accountInfo: AccountInfo<Buffer>, index: number) => {
@@ -583,10 +537,10 @@ const App: React.FC = () => {
         updateMap(parsedData);
     }, [updateMap]);
 
-    const handlePlayersListComponentChange = useCallback((accountInfo: AccountInfo<Buffer>, index: number) => {
+    /*const handlePlayersListComponentChange = useCallback((accountInfo: AccountInfo<Buffer>, index: number) => {
         const parsedData = playersListsClient.current?.coder.accounts.decode("players", accountInfo.data);
         updatePlayersList(parsedData, index);
-    }, [updatePlayersList]);
+    }, [updatePlayersList]);*/
 
     // Subscribe to the game state
     const subscribeToGame = useCallback(async (): Promise<void> => {
@@ -596,15 +550,11 @@ const App: React.FC = () => {
         playersComponentClient.current = await getComponentsClient(PLAYER_COMPONENT);
         foodComponentClient.current = await getComponentsClient(FOOD_COMPONENT);
         mapComponentClient.current = await getComponentsClient(MAP_COMPONENT);
-        playersListsClient.current = await getComponentsClient(PLAYERS_COMPONENT);
 
         if (mapComponentSubscriptionId && mapComponentSubscriptionId.current) await  providerEphemeralRollup.current.connection.removeAccountChangeListener(mapComponentSubscriptionId.current);
         if (myplayerComponentSubscriptionId && myplayerComponentSubscriptionId.current) await  providerEphemeralRollup.current.connection.removeAccountChangeListener(myplayerComponentSubscriptionId.current);
         for (let i = 0; i < foodEntities.current.length; i++) {
             if (foodComponentSubscriptionId && foodComponentSubscriptionId.current) await  providerEphemeralRollup.current.connection.removeAccountChangeListener(foodComponentSubscriptionId.current[i]);
-        }
-        for (let i = 0; i < playerListEntities.current.length; i++) {
-            if (playersListsComponentSubscriptionId && playersListsComponentSubscriptionId.current) await  providerEphemeralRollup.current.connection.removeAccountChangeListener(playersListsComponentSubscriptionId.current[i]);
         }
         for (let i = 0; i < playerEntities.current.length; i++) {
             if (playersComponentSubscriptionId && playersComponentSubscriptionId.current) await  providerEphemeralRollup.current.connection.removeAccountChangeListener(playersComponentSubscriptionId.current[i]);
@@ -623,27 +573,15 @@ const App: React.FC = () => {
             }
         }   
 
-        for (let i = 0; i < playerListEntities.current.length; i++) {
-            const playerListComponenti = FindComponentPda({
-                componentId: PLAYERS_COMPONENT,
-                entity: playerListEntities.current[i],
-            });
-            if (playersListsComponentSubscriptionId.current === null) {
-                playersListsComponentSubscriptionId.current = [providerEphemeralRollup.current.connection.onAccountChange(playerListComponenti, (accountInfo) => handlePlayersListComponentChange(accountInfo, i), 'processed')];
-            } else {
-                playersListsComponentSubscriptionId.current = [...playersListsComponentSubscriptionId.current, providerEphemeralRollup.current.connection.onAccountChange(playerListComponenti, (accountInfo) => handlePlayersListComponentChange(accountInfo, i), 'processed')];
-            }
-        }  
-
         for (let i = 0; i < playerEntities.current.length; i++) {
         const playersComponenti = FindComponentPda({
             componentId: PLAYER_COMPONENT,
             entity: playerEntities.current[i],
         });
         if (playersComponentSubscriptionId.current === null) {
-            playersComponentSubscriptionId.current = [providerEphemeralRollup.current.connection.onAccountChange(playersComponenti, handlePlayersComponentChange, 'processed')];
+            playersComponentSubscriptionId.current = [providerEphemeralRollup.current.connection.onAccountChange(playersComponenti, (accountInfo) => handlePlayersComponentChange(accountInfo, i), 'processed')];
         } else {
-            playersComponentSubscriptionId.current = [...playersComponentSubscriptionId.current,providerEphemeralRollup.current.connection.onAccountChange(playersComponenti, handlePlayersComponentChange, 'processed')];
+            playersComponentSubscriptionId.current = [...playersComponentSubscriptionId.current,providerEphemeralRollup.current.connection.onAccountChange(playersComponenti, (accountInfo) => handlePlayersComponentChange(accountInfo, i), 'processed')];
         }
         }     
         
@@ -667,18 +605,6 @@ const App: React.FC = () => {
              .catch((error: any) => {
              });
         }
-        
-        for (let i = 0; i < playerListEntities.current.length; i++) {
-            const playersListComponenti = FindComponentPda({
-                componentId: PLAYERS_COMPONENT,
-                entity: playerListEntities.current[i],
-            });
-             (playersListsClient.current?.account as any).players
-             .fetch(playersListComponenti, "processed")
-             .then((fetchedData: any) => updatePlayersList(fetchedData, i))
-             .catch((error: any) => {
-             });
-        }
 
         for (let i = 0; i < playerEntities.current.length; i++) {
             const playersComponenti = FindComponentPda({
@@ -687,7 +613,7 @@ const App: React.FC = () => {
             });
             console.log( i, playerEntities.current[i]);
             console.log('player component', playersComponenti);
-            (playersComponentClient.current?.account as any).player.fetch(playersComponenti, "processed").then(updatePlayers).catch((error: any) => {
+            (playersComponentClient.current?.account as any).player.fetch(playersComponenti, "processed").then((fetchedData: any) => updatePlayers(fetchedData, i)).catch((error: any) => {
                 console.error("Failed to fetch account:", error);
              });
         }    
@@ -771,6 +697,27 @@ const App: React.FC = () => {
     /**
      * Create a new join game transaction
      */
+    const waitSignatureConfirmation = async (
+        signature: string,
+        connection: anchor.web3.Connection,
+        commitment: anchor.web3.Commitment
+    ): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            connection.onSignature(
+                signature,
+                (result) => {
+                    if (result.err) {
+                        console.error(`Error with signature ${signature}`, result.err);
+                        reject(result.err);
+                    } else {
+                        console.log("transaction finalized");
+                        setTimeout(() => resolve(), 1000); // Adds a 1-second delay before resolving
+                    }
+                },
+                commitment
+            );
+        });
+    };
     const joinGameTx = useCallback(async (selectGameId: ActiveGame) => {
         if (!playerKey) throw new WalletNotConnectedError();
         if (!publicKey) throw new WalletNotConnectedError();
@@ -809,7 +756,7 @@ const App: React.FC = () => {
         let mint_of_token_being_sent = new PublicKey(0);
         let sender_token_account = new PublicKey(0);
         let payout_token_account = new PublicKey(0);
-        let vault_program_id = new PublicKey("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS");
+        let vault_program_id = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk");
 
         if(anteacc){
             const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
@@ -839,7 +786,7 @@ const App: React.FC = () => {
             const soltransfertx = SystemProgram.transfer({
                 fromPubkey: publicKey,
                 toPubkey: playerKey,
-                lamports: 0.01 * LAMPORTS_PER_SOL, 
+                lamports: 0.007 * LAMPORTS_PER_SOL, 
             });
             const combinedTx = new Transaction().add(soltransfertx)
             .add(createTokenAccountTx).add(transferIx); 
@@ -852,7 +799,7 @@ const App: React.FC = () => {
         let lowestfood = 100;
         const foodComponentClient= await getComponentsClient(FOOD_COMPONENT);
         for (let i = 1; i < 5; i++) {
-            const foodseed = i.toString().repeat(20);
+            const foodseed = 'food' + i.toString(); //i.toString().repeat(20);
             const foodEntityPda =  FindEntityPda({
                 worldId: gameInfo.worldId,
                 entityId: new anchor.BN(0),
@@ -878,11 +825,14 @@ const App: React.FC = () => {
         }
 
         const playerEntityPdas: any[] = [];
-        let totalplayers = 0;
-        let targetplayersid = 0;
-        const playersPerList: number[] = [];
-        let lowestplayers = 10;
-        const playersListsClient = await getComponentsClient(PLAYERS_COMPONENT);
+        //let totalplayers = 0;
+        //let targetplayersid = 0;
+        //const playersPerList: number[] = [];
+        //let lowestplayers = 10;
+        const playerClientER = await getComponentsClient(PLAYER_COMPONENT);
+        const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
+        let newplayerEntityPda : any = null;
+        let my_player_index = 0;
         for (let i = 1; i < 4; i++) {
             const playerentityseed = 'player' + i.toString();
             const playerEntityPda =  FindEntityPda({
@@ -892,83 +842,32 @@ const App: React.FC = () => {
             })
             playerEntityPdas.push(playerEntityPda);
             const playersComponentPda = FindComponentPda({
-                componentId: PLAYERS_COMPONENT,
+                componentId: PLAYER_COMPONENT,
                 entity: playerEntityPda,
             });
-            const playersacc = await providerEphemeralRollup.current.connection.getAccountInfo(
+            //const playersaccER = await providerEphemeralRollup.current.connection.getAccountInfo(
+            //    playersComponentPda, "processed"
+            //);
+            const playersacc = await provider.connection.getAccountInfo(
                 playersComponentPda, "processed"
             );
-            if(playersacc){
-                const playersParsedData = playersListsClient.coder.accounts.decode("players", playersacc.data);
-                totalplayers = totalplayers + playersParsedData.playerkeys.length;
-                playersPerList.push(playersParsedData.playerkeys.length);
-            }else{
-                playersPerList.push(0);
-            }
-        }
-        targetplayersid = playersPerList.indexOf(0) !== -1 
-            ? playersPerList.indexOf(0) 
-            : playersPerList.reduce((lowestIndex, currentValue, currentIndex, arr) => 
-                currentValue < arr[lowestIndex] ? currentIndex : lowestIndex, 0);
-        console.log(totalplayers, targetplayersid)
-    
-
-        let newplayerEntityPda : any = null;
-        const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
-        for (let i = 1; i < 4; i++) {
-            const myplayerentityseed = 'myplayer' + i.toString();
-            const myplayerEntityPda =  FindEntityPda({
-                worldId: gameInfo.worldId,
-                entityId: new anchor.BN(0),
-                seed: myplayerentityseed
-            })
-            const myplayersComponentPda = FindComponentPda({
-                componentId: PLAYER_COMPONENT,
-                entity: myplayerEntityPda,
-            });
-            const playersacc = await provider.connection.getAccountInfo(
-                myplayersComponentPda, "processed"
-            );
+            /*if(playersaccER){
+                const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
+                console.log(playersParsedDataER)
+            }else*/ 
             if(playersacc){
                 const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
-                console.log('player', i, playersParsedData)
-                if(playersParsedData.authority == null){
-                    newplayerEntityPda = myplayerEntityPda;
-                    break;
+                console.log(playersParsedData)
+                if(playersParsedData.authority == null && newplayerEntityPda == null){
+                    newplayerEntityPda = playerEntityPda;
+                    my_player_index = i - 1;
                 }
-            }else{
-                newplayerEntityPda = myplayerEntityPda;
-                break;
             }
+            else{
+                newplayerEntityPda = playerEntityPda;
+                my_player_index = i - 1;
             }
-
-            const playerseed = playerKey.toString().substring(0, 7); 
-            newplayerEntityPda =  FindEntityPda({
-                worldId: gameInfo.worldId,
-                entityId: new anchor.BN(0),
-                seed: playerseed
-            })
-            const addEntityIx = await createAddEntityInstruction(
-                {
-                    payer: playerKey,
-                    world: gameInfo.worldPda,
-                    entity: newplayerEntityPda,
-                },
-                { extraSeed: playerseed }
-            )
-    
-            const tx = new anchor.web3.Transaction().add(addEntityIx);
-            const initComponent = await InitializeComponent({
-                payer: playerKey,
-                entity: newplayerEntityPda,
-                componentId: PLAYER_COMPONENT,
-              });
-              tx.add(initComponent.transaction);
-              const playercomponentsignature = await submitTransaction(tx, "confirmed", true); 
-              console.log(
-                  `Init player component signature: ${playercomponentsignature}`
-              );
-
+         }
 
                 console.log('vault', vault_token_account.toString(), 'sender', sender_token_account.toString());
                 const applyBuyInSystem = await ApplySystem({
@@ -1061,10 +960,6 @@ const App: React.FC = () => {
                     entity: mapEntityPda,
                     components: [{ componentId:MAP_COMPONENT }],
                   },
-                  {
-                    entity: playerEntityPdas[targetplayersid],
-                    components: [{ componentId:PLAYERS_COMPONENT}],
-                  },
                 ], 
                 systemId: JOIN_GAME,
                 args: {
@@ -1072,7 +967,7 @@ const App: React.FC = () => {
                     //buyin: 1.0,
                 },
               });
-            const transaction = applySystem.transaction;
+            const jointransaction = applySystem.transaction;
             const {
                 context: { slot: minContextSlot },
                 value: { blockhash, lastValidBlockHeight }
@@ -1081,19 +976,26 @@ const App: React.FC = () => {
             if (!walletRef.current) {
                 throw new Error('Wallet is not initialized');
             } 
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = walletRef.current.publicKey;
-            transaction.sign(walletRef.current);
+            jointransaction.recentBlockhash = blockhash;
+            jointransaction.feePayer = walletRef.current.publicKey;
+            jointransaction.sign(walletRef.current);
+            //const signature = await providerEphemeralRollup.current.sendAndConfirm(jointransaction); 
             const signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
-                transaction.serialize(), 
+                jointransaction.serialize(), 
                 { skipPreflight: true } // We don't want to do preflight in most cases
             ).catch((error) => {
                    console.log(error)
             });
             //const signature = await providerEphemeralRollup.current.sendAndConfirm(applySystem.transaction);   
-            console.log(signature,transaction, walletRef.current.toString(), playerKey.toString())
+            console.log(signature,jointransaction, walletRef.current.toString(), playerKey.toString())
 
             if (signature != null) {
+                await waitSignatureConfirmation(
+                    signature,
+                    providerEphemeralRollup.current.connection,
+                    "finalized"
+                );
+                
                 setGameId(mapEntityPda); 
                 setActiveGames(prevActiveGames => {
                     const updatedGames = prevActiveGames.map(game =>
@@ -1108,7 +1010,22 @@ const App: React.FC = () => {
                 anteroomEntity.current = anteEntityPda;
                 currentWorldId.current = gameInfo.worldPda;
                 foodEntities.current = foodEntityPdas;
-                playerListEntities.current = playerEntityPdas;
+                playerEntities.current = playerEntityPdas;
+                const emptyPlayer: Blob = {
+                    name: 'unnamed',
+                    authority: null,
+                    x: 50000,
+                    y: 50000,
+                    radius: 0,
+                    mass: 0,
+                    score: 0,
+                    tax: 0,
+                    speed: 0,
+                    removal: new BN(0),
+                    target_x: 0,
+                    target_y: 0,
+                }; 
+                setAllPlayers(new Array(playerEntityPdas.length).fill(emptyPlayer));
                 setAllFood(new Array(foodEntityPdas.length).fill([]));
                 setFoodListLen(new Array(foodEntityPdas.length).fill(0));
                 processNewFoodTransaction();
@@ -1118,13 +1035,13 @@ const App: React.FC = () => {
     }, [playerKey, submitTransaction, subscribeToGame]);
 
     function findListIndex(pubkey: PublicKey): number | null {
-        for (let i = 0; i < playersLists.length; i++) {
-            const sublist = playersLists[i];
-            if (sublist.some((key) => key.toString() == pubkey.toString())) { 
-                return i; 
-            }
+        //console.log(pubkey.toString(), allplayers[1].authority?.toString());
+        const index = allplayers.findIndex((player) => player.authority?.toString() === pubkey.toString());
+        if (index !== -1) {
+            return index;
+        } else {
+            return null;
         }
-        return null; 
     }
 
     const preExitGameTx = useCallback(async () => {
@@ -1135,13 +1052,6 @@ const App: React.FC = () => {
         }
         const player_entity = currentPlayerEntity.current as PublicKey;
         const map_entity = entityMatch.current as PublicKey;
-        let myPlayersListIndex = null;
-        if(currentPlayer){
-            myPlayersListIndex = findListIndex(currentPlayer?.authority);
-        }
-        if(myPlayersListIndex == null){
-            throw new Error("PublicKey not found in any list.");
-        }
         const applySystem = await ApplySystem({
             authority: playerKey,
             world: currentWorldId.current,
@@ -1153,10 +1063,6 @@ const App: React.FC = () => {
               {
                 entity: map_entity,
                 components: [{ componentId: MAP_COMPONENT }],
-              },
-              {
-                entity: playerListEntities.current[myPlayersListIndex],
-                components: [{ componentId:PLAYERS_COMPONENT}],
               },
             ],
             systemId: EXIT_GAME,
@@ -1187,13 +1093,6 @@ const App: React.FC = () => {
         }
         const player_entity = currentPlayerEntity.current as PublicKey;
         const map_entity = entityMatch.current as PublicKey;
-        let myPlayersListIndex = null;
-        if(currentPlayer){
-            myPlayersListIndex = findListIndex(currentPlayer?.authority);
-        }
-        if(myPlayersListIndex == null){
-            throw new Error("PublicKey not found in any list.");
-        }
         const applySystem = await ApplySystem({
             authority: playerKey,
             world: currentWorldId.current,
@@ -1205,10 +1104,6 @@ const App: React.FC = () => {
               {
                 entity: map_entity,
                 components: [{ componentId: MAP_COMPONENT }],
-              },
-              {
-                entity: playerListEntities.current[myPlayersListIndex],
-                components: [{ componentId:PLAYERS_COMPONENT}],
               },
             ],
             systemId: EXIT_GAME,
@@ -1375,7 +1270,7 @@ const App: React.FC = () => {
                         let sender_token_account = new PublicKey(0);
                         let owner_token_account = new PublicKey(0);
                         let supersize_token_account = new PublicKey(0);
-                        let vault_program_id = new PublicKey("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS");
+                        let vault_program_id = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk");
                 
                         if(anteacc && savedPublicKey){
                             const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
@@ -1634,18 +1529,12 @@ const App: React.FC = () => {
 
                 let playerstoeat = checkPlayerDistances(players, screenSize);
                 if(playerstoeat){
-                    const seed = playerstoeat.toString().substring(0, 7);
-                    const newPlayerEntityPda = FindEntityPda({
-                        worldId: activeGames[0].worldId,
-                        entityId: new anchor.BN(0),
-                        seed: seed,
-                    });
-                    let myPlayersListIndex = null;
-                    if(currentPlayer){
-                        myPlayersListIndex = findListIndex(playerstoeat);
-                    }
-                    if(myPlayersListIndex != null){
-                    const eatPlayerTx = await ApplySystem({ 
+                    //console.log('eating')
+                    let playersListIndex = findListIndex(playerstoeat);
+                    //console.log(playersListIndex);
+                    if(playersListIndex != null){
+                        //console.log(playersListIndex)
+                        const eatPlayerTx = await ApplySystem({ 
                         authority: playerKey,
                         world: currentWorldId.current,
                         entities: [
@@ -1654,16 +1543,12 @@ const App: React.FC = () => {
                                 components: [{ componentId: PLAYER_COMPONENT }],
                               },
                               {
-                                entity: newPlayerEntityPda,
+                                entity: playerEntities.current[playersListIndex],
                                 components: [{ componentId: PLAYER_COMPONENT }],
                               }, 
                               {
                                 entity: entityMatch.current,
                                 components: [{ componentId: MAP_COMPONENT }],
-                              },
-                              {
-                                entity: playerListEntities.current[myPlayersListIndex],
-                                components: [{ componentId:PLAYERS_COMPONENT}],
                               },
                         ],
                         systemId: EAT_PLAYER, 
@@ -1725,8 +1610,7 @@ const App: React.FC = () => {
                     setIsSubmitting(false);
                     setTransactionError(null);
                     setTransactionSuccess(null);
-                    
-                    
+                                        
                     (playersComponentClient.current?.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayer).catch((error: any) => {
                         console.error("Failed to fetch account:", error);
                      });
@@ -1752,25 +1636,13 @@ const App: React.FC = () => {
                     (mapComponentClient.current?.account as any).map.fetch(mapComponent, "processed").then(updateMap).catch((error: any) => {
                         console.error("Failed to fetch account:", error);
                      });
- 
-                     for (let i = 0; i < playerListEntities.current.length; i++) {
-                        const playersListComponenti = FindComponentPda({
-                            componentId: PLAYERS_COMPONENT,
-                            entity: playerListEntities.current[i],
-                        });
-                         (playersListsClient.current?.account as any).players
-                         .fetch(playersListComponenti, "processed")
-                         .then((fetchedData: any) => updatePlayersList(fetchedData, i))
-                         .catch((error: any) => {
-                         });
-                    }
 
                     for (let i = 0; i < playerEntities.current.length; i++) {
                         const playersComponenti = FindComponentPda({
                             componentId: PLAYER_COMPONENT,
                             entity: playerEntities.current[i],
                         });
-                        (playersComponentClient.current?.account as any).player.fetch(playersComponenti, "processed").then(updatePlayers).catch((error: any) => {
+                        (playersComponentClient.current?.account as any).player.fetch(playersComponenti, "processed").then((fetchedData: any) => updatePlayers(fetchedData, i)).catch((error: any) => {
                             //console.error("Failed to fetch account:", error);
                          });
                     } 
@@ -2834,7 +2706,7 @@ const App: React.FC = () => {
                             target="_blank" 
                             rel="noopener noreferrer"
                         >
-                            Reclaim Sol 
+                            Reclaim SOL 
                         </a>
                         {reclaimTx != null ? (
                         <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{display:"inline", marginLeft:"5px", marginTop:"2px" }}>
@@ -2874,9 +2746,9 @@ const App: React.FC = () => {
                     }}
                 >
                     <div className="exitBox" style={{ background: 'black', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', userSelect: 'text' }}>
-                        <p className="superExitInfo">Final score: {currentPlayer?.score}</p>
-                        <p className="superExitInfo">Exit tax: {currentPlayer?.tax}</p>
-                        <p className="superExitInfo">Payout: {currentPlayer ? currentPlayer?.score - currentPlayer?.tax : playerCashout}</p>
+                        <p className="superExitInfo">Final score: {playerCashout + playerTax}</p>
+                        <p className="superExitInfo">Exit tax: {playerTax + playerCashout * 0.05}</p>
+                        <p className="superExitInfo">Payout: {playerCashout * 0.95}</p>
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
@@ -2911,7 +2783,7 @@ const App: React.FC = () => {
                             target="_blank" 
                             rel="noopener noreferrer"
                         >
-                            Reclaim Sol 
+                            Reclaim SOL 
                         </a>
                         {reclaimTx != null ? (
                         <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{display:"inline", marginLeft:"5px", marginTop:"2px" }}>

@@ -3,7 +3,8 @@ use std::f64::consts::E;
 use player::Player;
 use map::Map;
 
-declare_id!("8ahq6aWuNttiBiFjPAMRqhfyhMb85BefnpdZVUVYesyh");
+declare_id!("7GSaPMeqDopBN2yKX8pSQrNwaajUM1qFZcA6aRitH8LL");
+
 
 #[error_code]
 pub enum SupersizeError {
@@ -37,7 +38,7 @@ pub fn xorshift64(seed: u64) -> u64 {
 }
 
 #[system]
-pub mod spawn_playerb {
+pub mod spawn_playerc {
 
     pub fn execute(ctx: Context<Components>, args: Args) -> Result<Components> {
 
