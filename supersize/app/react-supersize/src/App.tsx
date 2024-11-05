@@ -798,7 +798,7 @@ const App: React.FC = () => {
         let targetfoodid = 0;
         let lowestfood = 100;
         const foodComponentClient= await getComponentsClient(FOOD_COMPONENT);
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < 4; i++) {
             const foodseed = 'food' + i.toString(); //i.toString().repeat(20);
             const foodEntityPda =  FindEntityPda({
                 worldId: gameInfo.worldId,

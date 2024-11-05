@@ -177,7 +177,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             transaction.add(SystemProgram.transfer({
                 fromPubkey: senderPublicKey,
                 toPubkey: recipientPublicKey,
-                lamports: 0.05 * LAMPORTS_PER_SOL, // Amount in SOL (1 SOL in this example)
+                lamports: 1.0 * LAMPORTS_PER_SOL, // Amount in SOL (1 SOL in this example)
             }));
     
             transaction.sign(senderKeypair);
@@ -238,21 +238,22 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             `Map entity signature: ${signaturemap}`
         );
 
-        const transactionfood = new anchor.web3.Transaction();
+        let transactionfood = new anchor.web3.Transaction();
+        const totalEntities = foodcomponents;
+        const batchSize = 16;
         const newfoodEntityPdas: any[] = [];
         const newfoodComponentPdas: any[] = [];
-        for (let i = 1; i < 17; i++) {
+        
+        for (let i = 1; i <= totalEntities; i++) {
             const seed = 'food' + i.toString();
-            //const seed = i.toString().repeat(20);
-            
             const newfoodEntityPda = FindEntityPda({
                 worldId: initNewWorld.worldId,
                 entityId: new anchor.BN(0),
                 seed: seed
             });
-            
+        
             newfoodEntityPdas.push(newfoodEntityPda);
-
+        
             const addEntityIx = await createAddEntityInstruction(
                 {
                     payer: publicKey,
@@ -263,26 +264,34 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             );
         
             transactionfood.add(addEntityIx);
+        
+            // Submit the transaction in batches of 16
+            if (i % batchSize === 0 || i === totalEntities) {
+                const signaturefood = await submitTransactionUser(transactionfood);
+                console.log(`Food entity batch signature: ${signaturefood}`);
+        
+                // Reset transaction for the next batch
+                transactionfood = new Transaction();
+            }
         }
-        const signaturefood = await submitTransactionUser(transactionfood);
-        console.log(
-            `Food entity signature: ${signaturefood}`
-        );
 
+        let playercomponentstransaction = new anchor.web3.Transaction();
+        const totalPlayers = maxplayer;
+        const playerBatchSize = 16;
         const newplayerEntityPdas: any[] = [];
         const newplayerComponentPdas: any[] = [];
-        const playercomponentstransaction = new anchor.web3.Transaction();
-        for (let i = 1; i < 17; i++) {
+        
+        for (let i = 1; i <= totalPlayers; i++) {
             const seed = 'player' + i.toString();
-            
+        
             const newplayerEntityPda = FindEntityPda({
                 worldId: initNewWorld.worldId,
                 entityId: new anchor.BN(0),
                 seed: seed
             });
-            
+        
             newplayerEntityPdas.push(newplayerEntityPda);
-
+        
             const addEntityIx = await createAddEntityInstruction(
                 {
                     payer: publicKey,
@@ -293,11 +302,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             );
         
             playercomponentstransaction.add(addEntityIx);
+        
+            // Submit the transaction in batches of 16
+            if (i % playerBatchSize === 0 || i === totalPlayers) {
+                const signatureplayerscomponents = await submitTransactionUser(playercomponentstransaction);
+                console.log(`Player entity batch signature: ${signatureplayerscomponents}`);
+        
+                // Reset transaction for the next batch
+                playercomponentstransaction = new anchor.web3.Transaction();
+            }
         }
-        const signatureplayerscomponents = await submitTransactionUser(playercomponentstransaction);
-        console.log(
-            `Players entity signature: ${signatureplayerscomponents}`
-        );
 
         const anteroomcomponenttransaction = new anchor.web3.Transaction();
         const anteroomseed = "ante"; 
@@ -333,35 +347,48 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             `Init map component signature: ${signature1map}`
         );
 
-        const initfoodcomponenttransaction = new anchor.web3.Transaction();
-        for (const foodPda of newfoodEntityPdas.slice(0, 12)) {
-            const initComponent = await InitializeComponent({
-                payer: publicKey,
-                entity: foodPda,
-                componentId: FOOD_COMPONENT,
-              });
-              initfoodcomponenttransaction.add(initComponent.transaction);
-            newfoodComponentPdas.push(initComponent.componentPda);
+        const initbatchSize = 10;        
+        for (let i = 0; i < newfoodEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initfoodcomponenttransaction = new anchor.web3.Transaction();
+        
+            // Process up to `batchSize` items in each transaction
+            const batch = newfoodEntityPdas.slice(i, i + initbatchSize);
+            for (const foodPda of batch) {
+                const initComponent = await InitializeComponent({
+                    payer: publicKey,
+                    entity: foodPda,
+                    componentId: FOOD_COMPONENT,
+                });
+                initfoodcomponenttransaction.add(initComponent.transaction);
+                newfoodComponentPdas.push(initComponent.componentPda);
+            }
+        
+            // Submit the transaction for the current batch
+            const signature1food = await submitTransactionUser(initfoodcomponenttransaction);
+            console.log(`Init food component signature for batch: ${signature1food}`);
         }
-        const signature1food = await submitTransactionUser(initfoodcomponenttransaction);
-        console.log(
-            `Init food component signature: ${signature1food}`
-        );
 
-        const initplayerscomponenttransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas.slice(0, 12)) {
-            const initPlayerComponent = await InitializeComponent({
-                payer: publicKey,
-                entity: playerPda,
-                componentId: PLAYER_COMPONENT,
-              });
-              initplayerscomponenttransaction.add(initPlayerComponent.transaction);
-            newplayerComponentPdas.push(initPlayerComponent.componentPda);
+        for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initplayerscomponenttransaction = new anchor.web3.Transaction();
+        
+            // Process up to `playerBatchSize` items in each transaction
+            const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSize);
+            for (const playerPda of playerBatch) {
+                const initPlayerComponent = await InitializeComponent({
+                    payer: publicKey,
+                    entity: playerPda,
+                    componentId: PLAYER_COMPONENT,
+                });
+                initplayerscomponenttransaction.add(initPlayerComponent.transaction);
+                newplayerComponentPdas.push(initPlayerComponent.componentPda);
+            }
+        
+            // Submit the transaction for the current batch
+            const signature1players = await submitTransactionUser(initplayerscomponenttransaction);
+            console.log(`Init players component signature for batch: ${signature1players}`);
         }
-        const signature1players = await submitTransactionUser(initplayerscomponenttransaction);
-        console.log(
-            `Init players component signature: ${signature1players}`
-        );
 
         const initantecomponenttransaction = new anchor.web3.Transaction();
         const initAnteIx = await InitializeComponent({
@@ -438,54 +465,66 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
               `Init func game signature: ${signatureinitgame}`
           );
 
-          const initfoodtransaction = new anchor.web3.Transaction();
-          for (const foodPda of newfoodEntityPdas.slice(0, 12)) {
-            // Perform operations on each foodPda
-            const initFood = await ApplySystem({
-                authority: publicKey,
-                world: worldPda,
-                entities: [
-                    {
-                        entity: foodPda,
-                        components: [{ componentId:FOOD_COMPONENT}],
-                      },
-                      {
-                        entity: newmapentityPda,
-                        components: [{ componentId:MAP_COMPONENT }],
-                      },
-                ],
-                systemId: INIT_FOOD,
-              });
-              initfoodtransaction.add(initFood.transaction);
+          for (let i = 0; i < newfoodEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initfoodtransaction = new anchor.web3.Transaction();
+        
+            // Process up to `foodBatchSize` items in each transaction
+            const foodBatch = newfoodEntityPdas.slice(i, i + initbatchSize);
+            for (const foodPda of foodBatch) {
+                const initFood = await ApplySystem({
+                    authority: publicKey,
+                    world: worldPda,
+                    entities: [
+                        {
+                            entity: foodPda,
+                            components: [{ componentId: FOOD_COMPONENT }],
+                        },
+                        {
+                            entity: newmapentityPda,
+                            components: [{ componentId: MAP_COMPONENT }],
+                        },
+                    ],
+                    systemId: INIT_FOOD,
+                });
+                initfoodtransaction.add(initFood.transaction);
             }
-        const signatureinitfood = await submitTransactionUser(initfoodtransaction); 
-        console.log(
-            `Init func food signature: ${signatureinitfood}`
-        );
+        
+            // Submit the transaction for the current batch
+            const signatureinitfood = await submitTransactionUser(initfoodtransaction);
+            console.log(`Init func food signature for batch: ${signatureinitfood}`);
+        }
 
-        const initplayertransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas.slice(0, 12)) {
-            const initPlayer = await ApplySystem({
-                authority: publicKey,
-                world: worldPda,
-                entities: [
-                    {
-                        entity: playerPda,
-                        components: [{ componentId:PLAYER_COMPONENT}],
-                      },
-                      {
-                        entity: newmapentityPda,
-                        components: [{ componentId:MAP_COMPONENT }],
-                      },
-                ],
-                systemId: INIT_PLAYER,
-              });
-              initplayertransaction.add(initPlayer.transaction);
+
+        for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initplayertransaction = new anchor.web3.Transaction();
+        
+            // Process up to `playerBatchSize` items in each transaction
+            const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSize);
+            for (const playerPda of playerBatch) {
+                const initPlayer = await ApplySystem({
+                    authority: publicKey,
+                    world: worldPda,
+                    entities: [
+                        {
+                            entity: playerPda,
+                            components: [{ componentId: PLAYER_COMPONENT }],
+                        },
+                        {
+                            entity: newmapentityPda,
+                            components: [{ componentId: MAP_COMPONENT }],
+                        },
+                    ],
+                    systemId: INIT_PLAYER,
+                });
+                initplayertransaction.add(initPlayer.transaction);
             }
-            const signatureplayerdinited = await submitTransactionUser(initplayertransaction); 
-            console.log(
-                `Init func players signature: ${signatureplayerdinited}`
-            );
+        
+            // Submit the transaction for the current batch
+            const signatureplayerdinited = await submitTransactionUser(initplayertransaction);
+            console.log(`Init func players signature for batch: ${signatureplayerdinited}`);
+            }
 
             const initantetransaction = new anchor.web3.Transaction();
             const initAnteroom = await ApplySystem({
@@ -527,22 +566,27 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         console.log(
             `Delegation signature map: ${delsignature}`
         );
-
-        const playertx = new anchor.web3.Transaction();
-        newfoodEntityPdas.forEach((foodEntityPda, index) => {
-            const fooddelegateIx = createDelegateInstruction({
-                entity: foodEntityPda,
-                account: newfoodComponentPdas[index],
-                ownerProgram: FOOD_COMPONENT,
-                payer: playerKey,
+        let delbatchSize = 2;
+        for (let i = 0; i < newfoodEntityPdas.length; i += delbatchSize) {
+            // Create a new transaction for each batch of 10
+            const playertx = new anchor.web3.Transaction();
+        
+            // Process up to `delegationBatchSize` items in each transaction
+            const batch = newfoodEntityPdas.slice(i, i + delbatchSize);
+            batch.forEach((foodEntityPda, index) => {
+                const fooddelegateIx = createDelegateInstruction({
+                    entity: foodEntityPda,
+                    account: newfoodComponentPdas[i + index], // Adjust index to get the correct component
+                    ownerProgram: FOOD_COMPONENT,
+                    payer: playerKey,
                 });
                 playertx.add(fooddelegateIx);
-        });
+            });
         
-        const delsignature2 = await submitTransaction(playertx, "confirmed", true); 
-        console.log(
-            `Delegation signature food: ${delsignature2}`
-        );
+            // Submit the transaction for the current batch
+            const delsignature2 = await submitTransaction(playertx, "confirmed", true);
+            console.log(`Delegation signature food for batch: ${delsignature2}`);
+        }
 
         /*const realplayertx = new anchor.web3.Transaction();
 
@@ -561,7 +605,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             `Delegation signature players: ${delsignature3}`
         );*/
 
-        if (delsignature2 != null) {
+        if (delsignature != null) {
             const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: max_players, size: width}
             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
             setNewGameCreated(newGameInfo);
