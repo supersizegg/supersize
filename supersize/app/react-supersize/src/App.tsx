@@ -611,10 +611,10 @@ const App: React.FC = () => {
                 componentId: PLAYER_COMPONENT,
                 entity: playerEntities.current[i],
             });
-            console.log( i, playerEntities.current[i]);
-            console.log('player component', playersComponenti);
+            //console.log( i, playerEntities.current[i]);
+            //console.log('player component', playersComponenti);
             (playersComponentClient.current?.account as any).player.fetch(playersComponenti, "processed").then((fetchedData: any) => updatePlayers(fetchedData, i)).catch((error: any) => {
-                console.error("Failed to fetch account:", error);
+                //console.error("Failed to fetch account:", error);
              });
         }    
         
@@ -694,9 +694,6 @@ const App: React.FC = () => {
         return null;
     }, [connection, isSubmitting, sendTransaction]);
 
-    /**
-     * Create a new join game transaction
-     */
     const waitSignatureConfirmation = async (
         signature: string,
         connection: anchor.web3.Connection,
@@ -718,12 +715,88 @@ const App: React.FC = () => {
             );
         });
     };
+
+    const checkTransactionStatus = async (
+        connection: anchor.web3.Connection,
+        signature: string
+    ): Promise<boolean> => {
+        try {
+            const status = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
+    
+            // Check if the status is confirmed and has no errors
+            if (status && status.value && status.value.confirmationStatus === "confirmed" && status.value.err === null) {
+                console.log("Transaction succeeded:", signature);
+                return true; // Transaction was successful
+            } else {
+                console.warn("Transaction still pending or failed:", signature);
+                return false; // Transaction not successful yet
+            }
+        } catch (error) {
+            console.error("Error checking transaction status:", error);
+            return false; // If an error occurs, treat it as a failure
+        }
+    };
+
+    const retrySubmitTransaction = async (
+        transaction: Transaction,
+        connection: anchor.web3.Connection,
+        commitment: anchor.web3.Commitment,
+        maxRetries = 5,
+        delay = 1000 // 1 second delay between retries
+    ): Promise<string | null> => {
+        let attempts = 0;
+        let signature: string | null = null;
+    
+        while (attempts < maxRetries) {
+            try {
+                // Submit the transaction
+                signature = await submitTransaction(transaction, commitment, true);
+                console.log("cashout attempt:", signature);
+    
+                // Check transaction status
+                if(signature){
+                const success = await checkTransactionStatus(connection, signature);
+                if (success) {
+                    console.log("Transaction confirmed successfully");
+                    return signature; // Return the successful transaction signature
+                }
+                }
+            } catch (error) {
+                console.error(`Attempt ${attempts + 1} failed:`, error);
+            }
+    
+            // Increment attempt count and wait before retrying
+            attempts++;
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+    
+        console.error("Max retries reached. Transaction failed to confirm.");
+        return null; // Return null if all retries fail
+    };
+
+    /**
+     * Create a new join game transaction
+     */
     const joinGameTx = useCallback(async (selectGameId: ActiveGame) => {
         if (!playerKey) throw new WalletNotConnectedError();
         if (!publicKey) throw new WalletNotConnectedError();
         if (isSubmitting) return null;
         setScreenSize({width:selectGameId.size, height:selectGameId.size});
         const gameInfo = selectGameId; 
+        let maxplayer=20;
+        let foodcomponents = 32;
+        if(selectGameId.size==4000){
+            maxplayer=20;
+            foodcomponents = 32;
+        }
+        else if(selectGameId.size==6000){
+            maxplayer=40;
+            foodcomponents = 64;
+        }
+        else if(selectGameId.size==10000){
+            maxplayer=100;
+            foodcomponents = 200;
+        }
 
         const mapseed = "origin"; 
         const mapEntityPda = FindEntityPda({
@@ -798,7 +871,7 @@ const App: React.FC = () => {
         let targetfoodid = 0;
         let lowestfood = 100;
         const foodComponentClient= await getComponentsClient(FOOD_COMPONENT);
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < foodcomponents+1; i++) {
             const foodseed = 'food' + i.toString(); //i.toString().repeat(20);
             const foodEntityPda =  FindEntityPda({
                 worldId: gameInfo.worldId,
@@ -832,8 +905,7 @@ const App: React.FC = () => {
         const playerClientER = await getComponentsClient(PLAYER_COMPONENT);
         const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
         let newplayerEntityPda : any = null;
-        let my_player_index = 0;
-        for (let i = 1; i < 4; i++) {
+        for (let i = 1; i < maxplayer+1; i++) {
             const playerentityseed = 'player' + i.toString();
             const playerEntityPda =  FindEntityPda({
                 worldId: gameInfo.worldId,
@@ -855,17 +927,16 @@ const App: React.FC = () => {
                 const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
                 console.log(playersParsedDataER)
             }else*/ 
+            //console.log(playerentityseed)
             if(playersacc){
                 const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
-                console.log(playersParsedData)
+                //console.log(playersParsedData)
                 if(playersParsedData.authority == null && newplayerEntityPda == null){
                     newplayerEntityPda = playerEntityPda;
-                    my_player_index = i - 1;
                 }
             }
             else{
                 newplayerEntityPda = playerEntityPda;
-                my_player_index = i - 1;
             }
          }
 
@@ -930,6 +1001,7 @@ const App: React.FC = () => {
                 console.log(
                     `buy in signature: ${buyinsignature}`
                 );
+                //if buy in fails, reclaim sol + coins, if succeeds everything else will work
 
                 const playerdeltx = new anchor.web3.Transaction();
                 const playerComponentPda = FindComponentPda({
@@ -990,12 +1062,6 @@ const App: React.FC = () => {
             console.log(signature,jointransaction, walletRef.current.toString(), playerKey.toString())
 
             if (signature != null) {
-                /*await waitSignatureConfirmation(
-                    signature,
-                    providerEphemeralRollup.current.connection,
-                    "finalized"
-                );*/
-                
                 setGameId(mapEntityPda); 
                 setActiveGames(prevActiveGames => {
                     const updatedGames = prevActiveGames.map(game =>
@@ -1131,83 +1197,6 @@ const App: React.FC = () => {
     }, [playerKey, submitTransaction, subscribeToGame]);
 
     useEffect(() => {
-        const waitSignatureConfirmation = async (
-            signature: string,
-            connection: anchor.web3.Connection,
-            commitment: anchor.web3.Commitment
-        ): Promise<void> => {
-            return new Promise((resolve, reject) => {
-                connection.onSignature(
-                    signature,
-                    (result) => {
-                        if (result.err) {
-                            console.error(`Error with signature ${signature}`, result.err);
-                            reject(result.err);
-                        } else {
-                            console.log("undelegation finalized");
-                            setTimeout(() => resolve(), 1000); // Adds a 1-second delay before resolving
-                        }
-                    },
-                    commitment
-                );
-            });
-        };
-        const checkTransactionStatus = async (
-            connection: anchor.web3.Connection,
-            signature: string
-        ): Promise<boolean> => {
-            try {
-                const status = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
-        
-                // Check if the status is confirmed and has no errors
-                if (status && status.value && status.value.confirmationStatus === "confirmed" && status.value.err === null) {
-                    console.log("Transaction succeeded:", signature);
-                    return true; // Transaction was successful
-                } else {
-                    console.warn("Transaction still pending or failed:", signature);
-                    return false; // Transaction not successful yet
-                }
-            } catch (error) {
-                console.error("Error checking transaction status:", error);
-                return false; // If an error occurs, treat it as a failure
-            }
-        };
-        const retrySubmitTransaction = async (
-            transaction: Transaction,
-            connection: anchor.web3.Connection,
-            commitment: anchor.web3.Commitment,
-            maxRetries = 5,
-            delay = 1000 // 1 second delay between retries
-        ): Promise<string | null> => {
-            let attempts = 0;
-            let signature: string | null = null;
-        
-            while (attempts < maxRetries) {
-                try {
-                    // Submit the transaction
-                    signature = await submitTransaction(transaction, commitment, true);
-                    console.log("cashout attempt:", signature);
-        
-                    // Check transaction status
-                    if(signature){
-                    const success = await checkTransactionStatus(connection, signature);
-                    if (success) {
-                        console.log("Transaction confirmed successfully");
-                        return signature; // Return the successful transaction signature
-                    }
-                    }
-                } catch (error) {
-                    console.error(`Attempt ${attempts + 1} failed:`, error);
-                }
-        
-                // Increment attempt count and wait before retrying
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, delay));
-            }
-        
-            console.error("Max retries reached. Transaction failed to confirm.");
-            return null; // Return null if all retries fail
-        };
         const cleanUp = async () => {
                 if (
                     currentPlayer &&
@@ -1277,7 +1266,8 @@ const App: React.FC = () => {
                             vault_token_account = anteParsedData.vaultTokenAccount;
                             mint_of_token_being_sent = anteParsedData.token;
                             owner_token_account = anteParsedData.gamemasterTokenAccount;
-                            supersize_token_account = anteParsedData.gamemasterTokenAccount;
+                            //supersize_token_account = anteParsedData.gamemasterTokenAccount;
+                            supersize_token_account = await getAssociatedTokenAddress(mint_of_token_being_sent, new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB"));
                             let usertokenAccountInfo = await getAssociatedTokenAddress(
                                 mint_of_token_being_sent,       
                                 savedPublicKey     
@@ -1461,27 +1451,6 @@ const App: React.FC = () => {
                 { skipPreflight: true } 
             );
             return signature;
-        };
-    
-        const waitSignatureConfirmation = async (
-            signature: string,
-            connection: anchor.web3.Connection,
-            commitment: anchor.web3.Commitment
-        ): Promise<void> => {
-            return new Promise((resolve, reject) => {
-                connection.onSignature(
-                    signature,
-                    (result) => {
-                        if (result.err) {
-                            console.error(`Error with signature ${signature}`, result.err);
-                            reject(result.err);
-                        } else {
-                            resolve();
-                        }
-                    },
-                    commitment
-                );
-            });
         };
         if (!exitHovered && currentWorldId.current && playerKey && currentPlayer && currentPlayer.authority && entityMatch.current && gameId && currentPlayerEntity.current) {
             try {

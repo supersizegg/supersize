@@ -9,9 +9,9 @@ import { Connection,
     Transaction, 
     sendAndConfirmTransaction,
     SystemProgram,
-    SystemInstruction 
+    SystemInstruction,
+    PublicKey, 
 } from '@solana/web3.js';
-import {PublicKey} from "@solana/web3.js";
 import BN from 'bn.js';
 import CreateGame from "./CreateGame";
 import {
@@ -95,6 +95,17 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
 }) => {
     const { publicKey, sendTransaction } = useWallet(); 
     const [panelContent, setPanelContent] = useState<JSX.Element | null>(null);
+    const [selected, setSelected] = useState(0);
+
+    const options = [
+      { id: 0, size: 4000, players: 20, cost: '0.4 SOL' },
+      { id: 1, size: 6000, players: 40, cost: '0.8 SOL' },
+      { id: 2, size: 10000, players: 100, cost: '2.0 SOL' },
+    ];
+
+    const handleSelection = (id: any) => {
+      setSelected(id);
+    };
 
     const submitTransactionUser = useCallback(async (transaction: Transaction): Promise<string | null> => {
         if (isSubmitting) return null;
@@ -154,69 +165,103 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         return null;
     }, [connection, isSubmitting, sendTransaction]);
 
-        // Function to send SOL
-        async function sendSol(destWallet: PublicKey) {
-            const privateKey = "FSYbuTybdvfrBgDWSHuZ3F3fMg7mTZd1pJSPXHM6QkamDbbQkykV94n3y8XhLwRvuvyvoUmEPJf9Qz8abzaWBtv"; 
-            if (!privateKey || !destWallet) {
-                throw new Error("Key is not defined in the environment variables");
-            }
-    
-            const secretKey = bs58.decode(privateKey); //Uint8Array.from(JSON.parse(privateKey));
-            const senderKeypair = Keypair.fromSecretKey(secretKey);
-    
-            const recipientPublicKey = destWallet;
-            const senderPublicKey = senderKeypair.publicKey;
-    
-            const {
-                context: { slot: minContextSlot },
-                value: { blockhash, lastValidBlockHeight }
-            } = await connection.getLatestBlockhashAndContext();
-            const transaction = new Transaction();
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = senderPublicKey;
-            transaction.add(SystemProgram.transfer({
-                fromPubkey: senderPublicKey,
-                toPubkey: recipientPublicKey,
-                lamports: 0.05 * LAMPORTS_PER_SOL, // Amount in SOL (1 SOL in this example)
-            }));
-    
-            transaction.sign(senderKeypair);
-            const signature = await connection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: 'processed',
-            });
-    
-            // Confirm the transaction
-            await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature }, "processed");
-    
-            console.log('Transaction successful with signature:', signature);
-        }
-
     /**
      * Create a new game transaction
      */
-    const newGameTx = useCallback(async (width: number, height: number, entry_fee: number, max_players: number, emit_type: number, emit_data: number, frozen: boolean, game_name: string) => {
+    const newGameTx = useCallback(async (game_size: number, max_buyin: number, min_buyin: number, game_owner_wallet_string: string, game_token_string: string, game_name: string) => {
         if (!publicKey) throw new WalletNotConnectedError();
+        //await sendSol(playerKey);
+        const base_buyin = Math.sqrt(max_buyin * min_buyin);
+        const max_multiple = max_buyin / base_buyin;
+        const min_multiple = min_buyin / base_buyin;
+        if (max_multiple > 10 || min_multiple > 10) {
+            throw new Error("Min-Max buy-in spread too large (max 100x).");
+        }
+
         let maxplayer = 20;
         let foodcomponents = 32;
-        if(width==4000){
+        let cost = 0.4;
+        if(game_size==4000){
             maxplayer=20;
             foodcomponents = 32;
+            cost = 0.4;
         }
-        if(width==6000){
+        if(game_size==6000){
             maxplayer=40;
             foodcomponents = 64;
+            cost = 0.8;
         }
-        if(width==10000){
+        if(game_size==10000){
             maxplayer=100;
             foodcomponents = 200;
+            cost = 2.0;
         }
+
+        const gameOwnerWallet = new PublicKey(game_owner_wallet_string);
+        const mint_of_token = new PublicKey(game_token_string);
+      
+        const owner_token_account = await getAssociatedTokenAddress(
+            mint_of_token,
+            gameOwnerWallet
+        );
+        
+        let decimals = 9;
+
+        const mintInfo = await connection.getParsedAccountInfo(mint_of_token);
+        if (mintInfo.value && "parsed" in mintInfo.value.data) {
+            decimals = mintInfo.value.data.parsed.info.decimals;
+            console.log('token', mint_of_token, 'mint decimals', decimals);
+          } else {
+            throw new Error("Mint information could not be retrieved or is invalid.");
+        }
+               
+        const supersize_wallet = new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB");
+        const supersizeAssociatedTokenAccount = await getAssociatedTokenAddress(mint_of_token, supersize_wallet);
+
+        const soltransfertx = SystemProgram.transfer({
+            fromPubkey: publicKey,
+            toPubkey: playerKey,
+            lamports: cost * LAMPORTS_PER_SOL, 
+        });
+        const sendsoltx = new Transaction().add(soltransfertx);
+        const sendsolsig = await submitTransactionUser(sendsoltx);
+        console.log(`Load wallet with SOL: ${sendsolsig}`);
+
+        const createTokenAccountsTx = new Transaction();
+        const accountInfoCreator = await connection.getAccountInfo(owner_token_account);
+        if (accountInfoCreator === null) {
+            const createTokenAccountTx = createAssociatedTokenAccountInstruction(
+                playerKey,
+                owner_token_account,
+                gameOwnerWallet,
+                mint_of_token,
+            );
+            createTokenAccountsTx.add(createTokenAccountTx);
+        } 
+        const accountInfoSupersize = await connection.getAccountInfo(supersizeAssociatedTokenAccount);
+        if (accountInfoSupersize === null) {
+            const createSuperTokenAccountTx = createAssociatedTokenAccountInstruction(
+                playerKey,
+                supersizeAssociatedTokenAccount,
+                supersize_wallet,
+                mint_of_token,
+            );
+            createTokenAccountsTx.add(createSuperTokenAccountTx);
+        } 
+        const createwalletsig = await submitTransaction(createTokenAccountsTx, "confirmed", true); 
+        console.log(
+            `Created wallet: ${createwalletsig}`
+        );
+
         const initNewWorld = await InitializeNewWorld({
-            payer:  publicKey, 
+            payer:  playerKey, 
             connection: connection,
           });
-        const txSign = await submitTransactionUser(initNewWorld.transaction); 
+        const txSign = await submitTransaction(initNewWorld.transaction, "confirmed", true);  //submitTransactionUser(initNewWorld.transaction); 
         const worldPda = initNewWorld.worldPda;
+        console.log(
+            `World entity signature: ${txSign}`
+        );
 
         const mapseed = "origin"; 
         const newmapentityPda = FindEntityPda({
@@ -226,36 +271,37 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         })
         const addMapEntityIx = await createAddEntityInstruction(
             {
-                payer: publicKey,
+                payer: playerKey,
                 world: worldPda,
                 entity: newmapentityPda,
             },
             { extraSeed: mapseed }
         )
         const transaction = new anchor.web3.Transaction().add(addMapEntityIx);
-        const signaturemap = await submitTransactionUser(transaction);
+        const signaturemap = await submitTransaction(transaction, "confirmed", true); //await submitTransactionUser(transaction);
         console.log(
             `Map entity signature: ${signaturemap}`
         );
 
-        const transactionfood = new anchor.web3.Transaction();
+        let transactionfood = new anchor.web3.Transaction();
+        const totalEntities = foodcomponents+1;
+        const batchSize = 16;
         const newfoodEntityPdas: any[] = [];
         const newfoodComponentPdas: any[] = [];
-        for (let i = 1; i < 5; i++) {
+        
+        for (let i = 1; i <= totalEntities; i++) {
             const seed = 'food' + i.toString();
-            //const seed = i.toString().repeat(20);
-            
             const newfoodEntityPda = FindEntityPda({
                 worldId: initNewWorld.worldId,
                 entityId: new anchor.BN(0),
                 seed: seed
             });
-            
+        
             newfoodEntityPdas.push(newfoodEntityPda);
-
+        
             const addEntityIx = await createAddEntityInstruction(
                 {
-                    payer: publicKey,
+                    payer: playerKey,
                     world: worldPda,
                     entity: newfoodEntityPda,
                 },
@@ -263,29 +309,37 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             );
         
             transactionfood.add(addEntityIx);
+        
+            // Submit the transaction in batches of 16
+            if (i % batchSize === 0 || i === totalEntities) {
+                const signaturefood = await submitTransaction(transactionfood, "confirmed", true); //await submitTransactionUser(transactionfood);
+                console.log(`Food entity batch signature: ${signaturefood}`);
+        
+                // Reset transaction for the next batch
+                transactionfood = new Transaction();
+            }
         }
-        const signaturefood = await submitTransactionUser(transactionfood);
-        console.log(
-            `Food entity signature: ${signaturefood}`
-        );
 
+        let playercomponentstransaction = new anchor.web3.Transaction();
+        const totalPlayers = maxplayer+1;
+        const playerBatchSize = 16;
         const newplayerEntityPdas: any[] = [];
         const newplayerComponentPdas: any[] = [];
-        const playercomponentstransaction = new anchor.web3.Transaction();
-        for (let i = 1; i < 4; i++) {
+        
+        for (let i = 1; i <= totalPlayers; i++) {
             const seed = 'player' + i.toString();
-            
+        
             const newplayerEntityPda = FindEntityPda({
                 worldId: initNewWorld.worldId,
                 entityId: new anchor.BN(0),
                 seed: seed
             });
-            
+        
             newplayerEntityPdas.push(newplayerEntityPda);
-
+        
             const addEntityIx = await createAddEntityInstruction(
                 {
-                    payer: publicKey,
+                    payer: playerKey,
                     world: worldPda,
                     entity: newplayerEntityPda,
                 },
@@ -293,11 +347,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             );
         
             playercomponentstransaction.add(addEntityIx);
+        
+            // Submit the transaction in batches of 16
+            if (i % playerBatchSize === 0 || i === totalPlayers) {
+                const signatureplayerscomponents = await submitTransaction(playercomponentstransaction, "confirmed", true); //await submitTransactionUser(playercomponentstransaction);
+                console.log(`Player entity batch signature: ${signatureplayerscomponents}`);
+        
+                // Reset transaction for the next batch
+                playercomponentstransaction = new anchor.web3.Transaction();
+            }
         }
-        const signatureplayerscomponents = await submitTransactionUser(playercomponentstransaction);
-        console.log(
-            `Players entity signature: ${signatureplayerscomponents}`
-        );
 
         const anteroomcomponenttransaction = new anchor.web3.Transaction();
         const anteroomseed = "ante"; 
@@ -308,113 +367,114 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         })
         const addAnteEntityIx = await createAddEntityInstruction(
             {
-                payer: publicKey,
+                payer: playerKey,
                 world: worldPda,
                 entity: newanteentityPda,
             },
             { extraSeed: anteroomseed }
         )
         anteroomcomponenttransaction.add(addAnteEntityIx);
-        const signatureanteroomcomponents = await submitTransactionUser(anteroomcomponenttransaction);
+        const signatureanteroomcomponents = await submitTransaction(anteroomcomponenttransaction, "confirmed", true); //await submitTransactionUser(anteroomcomponenttransaction);
         console.log(
             `Anteroom entity signature: ${signatureanteroomcomponents}`
         );
 
         const initmapomponenttransaction = new anchor.web3.Transaction();
         const initMapIx = await InitializeComponent({
-            payer: publicKey,
+            payer: playerKey,
             entity: newmapentityPda,
             componentId: MAP_COMPONENT,
         });
 
         initmapomponenttransaction.add(initMapIx.transaction);
-        const signature1map = await submitTransactionUser(initmapomponenttransaction);
+        const signature1map = await submitTransaction(initmapomponenttransaction, "confirmed", true); //await submitTransactionUser(initmapomponenttransaction);
         console.log(
             `Init map component signature: ${signature1map}`
         );
 
-        const initfoodcomponenttransaction = new anchor.web3.Transaction();
-        for (const foodPda of newfoodEntityPdas) {
-            const initComponent = await InitializeComponent({
-                payer: publicKey,
-                entity: foodPda,
-                componentId: FOOD_COMPONENT,
-              });
-              initfoodcomponenttransaction.add(initComponent.transaction);
-            newfoodComponentPdas.push(initComponent.componentPda);
+        const initbatchSize = 10;        
+        for (let i = 0; i < newfoodEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initfoodcomponenttransaction = new anchor.web3.Transaction();
+        
+            // Process up to `batchSize` items in each transaction
+            const batch = newfoodEntityPdas.slice(i, i + initbatchSize);
+            for (const foodPda of batch) {
+                const initComponent = await InitializeComponent({
+                    payer: playerKey,
+                    entity: foodPda,
+                    componentId: FOOD_COMPONENT,
+                });
+                initfoodcomponenttransaction.add(initComponent.transaction);
+                newfoodComponentPdas.push(initComponent.componentPda);
+            }
+        
+            // Submit the transaction for the current batch
+            const signature1food = await submitTransaction(initfoodcomponenttransaction, "confirmed", true);  //await submitTransactionUser(initfoodcomponenttransaction);
+            console.log(`Init food component signature for batch: ${signature1food}`);
         }
-        const signature1food = await submitTransactionUser(initfoodcomponenttransaction);
-        console.log(
-            `Init food component signature: ${signature1food}`
-        );
 
-        const initplayerscomponenttransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas) {
-            const initPlayerComponent = await InitializeComponent({
-                payer: publicKey,
-                entity: playerPda,
-                componentId: PLAYER_COMPONENT,
-              });
-              initplayerscomponenttransaction.add(initPlayerComponent.transaction);
-            newplayerComponentPdas.push(initPlayerComponent.componentPda);
+        for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initplayerscomponenttransaction = new anchor.web3.Transaction();
+        
+            // Process up to `playerBatchSize` items in each transaction
+            const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSize);
+            for (const playerPda of playerBatch) {
+                const initPlayerComponent = await InitializeComponent({
+                    payer: playerKey,
+                    entity: playerPda,
+                    componentId: PLAYER_COMPONENT,
+                });
+                initplayerscomponenttransaction.add(initPlayerComponent.transaction);
+                newplayerComponentPdas.push(initPlayerComponent.componentPda);
+            }
+        
+            // Submit the transaction for the current batch
+            const signature1players = await submitTransaction(initplayerscomponenttransaction, "confirmed", true); //await submitTransactionUser(initplayerscomponenttransaction);
+            console.log(`Init players component signature for batch: ${signature1players}`);
         }
-        const signature1players = await submitTransactionUser(initplayerscomponenttransaction);
-        console.log(
-            `Init players component signature: ${signature1players}`
-        );
 
         const initantecomponenttransaction = new anchor.web3.Transaction();
         const initAnteIx = await InitializeComponent({
-            payer: publicKey,
+            payer: playerKey,
             entity: newanteentityPda,
             componentId: ANTEROOM_COMPONENT,
         });
         initantecomponenttransaction.add(initAnteIx.transaction);
-        const signature1ante = await submitTransactionUser(initantecomponenttransaction);
+        const signature1ante = await submitTransaction(initantecomponenttransaction, "confirmed", true); //await submitTransactionUser(initantecomponenttransaction);
         console.log(
             `Init anteroom component signature: ${signature1ante}`
         );
 
         //set up vault
-        const decimals = 9;
+        //const decimals = 9;
         let vault_program_id = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk");
-        let mint_of_token = new PublicKey("AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp");
+        //let mint_of_token = new PublicKey("AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp");
         let map_component_id = initMapIx.componentPda;
         console.log('map component', map_component_id)
         let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("token_account_owner_pda"), map_component_id.toBuffer()],
         vault_program_id
         );
-        const owner_token_account = new PublicKey("BDcjDpR9i62tqxVCB62fpa37kvcAWeciWQC2VfUjXvZu");
+        //const owner_token_account = new PublicKey("BDcjDpR9i62tqxVCB62fpa37kvcAWeciWQC2VfUjXvZu");
         const tokenVault = await getAssociatedTokenAddress(mint_of_token, tokenAccountOwnerPda, true);
         const createTokenAccountTx = createAssociatedTokenAccountInstruction(
-            publicKey,
+            playerKey,
             tokenVault,
             tokenAccountOwnerPda,
             mint_of_token,
         );
         const combinedTx = new Transaction()
         .add(createTokenAccountTx); 
-        const createvaultsig = await submitTransactionUser(combinedTx);
+        const createvaultsig = await submitTransaction(combinedTx, "confirmed", true); //await submitTransactionUser(combinedTx);
         console.log(
             `Created pda + vault signature: ${createvaultsig}`
         );
         
-        console.log(
-            width,
-            height,
-            entry_fee,
-            max_players,
-            tokenVault.toString(), 
-            mint_of_token.toString(), 
-            9,
-            tokenAccountOwnerPda.toString(),
-            owner_token_account.toString(), 
-            frozen,
-        )
         const inittransaction = new anchor.web3.Transaction();
         const initGame = await ApplySystem({
-            authority: publicKey,
+            authority: playerKey,
             world: worldPda,
             entities: [
               {
@@ -425,71 +485,83 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             systemId: INIT_GAME,
             args: {
                 name:game_name,
-                size: width,
+                size: game_size,
                 entry_fee: 1.0,
                 entry_fee_upper_bound_mul: 10,
                 entry_fee_lower_bound_mul: 100,
-                frozen: frozen,
+                frozen: true,
             },
           });
           inittransaction.add(initGame.transaction);
-          const signatureinitgame = await submitTransactionUser(inittransaction); 
+          const signatureinitgame = await submitTransaction(inittransaction, "confirmed", true);  //await submitTransactionUser(inittransaction); 
           console.log(
               `Init func game signature: ${signatureinitgame}`
           );
 
-          const initfoodtransaction = new anchor.web3.Transaction();
-          for (const foodPda of newfoodEntityPdas) {
-            // Perform operations on each foodPda
-            const initFood = await ApplySystem({
-                authority: publicKey,
-                world: worldPda,
-                entities: [
-                    {
-                        entity: foodPda,
-                        components: [{ componentId:FOOD_COMPONENT}],
-                      },
-                      {
-                        entity: newmapentityPda,
-                        components: [{ componentId:MAP_COMPONENT }],
-                      },
-                ],
-                systemId: INIT_FOOD,
-              });
-              initfoodtransaction.add(initFood.transaction);
+          for (let i = 0; i < newfoodEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initfoodtransaction = new anchor.web3.Transaction();
+        
+            // Process up to `foodBatchSize` items in each transaction
+            const foodBatch = newfoodEntityPdas.slice(i, i + initbatchSize);
+            for (const foodPda of foodBatch) {
+                const initFood = await ApplySystem({
+                    authority: playerKey,
+                    world: worldPda,
+                    entities: [
+                        {
+                            entity: foodPda,
+                            components: [{ componentId: FOOD_COMPONENT }],
+                        },
+                        {
+                            entity: newmapentityPda,
+                            components: [{ componentId: MAP_COMPONENT }],
+                        },
+                    ],
+                    systemId: INIT_FOOD,
+                });
+                initfoodtransaction.add(initFood.transaction);
             }
-        const signatureinitfood = await submitTransactionUser(initfoodtransaction); 
-        console.log(
-            `Init func food signature: ${signatureinitfood}`
-        );
+        
+            // Submit the transaction for the current batch
+            const signatureinitfood = await submitTransaction(initfoodtransaction, "confirmed", true); //await submitTransactionUser(initfoodtransaction);
+            console.log(`Init func food signature for batch: ${signatureinitfood}`);
+        }
 
-        const initplayertransaction = new anchor.web3.Transaction();
-        for (const playerPda of newplayerEntityPdas) {
-            const initPlayer = await ApplySystem({
-                authority: publicKey,
-                world: worldPda,
-                entities: [
-                    {
-                        entity: playerPda,
-                        components: [{ componentId:PLAYER_COMPONENT}],
-                      },
-                      {
-                        entity: newmapentityPda,
-                        components: [{ componentId:MAP_COMPONENT }],
-                      },
-                ],
-                systemId: INIT_PLAYER,
-              });
-              initplayertransaction.add(initPlayer.transaction);
+
+        for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSize) {
+            // Create a new transaction for each batch of 10
+            const initplayertransaction = new anchor.web3.Transaction();
+        
+            // Process up to `playerBatchSize` items in each transaction
+            const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSize);
+            for (const playerPda of playerBatch) {
+                const initPlayer = await ApplySystem({
+                    authority: playerKey,
+                    world: worldPda,
+                    entities: [
+                        {
+                            entity: playerPda,
+                            components: [{ componentId: PLAYER_COMPONENT }],
+                        },
+                        {
+                            entity: newmapentityPda,
+                            components: [{ componentId: MAP_COMPONENT }],
+                        },
+                    ],
+                    systemId: INIT_PLAYER,
+                });
+                initplayertransaction.add(initPlayer.transaction);
             }
-            const signatureplayerdinited = await submitTransactionUser(initplayertransaction); 
-            console.log(
-                `Init func players signature: ${signatureplayerdinited}`
-            );
+        
+            // Submit the transaction for the current batch
+            const signatureplayerdinited = await submitTransaction(initplayertransaction, "confirmed", true); //await submitTransactionUser(initplayertransaction);
+            console.log(`Init func players signature for batch: ${signatureplayerdinited}`);
+            }
 
             const initantetransaction = new anchor.web3.Transaction();
             const initAnteroom = await ApplySystem({
-                authority: publicKey,
+                authority: playerKey,
                 world: worldPda,
                 entities: [
                   {
@@ -510,12 +582,11 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 },
               });
               initantetransaction.add(initAnteroom.transaction);
-        const signatureanteinited = await submitTransactionUser(initantetransaction); 
+        const signatureanteinited = await submitTransaction(initantetransaction, "confirmed", true);  //await submitTransactionUser(initantetransaction); 
         console.log(
             `Init func anteroom signature: ${signatureanteinited}`
         );
 
-        sendSol(playerKey);
         const mapdelegateIx = createDelegateInstruction({
         entity: newmapentityPda,
         account: initMapIx.componentPda,
@@ -527,22 +598,27 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         console.log(
             `Delegation signature map: ${delsignature}`
         );
-
-        const playertx = new anchor.web3.Transaction();
-        newfoodEntityPdas.forEach((foodEntityPda, index) => {
-            const fooddelegateIx = createDelegateInstruction({
-                entity: foodEntityPda,
-                account: newfoodComponentPdas[index],
-                ownerProgram: FOOD_COMPONENT,
-                payer: playerKey,
+        let delbatchSize = 5;
+        for (let i = 0; i < newfoodEntityPdas.length; i += delbatchSize) {
+            // Create a new transaction for each batch of 10
+            const playertx = new anchor.web3.Transaction();
+        
+            // Process up to `delegationBatchSize` items in each transaction
+            const batch = newfoodEntityPdas.slice(i, i + delbatchSize);
+            batch.forEach((foodEntityPda, index) => {
+                const fooddelegateIx = createDelegateInstruction({
+                    entity: foodEntityPda,
+                    account: newfoodComponentPdas[i + index], // Adjust index to get the correct component
+                    ownerProgram: FOOD_COMPONENT,
+                    payer: playerKey,
                 });
                 playertx.add(fooddelegateIx);
-        });
+            });
         
-        const delsignature2 = await submitTransaction(playertx, "confirmed", true); 
-        console.log(
-            `Delegation signature food: ${delsignature2}`
-        );
+            // Submit the transaction for the current batch
+            const delsignature2 = await submitTransaction(playertx, "confirmed", true);
+            console.log(`Delegation signature food for batch: ${delsignature2}`);
+        }
 
         /*const realplayertx = new anchor.web3.Transaction();
 
@@ -561,13 +637,23 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             `Delegation signature players: ${delsignature3}`
         );*/
 
-        if (delsignature2 != null) {
-            const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: max_players, size: width}
+        if (delsignature != null) {
+            const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: maxplayer, size: game_size}
             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
             setNewGameCreated(newGameInfo);
             const copiedActiveGameIds: ActiveGame[] = [...activeGames];
             copiedActiveGameIds.push(newGameInfo);  
             setActiveGames(copiedActiveGameIds);
+            const playerbalance = await connection.getBalance(playerKey, 'processed');
+            const reclaim_transaction = new Transaction();
+            const solTransferInstruction = SystemProgram.transfer({
+                fromPubkey: playerKey,
+                toPubkey: publicKey,
+                lamports: playerbalance - 5000,
+            });
+            reclaim_transaction.add(solTransferInstruction);
+            const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
+            console.log(`Reclaim leftover SOL: ${reclaimsig}`);
         }
     }, [playerKey, connection]);
 
@@ -595,7 +681,6 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                       Make your game stand out. Add everything from custom features and gameplay mechanics to in-game drops.
                       Supersize is a real-time fully onchain game powered by Magicblock engine. 
                       <br /><br />
-                      Here are some resources to start modding realtime fully onchain games: 
                     </p>
                     <div style={{display: "flex", flexDirection:"column", marginLeft:"2vw", marginTop:"1vw"}}>
                     <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/Logomark_white.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"20px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://docs.magicblock.gg/Forever%20Games', '_blank');}}> docs.magicblock.gg/Forever%20Games </a></div>
@@ -619,20 +704,51 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 case 5:
                     return (
                       <div className="panel" style={{ display: "flex", justifyContent: 'center', width: "100%", height: "100%", color:"white" }}>
-                        <div style={{ marginTop: "1vw", width: "60%" }}>
+                        <div style={{ marginTop: "0vw", width: "60%" }}>
                           <h1 style={{ marginTop: "2vw", marginBottom: "2vw", marginLeft: "1.5vw", fontFamily: "conthrax", fontSize: "36px" }}>Launch Your Game</h1>
                           <p style={{ marginLeft: "1.5vw", fontFamily: "terminus", fontSize: "20px", width: "80%" }}>
                               Deploy and customize your own Supersize game. <br /><br />
+                              <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-around',
+                                    background: 'black',
+                                    width: '100%',
+                                    fontSize: '16px',
+                                }}
+                                >
+                                {options.map(option => (
+                                    <div
+                                    key={option.id}
+                                    onClick={() => handleSelection(option.id)}
+                                    style={{
+                                        margin: '5px',
+                                        border: selected === option.id ? '1px solid #67F4B6' : '1px solid #272B30',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        textAlign: 'center',
+                                        width: '150px',
+                                        padding: '5px',
+                                        boxShadow: 'rgba(0, 0, 0, 0.05) 0px 1px 2px 0px',
+                                        backgroundColor: '#000000',
+                                    }}
+                                    >
+                                    <div>Size: {option.size}</div>
+                                    <div>Players: {option.players}</div>
+                                    <div>Cost: {option.cost}</div>
+                                    </div>
+                                ))}
+                                </div>
+                                <br />
                             <span style={{ opacity: "0.7" }}>
                               Deploying a game generates a new Supersize world that lives forever and is owned by you. 
-                              Game deployment costs 0.05 sol. Currently, games can only be deployed to devnet.
                             </span>
                             <br /><br />
                              <span className="free-play" style={{display:newGameCreated?'flex':'none', width: 'fit-content', padding:"10px", fontSize:"15px", marginTop:"1vh"}}>New Game ID: {newGameCreated?.worldId.toString()}</span>
                           </p>
                         </div>
-                        <div style={{ marginRight: "1.5vw", marginTop:"3vw" }}>
-                          <CreateGame initFunction={newGameTx} />
+                        <div style={{ marginRight: "1.5vw", marginTop:"1vw" }}>
+                          <CreateGame game_size={options[selected].size} userKey={publicKey !== null ? publicKey.toString() : "Connect Wallet"} initFunction={newGameTx} />
                         </div>
                       </div>
                     );
@@ -642,7 +758,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         };
         
         setPanelContent(renderPanel(buildViewerNumber));
-      }, [buildViewerNumber, newGameCreated]);
+      }, [buildViewerNumber, newGameCreated, selected]);
 
     return (
         <>
