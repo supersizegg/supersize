@@ -3,7 +3,7 @@ use player::Player;
 use map::Map;
 use section::Section;
 
-declare_id!("C9yoUrN6yhiKF1DEWV9QPcwaJRrTCCtMVtbJKipVTrEi");
+declare_id!("9rthxrCfneJKfPtv8PQmYk7hGQsUfeyeDKRp3uC4Uwh6");
 
 #[error_code]
 pub enum SupersizeError {
@@ -102,11 +102,11 @@ pub mod movement {
                     let free_space = 100 - section.food.len() as u64;
                     let steps_to_add = if steps < free_space { steps } else { free_space };
                     let remaining_steps = steps - steps_to_add;
-                    map.food_queue += remaining_steps as u16;
+                    map.food_queue += remaining_steps;
 
                     for n in 0..steps_to_add {
-                        let hardvarx : u64 = xorshift_output * (free_space as u64 + n + 1);
-                        let hardvary : u64 = xorshift_output * (free_space as u64 + n + 1) << random_shift;
+                        let hardvarx: u64 = xorshift_output.wrapping_mul(free_space as u64 + n + 1);
+                        let hardvary: u64 = xorshift_output.wrapping_mul(free_space as u64 + n + 1).wrapping_shl(random_shift as u32);
                         let seedx = (hardvarx % 100 as u64) + 1; 
                         let seedy = (hardvary % 100) + 1;
                         let pseudo_random_float_x : f64 = seedx as f64 / 100.0 + 1.2;
@@ -115,9 +115,17 @@ pub mod movement {
                         let offset_y = -unit_y * player_radius * pseudo_random_float_y;
                         let food_x = player_x as i16 + offset_x.round() as i16;
                         let food_y = player_y as i16 + offset_y.round() as i16;
-                        
-                        let newfood = section::Food { x: (food_x as u16).clamp(0, map.width), y: (food_y as u16).clamp(0, map.height)};
-                        section.food.push(newfood);
+                        let clamped_food_x = (food_x as u16).clamp(0, map.width);
+                        let clamped_food_y = (food_y as u16).clamp(0, map.height);
+                        if clamped_food_x >= section.top_left_x && clamped_food_x < section.top_left_x + 1000 &&
+                        clamped_food_y >= section.top_left_y && clamped_food_y < section.top_left_y + 1000 
+                        {
+                            let newfood = section::Food { x: clamped_food_x, y: clamped_food_y };
+                            section.food.push(newfood);
+                            map.total_food_on_map += 1;
+                        } else {
+                            map.food_queue += 1;
+                        }
                     }
                 }
             }

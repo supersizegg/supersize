@@ -14,7 +14,8 @@ pub struct Map {
     pub min_buyin: f64,
     pub max_players: u8,
     pub total_active_buyins: f64,
-    pub food_queue: u16,
+    pub total_food_on_map: u64,
+    pub food_queue: u64,
     pub next_food: Option<Food>,
     pub frozen: bool,
 }
@@ -37,6 +38,7 @@ impl Default for Map {
             min_buyin: 1000.0,
             max_players: 20,
             total_active_buyins: 0.0,
+            total_food_on_map: 0,
             food_queue: 0, 
             next_food: None,
             frozen: false,

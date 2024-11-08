@@ -7,8 +7,8 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'Terminus'; /* Specify the name you want to use for your font */
-    src: url('../public/font/terminus/TerminusTTF-4.49.3.ttf') format('truetype'); /* Provide the path to your TTF font file */
+    font-family: 'Terminus'; 
+    src: url('../public/font/terminus/TerminusTTF-4.49.3.ttf') format('truetype'); 
     font-weight: normal;
     font-style: normal;
 }
@@ -143,6 +143,74 @@ overflow: hidden;
 #linkImg:hover {
   opacity: 0.7;
 }
+.parent-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #333; 
+}
+
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  font-family: 'Terminus', sans-serif;
+  user-select: none;
+  margin-top: 4vh;
+  margin-left: 2vw;
+  width: 120px;
+}
+.selected-option {
+  padding: 10px;
+  width: 120px;
+  background-color: black;
+  color: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  text-align: center;
+}
+.selected-option.open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: black;
+  border: 1px solid #ccc;
+  border-top: none; 
+  border-radius: 0 0 10px 10px; 
+  width: 120px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+.dropdown-item {
+  width: 120px;
+  padding: 10px;
+  color: white;
+  text-align: left;
+}
+.dropdown-item:hover .dropdown-text {
+  opacity: 0.5;
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  opacity: 1 !important;
+}
+.green-dot {
+  background-color: #67F4B6;
+}
+.red-dot {
+  background-color: #FF8888;
+}
+
 .solstats{
   margin-left: auto;
   display: flex;
@@ -231,25 +299,25 @@ overflow: hidden;
   margin-left: 0.5em;
   font-family: 'Terminus';
   color: 'white';
-  align-items: center; /* Centers the slider vertically */
-  justify-content: center; /* Centers horizontally if needed */
+  align-items: center; 
+  justify-content: center; 
   overflow: hidden;
 }
 .slider {
-  -webkit-appearance: none; /* Remove default styling */
+  -webkit-appearance: none;
   appearance: none;
   width: 90%;
-  height: 1px; /* Adjust track height as needed */
-  background: white; /* Track color */
+  height: 1px;
+  background: white; 
   outline: none;
 }
 .slider::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Remove default styling */
+  -webkit-appearance: none; 
   appearance: none;
-  width: 16px; /* Adjust size as needed */
+  width: 16px;
   height: 16px;
-  background: white; /* Thumb color */
-  border-radius: 50%; /* Make it circular */
+  background: white; 
+  border-radius: 50%; 
   cursor: pointer;
 }
 .buyInField {
@@ -324,7 +392,7 @@ overflow: hidden;
 .gameSelect {
   grid-column: span 1;
   display: inline-flex;
-  justify-content: flex-start; /* Aligns content to the left */
+  justify-content: flex-start;
   align-items: center;
   margin-left: 1vw;
 }
@@ -341,7 +409,7 @@ overflow: hidden;
 }
 .play {
   display: inline-flex;
-  justify-content: flex-end; /* Aligns content to the right */
+  justify-content: flex-end;
   align-items: center;
   margin-right: 1vw;
 }
@@ -426,31 +494,31 @@ overflow: hidden;
 .circle {
   width: 1vw;
   height: 1vw;
-  background-color: #000; /* White color */
-  border: 1px solid #fff; /* Black stroke */
+  background-color: #000; 
+  border: 1px solid #fff; 
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.3s background-color 0.3s; /* Smooth transition for highlight */
+  transition: border-color 0.3s background-color 0.3s; 
   margin: 1vw;
   cursor: pointer;
 }
 .circleOn {
   width: 1vw;
   height: 1vw;
-  background-color: #fff; /* White color */
-  border: 1px solid #000; /* Black stroke */
+  background-color: #fff; 
+  border: 1px solid #000; 
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.3s background-color 0.3s; /* Smooth transition for highlight */
+  transition: border-color 0.3s background-color 0.3s; 
   margin: 1vw;
   cursor: pointer;
 }
 .circle:hover {
-  border-color: #000; /* Change stroke color on highlight (e.g., red) */
+  border-color: #000; 
   background-color: #fff; 
 }
 .buildViewer{
@@ -473,7 +541,6 @@ overflow: hidden;
     padding: 8px 12px;
     background: transparent;
     border: 2px solid #000;
-    /*color: #eee;*/
     width: fit-content;
     border-radius: 5px;
     transition: 0.2s;
@@ -481,8 +548,6 @@ overflow: hidden;
     cursor: pointer;
 }
 .topbar button:hover {
-    /*background: #61D8F9 !important;
-    color: #222 !important;*/
     background: #000 !important;
     border: 1px solid rgb(117, 94, 146);
     box-shadow: rgb(109, 88, 135) 0px 0px 0px 0px;
@@ -502,7 +567,7 @@ overflow: hidden;
 
 .grid-container-TPX {
     display: flex;
-    flex-wrap: wrap; /* Reverse the order of items (right to left) */
+    flex-wrap: wrap; 
     justify-content: center;
     align-items: center;
     margin-left: auto;
@@ -521,10 +586,9 @@ overflow: hidden;
   .grid-item-claim {
     background: black;
     border-radius: 0.5vw;    
-    /*box-shadow: 0 0 3px 1px #F1F1F1;*/
   }
  .grid-item-claim h2 {
-    flex-grow: 0;           /* Does not allow the paragraph to grow */
+    flex-grow: 0;         
     display: block;
     margin-top: 0;
     margin-bottom: 0.3vw;
@@ -545,25 +609,24 @@ overflow: hidden;
     display: grid;
     justify-content: space-between;
     width: 15vw;
-    height: fit-content; /* or any desired height */
+    height: fit-content;
     grid-template-rows: 1fr;
     grid-template-columns: 1fr;
     margin-top: auto;
   }
 .TPX_card {
-  display: flex;          /* Enables flexbox */
+  display: flex;        
   align-items: center;
   justify-content: center;
-  flex-direction: column; /* Stacks children vertically */
-  width: 5vw;            /* Adjusted for viewport width */
-  height: 5vw;           /* Adjusted for viewport height, can be set to auto if content should dictate size */
+  flex-direction: column; 
+  width: 5vw;           
+  height: 5vw;      
   border-radius: 0vw;
   background: #F1F1F1;
-  /*box-shadow: 0px 6px 6px 0px rgba(0, 0, 0, 0.25);*/
-  overflow: hidden;       /* Ensures no content spills out */
+  overflow: hidden;     
 }
 .TPX_card img {
-    flex-grow: 1;           /* Allows image to take remaining space */
+    flex-grow: 1;          
     width: auto; 
     height: 50%;
     margin-bottom: 0;
@@ -607,8 +670,6 @@ overflow: hidden;
     background-color: rgb(134, 201, 154);
     padding: 0.2vw;
     padding-right: 1vw;
-    /* padding-left: 4px; */
-    /* padding-right: 4px; */
   
     padding-left: 1vw;
     width: fit-content;
@@ -646,9 +707,9 @@ overflow: hidden;
     border-color: #000000;
   }
   .claim-right-wrapper{
-    flex-grow: 0;           /* Does not allow the div to grow */
-    position: relative;     /* Changed from absolute to relative */
-    width: 15vw;            /* Ensures it spans the full width of the card */
+    flex-grow: 0;         
+    position: relative;   
+    width: 15vw;          
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -704,7 +765,6 @@ overflow: hidden;
     border: 1px solid #f07171;
     border-radius: 100px;
     padding: 6px 10px; 
-    /*margin: 10px;*/
     transition: background 0.3s ease 0s, color 0.3s ease 0s; 
     z-index: 9999999;
 }
@@ -731,8 +791,6 @@ overflow: hidden;
   border-radius: 10px;
 }
 .create-game-button:hover {
-  /*background: #61D8F9 !important;
-  color: #222 !important;*/
   background: #000 !important;
   border: 1px solid rgb(117, 94, 146);
   box-shadow: rgb(109, 88, 135) 0px 0px 0px 0px;
@@ -758,7 +816,7 @@ overflow: hidden;
 .info-container {
   display: flex;
   width: 100%;
-  overflow-y: auto; /* Allow scrolling */
+  overflow-y: auto;
   margin-top: -20vh;
 }
 
@@ -789,7 +847,7 @@ overflow: hidden;
 }
 
 .info-scrolling-text {
-  height: 200%; /* For example, make the text container taller than the viewport */
+  height: 200%; 
   color: white;
   font-family: 'Terminus';
   font-size: 5rem;
@@ -987,11 +1045,10 @@ overflow: hidden;
 
 @keyframes fill {
   100% {
-    box-shadow: inset 0px 0px 0px 30px #15bd12; /* Replace $green with actual color */
+    box-shadow: inset 0px 0px 0px 30px #15bd12; 
   }
 }
 
-/* Mobile styles (for devices with screen width of 768px or less) */
 @media only screen and (max-width: 1000px) {
  .game-select {
     display: flex;

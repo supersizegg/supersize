@@ -3,7 +3,7 @@ use std::str::FromStr;
 use map::Map;
 use anteroom::Anteroom;
 
-declare_id!("DbKbkJC5Dw6RvQUkaM4CH7Z5hTcWGP51t7hZ3Hu42rXp");
+declare_id!("AxmRc9buNLgWVMinrH2WunSxKmdsBXVCghhYZgh2hJT6");
 
 #[error_code]
 pub enum SupersizeError {
@@ -12,7 +12,7 @@ pub enum SupersizeError {
     #[msg("Authority not found.")]
     AuthorityNotFound,
     #[msg("Account not found.")]
-    NotSupported,
+    AccountNotFound,
 }
 
 #[system]
@@ -41,15 +41,15 @@ pub mod init_anteroom {
             None => None,
         };
         anteroom.vault_token_account = match args.vault_token_account_string {
-            Some(ref vault_token_account_str) => Some(Pubkey::from_str(vault_token_account_str).map_err(|_| SupersizeError::NotSupported)?),
+            Some(ref vault_token_account_str) => Some(Pubkey::from_str(vault_token_account_str).map_err(|_| SupersizeError::AccountNotFound)?),
             None => None,
         };
         anteroom.token = match args.token_string {
-            Some(ref token_str) => Some(Pubkey::from_str(token_str).map_err(|_| SupersizeError::NotSupported)?),
+            Some(ref token_str) => Some(Pubkey::from_str(token_str).map_err(|_| SupersizeError::AccountNotFound)?),
             None => None,
         };
         anteroom.gamemaster_token_account = match args.gamemaster_wallet_string {
-            Some(ref gamemaster_wallet_str) => Some(Pubkey::from_str(gamemaster_wallet_str).map_err(|_| SupersizeError::NotSupported)?),
+            Some(ref gamemaster_wallet_str) => Some(Pubkey::from_str(gamemaster_wallet_str).map_err(|_| SupersizeError::AccountNotFound)?),
             None => None,
         };
 

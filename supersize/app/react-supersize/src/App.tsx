@@ -57,28 +57,26 @@ import {
     TOKEN_PROGRAM_ID,
   } from "@solana/spl-token";
 import { LIQUIDITY_STATE_LAYOUT_V4 } from "@raydium-io/raydium-sdk";
+import { set } from "@metaplex-foundation/beet";
 
 const bs58 = require('bs58');
 
-//new
-const FOOD_COMPONENT = new PublicKey("Dnh8jDMM6HDY1bXHt55Fi2yKfUPiu4TMhAJiotfb4oHq"); //2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N, DEmfhh4qTaeXsJztECTtiU61m5ygTGrQPC4CnvQwqnVA
-const MAP_COMPONENT = new PublicKey("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb"); //73x8SGXgkhk84Yk943eJRAVAW3yGoQz5m1Q2sb2THLsA, 6YbpcyDerGUMFXnW8rAP6rg7Xknp3knLeXLmZNpVgCzv
-const PLAYER_COMPONENT = new PublicKey("2ewyq31Atu7yLcYMg51CEa22HmcCSJwM4jjHH8kKVAJw");  //39c3gAHBe74wPgfhP5wBRCdcNHuMBY53awGBBjJUeWSw, Hc3Mh3NYXrEy8yHdLXeCmejFtr8e98AE9j3NApkZv7Yf
-//const PLAYERS_COMPONENT = new PublicKey("DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB"); //DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq, AjK6CRGGmcVSvcCd7PQZJuPqewjoqRtLxno8qvhuTCQR
-const ANTEROOM_COMPONENT = new PublicKey("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW");  //6PWyQF9YxtQLCZeYtJhPftVg4qXv2pHGyT5NteJVjacJ, 334RfoujN9JQqxXQ3Cx4ZW9Xs6QnoiPm4eQE94XKxrXn
+const FOOD_COMPONENT = new PublicKey("BEox2GnPkZ1upBAdUi7FVqTstjsC4tDjsbTpTiE17bah"); 
+const MAP_COMPONENT = new PublicKey("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb"); 
+const PLAYER_COMPONENT = new PublicKey("2ewyq31Atu7yLcYMg51CEa22HmcCSJwM4jjHH8kKVAJw");  
+const ANTEROOM_COMPONENT = new PublicKey("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW"); 
 
-const INIT_ANTEROOM = new PublicKey("DbKbkJC5Dw6RvQUkaM4CH7Z5hTcWGP51t7hZ3Hu42rXp"); //5oEk3USUXwmriWFsH5cKzyfmbetYuWvRQpk4ZTzdqs47, 9rcYNGJ2xmAtdSDfXM86DhGxKxLmigYKChScFT1R2QE3
-const INIT_GAME = new PublicKey("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");  //68caW8nVmZnUSunBotTTM5wuYQ3aymEsEHuTnsXgec65, 3afF5EsmrUyzAukV5gK8VcCtHFaroEigQC5LZtSLSooQ
-const EAT_FOOD = new PublicKey("J7R4J1RnFMGdXgEBqwseTR9ZFruAiT1wMAYYc2Hnxsre"); //B1M7AtzCds9MyoibMA3UhhrZMJ46BTJvFadvkCr7J71U, 4AGtQVGThaBqFVNnc4dH5jdk4of554LtaV2EapcxQsJ6
-const EAT_PLAYER = new PublicKey("CjuTzhsJNQeQ7hrdT2p5wUizdXUqY4cXBoyPWdQVe1o6"); //VZ7h6UCzrrWtCm3xBghYSAVXBvHecc34qnyeyeyjASh, 3MPgnXAdJTwMtTWFxAycUgcmfcJbc9V4jMTTUxooMbXY
-const JOIN_GAME = new PublicKey("7GSaPMeqDopBN2yKX8pSQrNwaajUM1qFZcA6aRitH8LL"); //BaTXEmj1rf1Jq5uGHLBVrBihLqTA6gSd2ZddmD4rLdaD, ENb3WCgfjeEUEAAn7QxutqvDCa1Xc3irRERRKKZS7Q1i
-const MOVEMENT = new PublicKey("C9yoUrN6yhiKF1DEWV9QPcwaJRrTCCtMVtbJKipVTrEi");  //EhLPnGqecy61peHT7j1WRsEWGqUZ11MZzYR4Xxm5RHRj, 3Zq52bMtNsPVZgUmtAcm3jdrL3dSPPtjGfFdN2ijKFgW
-const EXIT_GAME = new PublicKey("GuNYSdedUpgh8osyUaZTvSuz5pDNUtQcVeLmEZKDgfCQ"); //4PvV5ZSgXpUGbzBpDVmaguzG1gWZw2LKpuevYcPPVPtk, 3okUSUfqGYbP2zrDrGTjyRCoMVkSte2w3q6379SSTb3H
-const SPAWN_FOOD = new PublicKey("A3LybrLCJfYL2F1wrBVaaK1rUnhzpMoGD6Lp5VTqEFNG"); //EKSX8KynuiQCkvAZiyiVuYJcEAb77WBUaSUFkhZUqASk, 6mzy9FQyryvthEewwZJeG1aR6GNeafwpJoyG1wCiNiJk
-const INIT_PLAYERS = new PublicKey("Ru2cmntBkvmUGcg6E7rrDFYrx6ujf1zVJs7hEDq3uT3"); //84UTvkLscZVoznsgC4ppfQ3xSjBxod617g1nwTqEiMLM, 4Viwh8k4jYCuxWF1ogTA484y4UaTspbFhBph9UhJ2o4A
-const INIT_FOOD = new PublicKey("3YdRbDukWkyE2tBPoUhPSJzB1MCE1gKnoNjx5WdEq6aE"); //6vFNtK3uopAUxJ4AhXbsfKyb9JZPkKnPvkFXEpUwNSEc, 57ZASAqcrm2ErhB9cJ5eBJWNWxu2B7xiy1BqMwYN6ywT
-const BUY_IN = new PublicKey("7eq2fy2VfYiRAdsHA7bQuZDNMtEfkdzCZEJk86ASdqsw"); //7xHzX2a5VzBkRayf1uyVPTLmwNwNE2Hh4qS1CbEAjPsJ, bdmYHm1gmB1QRELBAfBbGu2aNm2uzHGjotLM7ye58Dg
-const CASH_OUT = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk"); //8x4pQTDyoRe49NLiASjebyasW2shv1pRMCTwngSB5ari
+const INIT_ANTEROOM = new PublicKey("AxmRc9buNLgWVMinrH2WunSxKmdsBXVCghhYZgh2hJT6"); 
+const INIT_GAME = new PublicKey("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");  
+const EAT_FOOD = new PublicKey("EdLga9mFADH4EjPY6RsG1LF7w8utVuWDgyLVRrA8YzzN"); 
+const EAT_PLAYER = new PublicKey("F6rDhVKjVTdGKdxEK9UWfFDcxeT3vFbAckX6U2aWeEKZ"); 
+const JOIN_GAME = new PublicKey("DViN676ajvuWryjWHxk2EF7MvQLgHNqhj4m32p1xLBDB");
+const MOVEMENT = new PublicKey("9rthxrCfneJKfPtv8PQmYk7hGQsUfeyeDKRp3uC4Uwh6");  
+const EXIT_GAME = new PublicKey("wdH5MUvXcyKM58yffCxhRQfB5jLQHpnWZhhdYhLCThf"); 
+const SPAWN_FOOD = new PublicKey("GP3L2w9SP9DASTJoJdTAQFzEZRHprMLaxGovxeMrvMNe"); 
+const INIT_FOOD = new PublicKey("4euz4ceqv5ugh1x6wZP3BsLNZHqBxQwXcK59psw5KeQw");
+const BUY_IN = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
+const CASH_OUT = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
 
 interface Food {
     x: number;
@@ -116,9 +114,9 @@ const App: React.FC = () => {
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(null);
     const [exitTxn, setExitTxn] = useState<string>('');
     const endpoints = [
-        "https://supersize-sin.magicblock.app",
         "https://supersize-fra.magicblock.app",
         "https://supersize.magicblock.app",
+        "https://supersize-sin.magicblock.app",
       ];
       
     const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
@@ -126,6 +124,9 @@ const App: React.FC = () => {
     const [wallet] = useState<Keypair>(() => Keypair.generate());
     const [playerKey, setPlayerKey] = useState<PublicKey>(wallet.publicKey);
     const walletRef = useRef<Keypair>(wallet);
+    const [foodwallet] = useState<Keypair>(() => Keypair.generate());
+    const [foodKey, setFoodKey] = useState<PublicKey>(foodwallet.publicKey);
+    const foodwalletRef = useRef<Keypair>(foodwallet);
     const [players, setPlayers] = useState<Blob[]>([]);
     const [playersLists, setPlayersLists] = useState<PublicKey[][]>([]);
     const [playersListsLen, setPlayersListsLen] = useState<number[]>([]);
@@ -137,12 +138,16 @@ const App: React.FC = () => {
     const [currentPlayer, setCurrentPlayer] = useState<Blob | null>(null);
     const [playerName, setPlayerName] = useState("unnamed");
     const [expandlist, setexpandlist] = useState(false);
+    const [subscribedToGame, setSubscribedToGame] = useState(false);
     const [newGameCreated, setNewGameCreated] = useState<ActiveGame | null>(null);
     const [currentTPS, setCurrentTPS] = useState(0);
     const [price, setPrice] = useState(0);
     const scale = 1;
-    const [screenSize, setScreenSize] = useState({width: 2000,height: 2000}); //530*3,300*3
+    const [screenSize, setScreenSize] = useState({width: 2000,height: 2000});
+    const [mapSize, setMapSize] = useState(4000);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [isJoining, setIsJoining] = useState<boolean>(false);
+    const [moveSignature, setMoveSignature] = useState<string | null>(null);
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
     const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
@@ -160,6 +165,7 @@ const App: React.FC = () => {
         },
       };
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
+    const [gamewallet, setGameWallet] = useState("");
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
     let entityMatch = useRef<PublicKey | null>(null);
     let playerEntities = useRef<PublicKey[]>([]);
@@ -176,7 +182,6 @@ const App: React.FC = () => {
     let myplayerComponentSubscriptionId = useRef<number | null>(null);
     let mapComponentSubscriptionId= useRef<number | null>(null);
 
-    // Use useRef for persisting values without causing re-renders
     const playersComponentClient = useRef<Program | null>(null);
     const mapComponentClient = useRef<Program | null>(null);
     const foodComponentClient = useRef<Program | null>(null); 
@@ -196,7 +201,7 @@ const App: React.FC = () => {
    const [reclaimTx, setReclaimTx] = useState<string| null>(null);
    const [cashingOut, setCashingOut] = useState<boolean>(false);
    const [playerCashoutAddy, setPlayerCashoutAddy] = useState<PublicKey| null>(null);
-   const [nextFood, setNextFood] = useState({x: -1,y: -1});
+   const nextFood = useRef({x: -1,y: -1});
 
    const [inputValue, setInputValue] = useState<string>('');  
    const [footerVisible, setFooterVisible] = useState(false);
@@ -204,7 +209,13 @@ const App: React.FC = () => {
    const [countdown, setCountdown] = useState(5);
    const [buyIn, setBuyIn] = useState(1.0); 
 
-   const SOL_USDC_POOL_ID = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2"; // Your pool ID
+   const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
+   const [selectedOption, setSelectedOption] = useState("Europe");
+   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+   const options = ["Europe", "America", "Asia"];
+
+   const SOL_USDC_POOL_ID = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2"; 
 
    const provider = new anchor.AnchorProvider(
     connection,
@@ -224,7 +235,13 @@ const App: React.FC = () => {
 
     anchor.setProvider(provider);
 
-        // Function to ping an endpoint and return the ping time
+    const handleOptionClick = (option: any) => {
+        setSelectedOption(option);
+        setIsDropdownOpen(false);
+        const selectedIndex = options.indexOf(option);
+        setFastestEndpoint(endpoints[selectedIndex]);
+    };
+
     const pingEndpoint = async (url: string): Promise<number> => {
             const startTime = performance.now();
             try {
@@ -247,6 +264,10 @@ const App: React.FC = () => {
 
         const lowestPingEndpoint = Object.keys(results).reduce((a, b) => (results[a] < results[b] ? a : b));
         setFastestEndpoint(lowestPingEndpoint);
+        const index = endpoints.indexOf(lowestPingEndpoint);
+        if (index !== -1) {
+            setSelectedOption(options[index]);
+        }
         const wsUrl = lowestPingEndpoint.replace("https", "wss");
         };
 
@@ -287,10 +308,13 @@ const App: React.FC = () => {
     }, [fastestEndpoint]); 
 
     const openDocs = useCallback(() => {
-        window.open('https://docs.supersize.app/', '_blank');
+        window.open('https://docs.supersize.gg/', '_blank');
     }, []); 
     const openX = useCallback(() => {
         window.open('https://x.com/SUPERSIZEgg', '_blank');
+    }, []); 
+    const openTG = useCallback(() => {
+        window.open('https://t.me/supersizeplayers', '_blank');
     }, []); 
 
     const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -410,9 +434,7 @@ const App: React.FC = () => {
     }, [setCurrentPlayer, playerKey, allFood]);
 
     const updateMyPlayer = useCallback((player: any) => {
-        //console.log(player, currentPlayer?.target_x, currentPlayer?.target_y)
         if(player.scheduledRemovalTime){
-            //console.log(player.scheduledRemovalTime, player.scheduledRemovalTime.toNumber());
             playerRemovalTimeRef.current = player.scheduledRemovalTime;
         }
         if(Math.sqrt(player.mass) == 0 &&
@@ -441,7 +463,6 @@ const App: React.FC = () => {
 
     useEffect(() => {
         if(currentPlayer){
-        //const playersWithAuthority = allplayers.filter((player) => player.authority !== null);
         const playersWithAuthority = allplayers.filter(
             (player) =>
                 player.authority !== null &&
@@ -484,10 +505,17 @@ const App: React.FC = () => {
 
     const updateMap = useCallback((map: any) => {
         const playerArray = map.players as any[];
-        if(activeGames[0]){
+        console.log(map); 
         if(map.nextFood){
-            setNextFood({x: map.nextFood.x, y: map.nextFood.y});
-        }
+            if(map.nextFood.x !== nextFood.current.x || map.nextFood.y !== nextFood.current.y){
+            //console.log('new food', map.nextFood, nextFood.current);
+            nextFood.current = {x: map.nextFood.x, y: map.nextFood.y};
+            //processNewFoodTransaction(map.nextFood.x, map.nextFood.y);
+            }
+        }else if(map.foodQueue > 0){
+            nextFood.current = {x: 0, y: 0};
+            //console.log('new food', map.foodQueue);
+            //processNewFoodTransaction(0, 0);
         }
     }, [setPlayers, setCurrentPlayer, playerKey, allFood]);
 
@@ -536,11 +564,6 @@ const App: React.FC = () => {
         const parsedData = mapComponentClient.current?.coder.accounts.decode("map", accountInfo.data);
         updateMap(parsedData);
     }, [updateMap]);
-
-    /*const handlePlayersListComponentChange = useCallback((accountInfo: AccountInfo<Buffer>, index: number) => {
-        const parsedData = playersListsClient.current?.coder.accounts.decode("players", accountInfo.data);
-        updatePlayersList(parsedData, index);
-    }, [updatePlayersList]);*/
 
     // Subscribe to the game state
     const subscribeToGame = useCallback(async (): Promise<void> => {
@@ -626,6 +649,8 @@ const App: React.FC = () => {
         (mapComponentClient.current?.account as any).map.fetch(mapComponent, "processed").then(updateMap).catch((error: any) => {
             console.error("Failed to fetch account:", error);
          });
+
+         setSubscribedToGame(true);
     }, [connection, handlePlayersComponentChange, handleMyPlayerComponentChange,handleFoodComponentChange, handleMapComponentChange, updatePlayers, updateFoodList, updateMap, updateMyPlayer]);
 
     const handleGameIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -707,8 +732,7 @@ const App: React.FC = () => {
                         console.error(`Error with signature ${signature}`, result.err);
                         reject(result.err);
                     } else {
-                        console.log("transaction finalized");
-                        setTimeout(() => resolve(), 1000); // Adds a 1-second delay before resolving
+                        setTimeout(() => resolve(), 1000); 
                     }
                 },
                 commitment
@@ -721,19 +745,17 @@ const App: React.FC = () => {
         signature: string
     ): Promise<boolean> => {
         try {
-            const status = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
-    
-            // Check if the status is confirmed and has no errors
+            const status = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });    
             if (status && status.value && status.value.confirmationStatus === "confirmed" && status.value.err === null) {
                 console.log("Transaction succeeded:", signature);
-                return true; // Transaction was successful
+                return true; 
             } else {
                 console.warn("Transaction still pending or failed:", signature);
-                return false; // Transaction not successful yet
+                return false;
             }
         } catch (error) {
             console.error("Error checking transaction status:", error);
-            return false; // If an error occurs, treat it as a failure
+            return false; 
         }
     };
 
@@ -742,7 +764,7 @@ const App: React.FC = () => {
         connection: anchor.web3.Connection,
         commitment: anchor.web3.Commitment,
         maxRetries = 5,
-        delay = 1000 // 1 second delay between retries
+        delay = 1000 
     ): Promise<string | null> => {
         let attempts = 0;
         let signature: string | null = null;
@@ -751,21 +773,20 @@ const App: React.FC = () => {
             try {
                 // Submit the transaction
                 signature = await submitTransaction(transaction, commitment, true);
-                console.log("cashout attempt:", signature);
-    
+                console.log("transaction attempt:", signature);
+                await new Promise(resolve => setTimeout(resolve, 1000)); 
                 // Check transaction status
                 if(signature){
                 const success = await checkTransactionStatus(connection, signature);
                 if (success) {
                     console.log("Transaction confirmed successfully");
-                    return signature; // Return the successful transaction signature
+                    return signature; 
                 }
                 }
             } catch (error) {
                 console.error(`Attempt ${attempts + 1} failed:`, error);
             }
     
-            // Increment attempt count and wait before retrying
             attempts++;
             await new Promise((resolve) => setTimeout(resolve, delay));
         }
@@ -781,10 +802,12 @@ const App: React.FC = () => {
         if (!playerKey) throw new WalletNotConnectedError();
         if (!publicKey) throw new WalletNotConnectedError();
         if (isSubmitting) return null;
+        setIsJoining(true);
         setScreenSize({width:selectGameId.size, height:selectGameId.size});
         const gameInfo = selectGameId; 
         let maxplayer=20;
         let foodcomponents = 32;
+        setMapSize(selectGameId.size);
         if(selectGameId.size==4000){
             maxplayer=20;
             foodcomponents = 32;
@@ -829,10 +852,11 @@ const App: React.FC = () => {
         let mint_of_token_being_sent = new PublicKey(0);
         let sender_token_account = new PublicKey(0);
         let payout_token_account = new PublicKey(0);
-        let vault_program_id = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk");
+        let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
 
         if(anteacc){
             const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
+            console.log(anteParsedData);
             vault_token_account = anteParsedData.vaultTokenAccount;
             mint_of_token_being_sent = anteParsedData.token;
             let usertokenAccountInfo = await getAssociatedTokenAddress(
@@ -872,7 +896,7 @@ const App: React.FC = () => {
         let lowestfood = 100;
         const foodComponentClient= await getComponentsClient(FOOD_COMPONENT);
         for (let i = 1; i < foodcomponents+1; i++) {
-            const foodseed = 'food' + i.toString(); //i.toString().repeat(20);
+            const foodseed = 'food' + i.toString(); 
             const foodEntityPda =  FindEntityPda({
                 worldId: gameInfo.worldId,
                 entityId: new anchor.BN(0),
@@ -898,13 +922,10 @@ const App: React.FC = () => {
         }
 
         const playerEntityPdas: any[] = [];
-        //let totalplayers = 0;
-        //let targetplayersid = 0;
-        //const playersPerList: number[] = [];
-        //let lowestplayers = 10;
         const playerClientER = await getComponentsClient(PLAYER_COMPONENT);
         const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
         let newplayerEntityPda : any = null;
+        let myPlayerId = '';
         for (let i = 1; i < maxplayer+1; i++) {
             const playerentityseed = 'player' + i.toString();
             const playerEntityPda =  FindEntityPda({
@@ -917,29 +938,23 @@ const App: React.FC = () => {
                 componentId: PLAYER_COMPONENT,
                 entity: playerEntityPda,
             });
-            //const playersaccER = await providerEphemeralRollup.current.connection.getAccountInfo(
-            //    playersComponentPda, "processed"
-            //);
             const playersacc = await provider.connection.getAccountInfo(
                 playersComponentPda, "processed"
             );
-            /*if(playersaccER){
-                const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
-                console.log(playersParsedDataER)
-            }else*/ 
-            //console.log(playerentityseed)
+            myPlayerId = playerentityseed;
             if(playersacc){
                 const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
-                //console.log(playersParsedData)
                 if(playersParsedData.authority == null && newplayerEntityPda == null){
                     newplayerEntityPda = playerEntityPda;
+                    break;
                 }
             }
             else{
                 newplayerEntityPda = playerEntityPda;
+                break;
             }
-         }
-
+            }
+                console.log('myPlayer', myPlayerId)
                 console.log('vault', vault_token_account.toString(), 'sender', sender_token_account.toString());
                 const applyBuyInSystem = await ApplySystem({
                     authority: playerKey,
@@ -997,12 +1012,46 @@ const App: React.FC = () => {
                       ],
                   });
                 const buyintx = new anchor.web3.Transaction().add(applyBuyInSystem.transaction);
-                const buyinsignature = await submitTransaction(buyintx, "confirmed", true);
-                console.log(
-                    `buy in signature: ${buyinsignature}`
-                );
+                //const buyinsignature = await submitTransaction(buyintx, "confirmed", true);
+                const buyinsignature = await retrySubmitTransaction(buyintx, connection, "confirmed");
                 //if buy in fails, reclaim sol + coins, if succeeds everything else will work
-
+                if(buyinsignature == null){
+                    const reclaim_transaction = new Transaction();
+                    const playerbalance = await connection.getBalance(playerKey, 'processed');
+                    const accountInfo = await getAccount(connection, sender_token_account);
+                    const transfertokens = createTransferInstruction(
+                        sender_token_account,
+                        payout_token_account,
+                        playerKey,
+                        accountInfo.amount,
+                        [],
+                        splToken.TOKEN_PROGRAM_ID,
+                    );
+                    const closeInstruction = createCloseAccountInstruction(
+                        sender_token_account,
+                        publicKey,
+                        playerKey,
+                    );
+                    const solTransferInstruction = SystemProgram.transfer({
+                        fromPubkey: playerKey,
+                        toPubkey: publicKey,
+                        lamports: playerbalance - 5000,
+                    });
+                    reclaim_transaction.add(transfertokens);
+                    reclaim_transaction.add(closeInstruction);
+                    reclaim_transaction.add(solTransferInstruction);
+                    const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
+                    console.log(
+                        `buy in failed, reclaimed tokens: ${reclaimsig}`
+                    );
+                    throw new Error('Buy in failed, reclaimed SOL');
+                }
+                else{
+                    console.log(
+                        `buy in signature: ${buyinsignature}`
+                    );
+                }
+                
                 const playerdeltx = new anchor.web3.Transaction();
                 const playerComponentPda = FindComponentPda({
                     componentId: PLAYER_COMPONENT,
@@ -1051,26 +1100,18 @@ const App: React.FC = () => {
             jointransaction.recentBlockhash = blockhash;
             jointransaction.feePayer = walletRef.current.publicKey;
             jointransaction.sign(walletRef.current);
-            //const signature = await providerEphemeralRollup.current.sendAndConfirm(jointransaction); 
             const signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
                 jointransaction.serialize(), 
-                { skipPreflight: true } // We don't want to do preflight in most cases
+                { skipPreflight: true } 
             ).catch((error) => {
                    console.log(error)
             });
-            //const signature = await providerEphemeralRollup.current.sendAndConfirm(applySystem.transaction);   
-            console.log(signature,jointransaction, walletRef.current.toString(), playerKey.toString())
-
+            console.log('joined game', signature);
+            await new Promise(resolve => setTimeout(resolve, 1000));
             if (signature != null) {
+                setIsJoining(false);
                 setGameId(mapEntityPda); 
-                setActiveGames(prevActiveGames => {
-                    const updatedGames = prevActiveGames.map(game =>
-                        game.worldId === gameInfo.worldId && game.worldPda.toString() === gameInfo.worldPda.toString()
-                            ? { ...game, delegated: true }
-                            : game
-                    );
-                    return updatedGames;
-                });
+                setMapSize(selectGameId.size);
                 entityMatch.current = mapEntityPda;
                 currentPlayerEntity.current = newplayerEntityPda;
                 anteroomEntity.current = anteEntityPda;
@@ -1094,14 +1135,12 @@ const App: React.FC = () => {
                 setAllPlayers(new Array(playerEntityPdas.length).fill(emptyPlayer));
                 setAllFood(new Array(foodEntityPdas.length).fill([]));
                 setFoodListLen(new Array(foodEntityPdas.length).fill(0));
-                processNewFoodTransaction();
                 await subscribeToGame(); 
             }
         
     }, [playerKey, submitTransaction, subscribeToGame]);
 
     function findListIndex(pubkey: PublicKey): number | null {
-        //console.log(pubkey.toString(), allplayers[1].authority?.toString());
         const index = allplayers.findIndex((player) => player.authority?.toString() === pubkey.toString());
         if (index !== -1) {
             return index;
@@ -1209,7 +1248,7 @@ const App: React.FC = () => {
                     if(currentWorldId.current==null){
                         throw new Error("world not found");
                     }
-                    console.log(currentPlayer)
+                    //console.log(currentPlayer)
                     if(currentPlayerEntity.current && anteroomEntity.current && entityMatch.current){
                         const myplayerComponent = FindComponentPda({
                             componentId: PLAYER_COMPONENT,
@@ -1259,7 +1298,7 @@ const App: React.FC = () => {
                         let sender_token_account = new PublicKey(0);
                         let owner_token_account = new PublicKey(0);
                         let supersize_token_account = new PublicKey(0);
-                        let vault_program_id = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk");
+                        let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
                 
                         if(anteacc && savedPublicKey){
                             const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
@@ -1356,7 +1395,6 @@ const App: React.FC = () => {
                             const reclaim_transaction = new Transaction();
                             const playerbalance = await connection.getBalance(playerKey, 'processed');
                             const accountInfo = await getAccount(connection, playerTokenAccount);
-                            //console.log(accountInfo)
                             const transfertokens = createTransferInstruction(
                                 playerTokenAccount,
                                 usertokenAccountInfo,
@@ -1466,43 +1504,64 @@ const App: React.FC = () => {
                 });
 
                 const alltransaction = new anchor.web3.Transaction();
-
-                for (let i = 0; i < visibleFood.length; i++) {
-                    let foodtoeat = checkFoodDistances(visibleFood[i], screenSize);
-                    if(foodtoeat){
-                        const eatFoodTx = await ApplySystem({
-                            authority: playerKey,
-                            world: currentWorldId.current,
-                            entities: [
-                                    {
-                                    entity: currentPlayerEntity.current,
-                                    components: [{ componentId: PLAYER_COMPONENT }],
-                                  }, 
-                                  {
-                                    entity: foodEntities.current[i],
-                                    components: [{ componentId: FOOD_COMPONENT }],
-                                  },
-                                  {
-                                    entity: entityMatch.current,
-                                    components: [{ componentId: MAP_COMPONENT }],
-                                  },
-                            ],
-                            systemId: EAT_FOOD,
-                            args: {
-                                timestamp: performance.now(),
-                            },
-                        });
-                        alltransaction.add(eatFoodTx.transaction);   
-                    }
+                let currentSection = getSectionIndex(currentPlayer.x, currentPlayer.y, mapSize, false);
+                let currentSectionBoosting = getSectionIndex(currentPlayer.x, currentPlayer.y, mapSize, true);
+                //let foodtoeat = checkFoodDistances(visibleFood[currentSection], screenSize);
+                //let playerfoodtoeat = checkFoodDistances(visibleFood[currentSectionBoosting], screenSize);
+                if(true){
+                    const eatFoodTx = await ApplySystem({
+                        authority: playerKey,
+                        world: currentWorldId.current,
+                        entities: [
+                                {
+                                entity: currentPlayerEntity.current,
+                                components: [{ componentId: PLAYER_COMPONENT }],
+                                }, 
+                                {
+                                entity: foodEntities.current[currentSection],
+                                components: [{ componentId: FOOD_COMPONENT }],
+                                },
+                                {
+                                entity: entityMatch.current,
+                                components: [{ componentId: MAP_COMPONENT }],
+                                },
+                        ],
+                        systemId: EAT_FOOD,
+                        args: {
+                            timestamp: performance.now(),
+                        },
+                    });
+                    alltransaction.add(eatFoodTx.transaction);   
                 }
-
+                if(true){
+                    const eatPlayerFoodTx = await ApplySystem({
+                        authority: playerKey,
+                        world: currentWorldId.current,
+                        entities: [
+                                {
+                                entity: currentPlayerEntity.current,
+                                components: [{ componentId: PLAYER_COMPONENT }],
+                                }, 
+                                {
+                                entity: foodEntities.current[currentSectionBoosting],
+                                components: [{ componentId: FOOD_COMPONENT }],
+                                },
+                                {
+                                entity: entityMatch.current,
+                                components: [{ componentId: MAP_COMPONENT }],
+                                },
+                        ],
+                        systemId: EAT_FOOD,
+                        args: {
+                            timestamp: performance.now(),
+                        },
+                    });
+                    alltransaction.add(eatPlayerFoodTx.transaction);  
+                }
                 let playerstoeat = checkPlayerDistances(players, screenSize);
                 if(playerstoeat){
-                    //console.log('eating')
                     let playersListIndex = findListIndex(playerstoeat);
-                    //console.log(playersListIndex);
                     if(playersListIndex != null){
-                        //console.log(playersListIndex)
                         const eatPlayerTx = await ApplySystem({ 
                         authority: playerKey,
                         world: currentWorldId.current,
@@ -1530,9 +1589,6 @@ const App: React.FC = () => {
                     }
                 }
 
-                let current_foodlist = foodListLen.reduce((minIndex, currentValue, currentIndex, array) =>
-                    currentValue < array[minIndex] ? currentIndex : minIndex
-                , 0);
                 const makeMove = await ApplySystem({
                     authority: playerKey,
                     world: currentWorldId.current,
@@ -1542,7 +1598,7 @@ const App: React.FC = () => {
                         components: [{ componentId: PLAYER_COMPONENT }],
                       },
                       {
-                        entity: foodEntities.current[current_foodlist],
+                        entity: foodEntities.current[currentSectionBoosting],
                         components: [{ componentId: FOOD_COMPONENT }],
                       },
                       { 
@@ -1572,10 +1628,13 @@ const App: React.FC = () => {
                 alltransaction.feePayer = walletRef.current.publicKey;
                 alltransaction.sign(walletRef.current);
                 let signature = await processSessionEphemTransaction(alltransaction).catch((error) => {
-                    //console.log(error)
+                    console.log(error)
                 });
-                
-                if (gameId && entityMatch.current) {   
+                //console.log(allFood, visibleFood); 
+                setIsSubmitting(false);
+                setTransactionError(null);
+                setTransactionSuccess(null);
+                /*if (gameId && entityMatch.current) {   
                     setIsSubmitting(false);
                     setTransactionError(null);
                     setTransactionSuccess(null);
@@ -1615,14 +1674,14 @@ const App: React.FC = () => {
                             //console.error("Failed to fetch account:", error);
                          });
                     } 
-                }
+                }*/
             } catch (error) {
                 setIsSubmitting(false);
                 //console.error("Failed to execute system or submit transaction:", error);
             }
         }
     }; 
-      
+    
     useEffect(() => {
 
         const intervalId = setInterval(() => {
@@ -1631,6 +1690,17 @@ const App: React.FC = () => {
         
         return () => clearInterval(intervalId);
     }, [gameId, currentPlayer, exitHovered]);
+
+    useEffect(() => {
+        //const firstHalf = foodListLen.slice(0, Math.floor(foodListLen.length / 2));
+        //const hasValueLessThan100 = firstHalf.some(value => value < 100);
+
+        const intervalId = setInterval(() => {
+            processNewFoodTransaction(nextFood.current.x, nextFood.current.y);
+        }, 400); 
+        
+        return () => clearInterval(intervalId);
+    }, [gameId, nextFood]);
 
     const checkPlayerDistances = (visiblePlayers: Blob[], screenSize: { width: number, height: number }) => {
         if(currentPlayer?.radius){
@@ -1651,7 +1721,7 @@ const App: React.FC = () => {
         if(currentPlayer?.radius){
             const centerX = screenSize.width / 2;
             const centerY = screenSize.height / 2;
-            
+            //console.log(visibleFood)
             return visibleFood.some(food => {
                 const distance = Math.sqrt((food.x - centerX) ** 2 + (food.y - centerY) ** 2);
                 return distance < currentPlayer.radius;
@@ -1660,18 +1730,51 @@ const App: React.FC = () => {
         return null;
     };
     
-    const processNewFoodTransaction = async () => {
-        if(currentWorldId.current==null){
-            throw new Error("world not found");
+    function getSectionIndex(x: number, y: number, mapSize: number, duplicateEncoding: boolean = false): number {
+        const sectionSize = 1000; // each section is 1000x1000
+        const sectionsPerRow = mapSize / sectionSize;
+        const mapSectionCount = sectionsPerRow * sectionsPerRow;
+        const adjustedX = Math.min(x, mapSize - 1);
+        const adjustedY = Math.min(y, mapSize - 1);
+        //const row = Math.floor(adjustedX / sectionSize);
+        //const col = Math.floor(adjustedY / sectionSize);
+        const row = Math.floor(adjustedY / sectionSize); 
+        const col = Math.floor(adjustedX / sectionSize); 
+        let baseIndex = row * sectionsPerRow + col;
+        if (duplicateEncoding) {
+            baseIndex += mapSectionCount;
         }
+    
+        return baseIndex;
+    }
+
+    const processNewFoodTransaction = async (foodX : number, foodY : number) => {
+        if(currentWorldId.current !== null){
         const allTransaction = new anchor.web3.Transaction();
-        if(currentPlayerEntity.current && entityMatch.current && currentPlayer){
+        if(currentPlayerEntity.current && entityMatch.current){
         try {
-            let current_foodlist = foodListLen.reduce((minIndex, currentValue, currentIndex, array) =>
+            /*let current_foodlist = foodListLen.reduce((minIndex, currentValue, currentIndex, array) =>
                 currentValue < array[minIndex] ? currentIndex : minIndex
-            , 0);
+            , 0);*/
+            const mapComponent = FindComponentPda({
+                componentId: MAP_COMPONENT,
+                entity: entityMatch.current,
+            });
+            const mapacc = await providerEphemeralRollup.current.connection.getAccountInfo(
+                mapComponent, "processed"
+            );
+            let nextFoodx = foodX;
+            let nextFoody = foodY;
+            if(mapacc){
+                const mapParsedData = mapComponentClient.current?.coder.accounts.decode("map", mapacc?.data);
+                if(mapParsedData.nextFood != null){
+                    nextFoodx = mapParsedData.nextFood.x;
+                    nextFoody = mapParsedData.nextFood.y;
+                }
+            }
+            let currentSection = getSectionIndex(foodX, foodY, mapSize, false);
             const newFoodTx = await ApplySystem({
-                authority: playerKey,
+                authority: foodKey,
                 world: currentWorldId.current,
                 entities: [
                     {
@@ -1679,7 +1782,7 @@ const App: React.FC = () => {
                         components: [{ componentId: MAP_COMPONENT }],
                     },
                     {
-                        entity: foodEntities.current[current_foodlist],
+                        entity: foodEntities.current[currentSection],
                         components: [{ componentId: FOOD_COMPONENT }],
                     },
                 ],  
@@ -1699,23 +1802,28 @@ const App: React.FC = () => {
 
             allTransaction.add(newFoodTx.transaction);
             allTransaction.recentBlockhash = blockhash;
-            allTransaction.feePayer = walletRef.current.publicKey;
-            allTransaction.sign(walletRef.current);
+            allTransaction.feePayer = foodwalletRef.current.publicKey;
+            allTransaction.sign(foodwalletRef.current);
             const signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
                 allTransaction.serialize(), 
                 { skipPreflight: true }
-            );
+            ).catch((error) => {
+                console.log(error); 
+            });
+            if (signature){
+                await waitSignatureConfirmation(
+                    signature,
+                    providerEphemeralRollup.current.connection,
+                    "finalized"
+                  );
+                //console.log('new food', signature)
+            }
         } catch (error) {
-            console.error("Transaction failed", error);
+            console.log("Transaction failed", error);
+        }
         }
         }
     };
-    useEffect(() => {
-        const hasValueLessThan100 = foodListLen.some(value => value < 100);
-        if(hasValueLessThan100){
-            processNewFoodTransaction(); 
-        }
-    }, [gameId, nextFood, currentPlayer]);
 
     const handleExitClick = () => {
         preExitGameTx();
@@ -1724,14 +1832,6 @@ const App: React.FC = () => {
         const interval = setInterval(() => {
           setCountdown((prev) => prev - 1);
         }, 1000);
-        
-        /*
-        setTimeout(() => {
-          console.log("Timeout triggered");
-          exitGameTx();
-          clearInterval(interval);
-        }, 6000);*/
-          // Set the removal timestamp
         
         const startTime = Date.now();
         // Set up an interval to continually check if 6 seconds have passed
@@ -1749,6 +1849,7 @@ const App: React.FC = () => {
                   exitGameTx();
                   clearInterval(timeoutinterval);
                   clearInterval(interval);
+                  setPlayerExiting(false);
                 } else {
                   console.log("Waiting...", elapsedTime);
                 }
@@ -1855,7 +1956,7 @@ const App: React.FC = () => {
                 try {
                     const worldId = {worldId: new anchor.BN(inputValue.trim())};
                     const worldPda = await FindWorldPda( worldId);
-                    const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "test", active_players: 0, max_players: 0, size: 0}
+                    const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0}
                     console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
                     setNewGameCreated(newGameInfo);
                     setActiveGames([newGameInfo, ...activeGames]);
@@ -1893,17 +1994,43 @@ const App: React.FC = () => {
                         if (mapacc) {
                             const mapParsedData = mapComponentClient.coder.accounts.decode("map", mapacc.data);
                             console.log(`Parsed Data for game ID ${activeGames[i].worldId}:`, mapParsedData);
+                            const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
+                            let activeplayers=0;
+                            for (let player_index = 1; i < mapParsedData.maxPlayers+1; player_index++) {
+                                const playerentityseed = 'player' + player_index.toString();
+                                const playerEntityPda =  FindEntityPda({
+                                    worldId: activeGames[i].worldId,
+                                    entityId: new anchor.BN(0),
+                                    seed: playerentityseed
+                                })
+                                const playersComponentPda = FindComponentPda({
+                                    componentId: PLAYER_COMPONENT,
+                                    entity: playerEntityPda,
+                                });
+                                const playersacc = await provider.connection.getAccountInfo(
+                                    playersComponentPda, "processed"
+                                );
+                                if(playersacc){
+                                    const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
+                                    //console.log(playersParsedData)
+                                    if(playersParsedData.authority != null){
+                                        activeplayers = activeplayers + 1;
+                                    }
+                                }else{
+                                    break;
+                                }
+                            }
                             setActiveGames(prevActiveGames => {
                                 const updatedGames = prevActiveGames.map(game =>
                                     game.worldId === activeGames[i].worldId && game.worldPda.toString() === activeGames[i].worldPda.toString()
-                                        ? { ...game, name: mapParsedData.name, active_players: 0, max_players: mapParsedData.maxPlayers, size: mapParsedData.width  } 
+                                        ? { ...game, name: mapParsedData.name, active_players: activeplayers, max_players: mapParsedData.maxPlayers, size: mapParsedData.width  } 
 
                                         : game
                                 );
                                 return updatedGames;
                             });
                         } else {
-                            console.log(providerEphemeralRollup.current)
+                            //console.log(providerEphemeralRollup.current)
                             console.log(`No account info found for game ID ${activeGames[i].worldId}`);
                         }
                     } catch (error) {
@@ -2001,8 +2128,6 @@ const App: React.FC = () => {
           }
         };
       }, [buildViewerNumber]);
-    
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
 
     useEffect(() => {
       const handleResize = () => {
@@ -2015,12 +2140,54 @@ const App: React.FC = () => {
         window.removeEventListener('resize', handleResize);
       };
     }, []);
-    
+
+    useEffect(() => {
+        const logoElement = document.querySelector('.logo-image') as HTMLElement | null;
+        if (logoElement) {
+          logoElement.style.transform = 'none';
+        } else {
+          console.warn('Element with class name "logo-image" not found.');
+        }
+    }, [buildViewerNumber]);
+
     return (
         <>
         <div className="supersize">
         <div className="topbar" style={{display: gameId == null && gameEnded == 0 ? 'flex' : 'none',background: buildViewerNumber==1 ? "rgba(0, 0, 0, 0.3)" : "rgb(0, 0, 0)",height: isMobile && buildViewerNumber == 1 ? '20vh' : buildViewerNumber == 1 ? '10vh' : '4vh', zIndex: 9999999}}>
-            {buildViewerNumber == 0 ? (<span className="free-play" style={{color:"#FFEF8A", borderColor:"#FFEF8A", marginLeft:"27vw", width:"fit-content", paddingLeft:"10px", paddingRight:"10px", marginTop:"5vh", background:"black"}}>Supersize is an eat or be eaten multiplayer game, live on the Solana blockchain</span>) : 
+            {buildViewerNumber == 0 ? (
+                <>
+                <div
+                    className="dropdown-container"
+                    onClick={() => setIsDropdownOpen((prev) => !prev)} 
+                >
+                    <div className={`selected-option ${isDropdownOpen ? "open" : ""}`}>
+                        <span className="dot green-dot" /> 
+                        {selectedOption}
+                    </div>
+
+                    {isDropdownOpen && (
+                        <div className="dropdown-menu">
+                            {options
+                                .filter((option) => option !== selectedOption)
+                                .map((option) => (
+                                    <div
+                                        key={option}
+                                        className="dropdown-item"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); 
+                                            handleOptionClick(option);
+                                        }}
+                                    >
+                                        <span className="dot red-dot" />
+                                        <span className="dropdown-text"> {option} </span>
+                                    </div>
+                                ))}
+                        </div>
+                    )}
+                </div>
+                <span className="free-play" style={{color:"#FFEF8A", borderColor:"#FFEF8A", marginLeft:"0vw", width:"fit-content", paddingLeft:"10px", paddingRight:"10px", marginTop:"5vh", background:"black"}}>Supersize is an eat or be eaten multiplayer game, live on the Solana blockchain</span>
+                </>
+            ) : 
                (
                 <div>
                 <>
@@ -2076,47 +2243,6 @@ const App: React.FC = () => {
                 </div>)
             }
             <div className="left-side" style={{alignItems : "center", justifyContent:"center", display: 'flex', zIndex: 9999999 }}>
-            {/*<div
-                style={{
-                    width: '45px',
-                    height: '45px',
-                    position: 'relative',
-                    display: 'flex',
-                    marginRight: '1vw',
-                    alignItems : "center", 
-                    justifyContent:"center",
-                    marginTop:"4.5vh",
-                    cursor:"pointer",
-                }}
-                onMouseEnter={() => setIsHovered([true,false,false,false,false])}
-                onMouseLeave={() => setIsHovered([false,false,false,false,false])}
-                >
-                <img
-                    src={`${process.env.PUBLIC_URL}/leaderboard.png`}
-                    width="35"
-                    height="35"
-                    alt="Image"
-                    style={{
-                        position: "absolute",
-                        opacity: isHovered[0] ? 0.2 : 0.8,
-                        transition: 'opacity 0.0s ease background 0.3s ease 0s, color 0.3s ease 0s',
-                    }}
-                />
-                {isHovered[0] && (
-                    <img
-                    src={`${process.env.PUBLIC_URL}/leaderboardhighlight.png`}
-                    width="35"
-                    height="35"
-                    alt="Highlighted Image"
-                    style={{
-                        display: 'flex',
-                        position: 'absolute',
-                        opacity: isHovered[0] ? 0.8 : 0.2,
-                        transition: 'opacity 0.3s ease',
-                    }}
-                    />
-                )}
-            </div>*/}
             <>
             {buildViewerNumber != 1 ? (
                 <div className="wallet-buttons" style={{ marginTop:"0vh", zIndex: 9999999}}>
@@ -2124,7 +2250,7 @@ const App: React.FC = () => {
                 </div>
             ):(
                 <div className="play" style={{display: footerVisible ? "none" : 'flex'}}>
-                <Button buttonClass="playButton" title={"Play"} onClickFunction={joinGameTx} args={[activeGames[0]]}/>
+                <Button buttonClass="playButton" title={"Play"} onClickFunction={() => {setbuildViewerNumber(0);}} args={[activeGames[0]]}/>
                 </div>
             )}
             </>
@@ -2266,28 +2392,25 @@ const App: React.FC = () => {
             </div>
             <div className="info-text-container" style={{width: footerVisible ? '100%' : '65%', paddingLeft: footerVisible ? '0' : '20px',  paddingRight: footerVisible ? '0' : '6vw'}}>
               <div className="info-scrolling-text">
-                ABOUT US:
-                <br></br>
-                <br></br>
                 <p>Supersize is a live multiplayer feeding frenzy game. Players must eat or be eaten to become the biggest onchain. 
                 <br></br>
                 <br></br>
-                Bigger players move slower than smaller players, but can expend tokens to boost forward and eat them. Click to boost. Hold space to charge.
+                Bigger players move slower than smaller players, but can expend tokens to boost forward and eat them. Click to boost. 
+                <br></br>
+                <br></br>
+                Supersize is playable with any SPL token. Players can exit the game at any time to receive their score in tokens. <br></br>(3% tax on exit)              
                 <br></br>
                 <br></br>
                 All game logic and state changes are securely recorded on the Solana blockchain in real-time, <br></br>powered by  {' '}
                 <a href="https://www.magicblock.gg/" target="_blank" rel="noopener noreferrer">
                     <img src={`${process.env.PUBLIC_URL}/magicblock_white_copy.svg`} alt="Spinning" className="info-spinning-image" style={{width:"300px", marginTop:"50px", display:"inline-block"}}/>
-                </a>                
-                <br></br>
-                <br></br>
-                Supersize will be playable with any SPL token. Players can buy-in and exit the game at any time to receive their score in tokens. 
+                </a>   
                 </p>
                 <div className={`info-footer ${footerVisible ? 'visible' : ''}`}>
                 <div style={{position:"absolute", top:"-50vh", left:"40vw", width:"fit-content", color: "white", fontFamily:"Terminus", fontSize:"0.5em", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column"}}>
                 Join a game
                 <div className="play" style={{marginTop:"1vw"}}>
-                        <Button buttonClass="playNowButton" title={"Play Now"} onClickFunction={joinGameTx} args={[activeGames[0]]}/>
+                        <Button buttonClass="playNowButton" title={"Play Now"} onClickFunction={() => {setbuildViewerNumber(0);}} args={[activeGames[0]]}/>
                     </div>
                 </div>
                 <div className="footer-left">
@@ -2343,7 +2466,7 @@ const App: React.FC = () => {
                         alignItems : "center", 
                         justifyContent:"center",
                         paddingLeft: "0px",
-                        paddingRight:"5px",
+                        paddingRight:"0px",
                     }}
                     onMouseEnter={() => setIsHovered([false,false,false,true,false])}
                     onMouseLeave={() => setIsHovered([false,false,false,false,false])}
@@ -2375,6 +2498,45 @@ const App: React.FC = () => {
                         />
                     )}
                 </div>
+                <div
+                    style={{
+                        width: '35px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems : "center", 
+                        justifyContent:"center",
+                        paddingRight:"10px",
+                        cursor: "pointer",
+                    }}
+                    onMouseEnter={() => setIsHovered([false,false,false,false,true])}
+                    onMouseLeave={() => setIsHovered([false,false,false,false,false])}
+                    onClick={openTG}
+                    >
+                    <img
+                        src={`${process.env.PUBLIC_URL}/tg2.png`}
+                        width="23px"
+                        height="auto"
+                        alt="Image"
+                        style={{
+                            position: "absolute",
+                            opacity: isHovered[4] ? 0.2 : 0.8,
+                            transition: 'opacity 0.0s ease background 0.3s ease 0s, color 0.3s ease 0s',
+                        }}
+                    />
+                    {isHovered[4] && (
+                        <img
+                        src={`${process.env.PUBLIC_URL}/tg.png`}
+                        width="23px"
+                        height="auto"
+                        alt="Highlighted Image"
+                        style={{
+                            position: 'absolute',
+                            opacity: isHovered[4] ? 0.8 : 0.2,
+                            transition: 'opacity 0.3s ease',
+                        }}
+                        />
+                    )}
+                </div>
                 </div>
             </div>
               </div>
@@ -2391,12 +2553,14 @@ const App: React.FC = () => {
                 isSubmitting={isSubmitting}
                 newGameCreated={newGameCreated}
                 activeGames={activeGames}
+                gamewallet={gamewallet}
                 setTransactionError={setTransactionError}
                 setTransactionSuccess={setTransactionSuccess}
                 setIsSubmitting={setIsSubmitting}
                 setActiveGames={setActiveGames}
                 setbuildViewerNumber={setbuildViewerNumber}
                 setNewGameCreated={setNewGameCreated}
+                setGameWallet={setGameWallet}
                 />
                 </div>
             )}
@@ -2439,46 +2603,6 @@ const App: React.FC = () => {
             />
             </div>
             <div className="solstats" style={{display: !isMobile ? 'flex' : 'none'}}>
-                {/*<div
-                    style={{
-                        width: '35px',
-                        height: '40px',
-                        display: 'flex',
-                        cursor: "pointer",
-                        alignItems : "center", 
-                        justifyContent:"center",
-                        paddingLeft: "10px",
-                        paddingRight:"0px",
-                    }}
-                    onMouseEnter={() => setIsHovered([false,true,false,false,false])}
-                    onMouseLeave={() => setIsHovered([false,false,false,false,false])}
-                    onClick={() => setbuildViewerNumber(1)}
-                    >
-                    <img
-                        src={`${process.env.PUBLIC_URL}/build.png`}
-                        width="20px"
-                        height="auto"
-                        alt="Image"
-                        style={{
-                            position: "absolute",
-                            opacity: isHovered[1] ? 0.2 : 0.8,
-                            transition: 'opacity 0.0s ease background 0.3s ease 0s, color 0.3s ease 0s',
-                        }}
-                    />
-                    {isHovered[1] && (
-                        <img
-                        src={`${process.env.PUBLIC_URL}/buildhighlight.png`}
-                        width="20px"
-                        height="auto"
-                        alt="Highlighted Image"
-                        style={{
-                            position: 'absolute',
-                            opacity: isHovered[1] ? 0.8 : 0.2,
-                            transition: 'opacity 0.3s ease',
-                        }}
-                        />
-                    )}
-                    </div>*/}
                 <div
                     style={{
                         width: '35px',
@@ -2576,6 +2700,7 @@ const App: React.FC = () => {
                     }}
                     onMouseEnter={() => setIsHovered([false,false,false,false,true])}
                     onMouseLeave={() => setIsHovered([false,false,false,false,false])}
+                    onClick={openTG}
                     >
                     <img
                         src={`${process.env.PUBLIC_URL}/tg2.png`}
@@ -2716,8 +2841,8 @@ const App: React.FC = () => {
                 >
                     <div className="exitBox" style={{ background: 'black', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', userSelect: 'text' }}>
                         <p className="superExitInfo">Final score: {playerCashout + playerTax}</p>
-                        <p className="superExitInfo">Exit tax: {playerTax + playerCashout * 0.05}</p>
-                        <p className="superExitInfo">Payout: {playerCashout * 0.95}</p>
+                        <p className="superExitInfo">Exit tax: {playerTax + playerCashout * 0.02}</p>
+                        <p className="superExitInfo">Payout: {playerCashout * 0.98}</p>
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
@@ -2805,7 +2930,7 @@ const App: React.FC = () => {
         </div>
 
         </div>
-        {isSubmitting && (
+        {(isSubmitting || isJoining) && (
             <div style={{
                 display: 'flex',
                 justifyContent: 'center',
@@ -2822,7 +2947,7 @@ const App: React.FC = () => {
 
         {transactionError && <Alert type="error" message={transactionError} onClose={() => setTransactionError(null) } />}
 
-        {transactionSuccess && <Alert type="success" message={transactionSuccess} onClose={() => setTransactionSuccess(null) } />}
+        {(transactionSuccess && !isJoining) && <Alert type="success" message={transactionSuccess} onClose={() => setTransactionSuccess(null) } />}
         </div>
         </>
     );

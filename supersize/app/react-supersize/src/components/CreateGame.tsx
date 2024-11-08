@@ -6,13 +6,12 @@ import "./CreateGame.scss";
 type gameProps = {
     game_size: number,
     userKey: string,
-    initFunction: (...args: any[]) => void;  // General function accepting any arguments
+    initFunction: (...args: any[]) => void;  
 };
 
 type FormData = [number, number, number, string, string, string];
 
 const CreateGame: React.FC<gameProps> = ({ game_size, userKey, initFunction }) => {
-    //game_size: number, max_buyin: number, min_buyin: number, game_owner_wallet_string: string, game_token_string: string, game_name: string
     const [formData, setFormData] = useState<FormData>([game_size, 10.0, 0.1, userKey, "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp", "ffa"]);
     const handleChange = (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const { type, checked, value } = e.target;
@@ -30,7 +29,6 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, initFunction }) =
       e.preventDefault();
       console.log('Form Data Submitted:', formData);
     };
-      {/*<div className="container">*/}  
     return (
         <form className="form-box" onSubmit={handleSubmit}>
           <h2 className="form-title">Game Settings</h2>

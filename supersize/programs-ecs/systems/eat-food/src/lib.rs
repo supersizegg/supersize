@@ -3,7 +3,7 @@ use player::Player;
 use map::Map;
 use section::Section;
 
-declare_id!("J7R4J1RnFMGdXgEBqwseTR9ZFruAiT1wMAYYc2Hnxsre");
+declare_id!("EdLga9mFADH4EjPY6RsG1LF7w8utVuWDgyLVRrA8YzzN");
 
 #[error_code]
 pub enum SupersizeError {
@@ -24,8 +24,8 @@ pub mod eat_food {
         let player = &mut ctx.accounts.player;
         let authority = *ctx.accounts.authority.key;
 
-        require!(map.key() == player.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
-        require!(map.key() == section.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
+        require!(map.key() == player.map.expect("Player map key not set"), SupersizeError::MapKeyMismatch);
+        require!(map.key() == section.map.expect("Section map key not set"), SupersizeError::MapKeyMismatch);
         require!(player.mass != 0, SupersizeError::NotInGame);
 
         let player_mass = player.mass as f64 / 10.0;
@@ -44,6 +44,7 @@ pub mod eat_food {
                     if distance < player_radius {
                         player.mass += 1;
                         player.score += map.base_buyin as f64 / 1000.0;
+                        map.total_food_on_map -= 1;
                         false 
                     } else {
                         true

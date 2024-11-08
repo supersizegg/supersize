@@ -1,21 +1,17 @@
 use bolt_lang::*;
 use std::f64::consts::E; 
 use player::Player;
-use players::Players;
 use map::Map;
 
-declare_id!("QMpMFne3WkDRWEvY8LGKQB6n5ox6dvdhsoB8jZFjjmX");
-
+declare_id!("DViN676ajvuWryjWHxk2EF7MvQLgHNqhj4m32p1xLBDB");
 
 #[error_code]
 pub enum SupersizeError {
     #[msg("Player already in game.")]
     AlreadyInGame,
-    #[msg("Players component Full.")]
-    GameFull,
     #[msg("Not owner of this player.")]
     NotOwner,
-    #[msg("Players component doesn't belong to map.")]
+    #[msg("Player component doesn't belong to map.")]
     MapKeyMismatch,
 }
 
@@ -47,16 +43,13 @@ pub mod spawn_player {
 
         let map = &mut ctx.accounts.map;
         let player = &mut ctx.accounts.player;
-        let players = &mut ctx.accounts.players;
         let authority = *ctx.accounts.authority.key;
 
-        require!(map.key() == player.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
-        require!(map.key() == players.map.expect("players map key not set"), SupersizeError::MapKeyMismatch);
+        require!(map.key() == player.map.expect("Player map key not set"), SupersizeError::MapKeyMismatch);
         
         require!(player.mass == 0, SupersizeError::AlreadyInGame);
         require!(player.score == 0.0, SupersizeError::AlreadyInGame);
         require!(player.authority == Some(authority), SupersizeError::NotOwner);
-        require!(players.playerkeys.len() < 10, SupersizeError::GameFull);
         
         let playername = args.name as String;
         let slot = Clock::get()?.slot;
@@ -79,31 +72,32 @@ pub mod spawn_player {
 
         let mut food_to_add = 100.0;
         let mut player_tax = 100.0;
+        let mut food_in_wallet = wallet_balance as f64 - map.total_active_buyins;
+        food_in_wallet = food_in_wallet - (map.food_queue as f64 * map.base_buyin / 1000.0);
+        food_in_wallet = food_in_wallet - (map.total_food_on_map as f64 * map.base_buyin / 1000.0);
         let ten_food_unit = map.base_buyin / 100.0;
-        let food_in_wallet = (wallet_balance as f64 - map.total_active_buyins) / ten_food_unit;
+        food_in_wallet = food_in_wallet / ten_food_unit;
         let epsilon = 0.01;
         let k = calculate_k(map.max_players as f64, epsilon);
         let y = calculate_y(food_in_wallet as f64, k).floor();
-        if y > 10.0 {
+        if y >= 10.0 {
             food_to_add = y * 10.0;
             player_tax = 0.0;
         }else{
             player_tax = player_tax - y * 10.0;
         }
         let mut food_to_add_scaled = food_to_add;
-        let mut tax_scaled = player_tax;
+        let mut tax_scaled = (player_tax / 1000.0) * map.base_buyin;
         if player_buyin <= map.base_buyin {
             food_to_add_scaled = food_to_add / map.base_buyin * player_buyin;
-            tax_scaled = player_tax / 1000.0 * player_buyin;
+            tax_scaled = (player_tax / 1000.0) * player_buyin;
         }
 
         player.tax = tax_scaled;
-        let updated_queue = map.food_queue + food_to_add_scaled as u16;
+        let updated_queue = map.food_queue + food_to_add_scaled as u64;
         map.food_queue = updated_queue;
         map.total_active_buyins = map.total_active_buyins + player_buyin;
-        
-        players.playerkeys.push(authority);
-        
+                
         Ok(ctx.accounts)
     }
 
@@ -111,11 +105,11 @@ pub mod spawn_player {
     pub struct Components {
         pub player: Player,
         pub map: Map,
-        pub players: Players,
     }
 
     #[arguments]
     struct Args {
         name: String,
     }
+    
 }

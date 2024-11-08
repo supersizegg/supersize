@@ -837,54 +837,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "buy-inb"
-version = "0.1.10"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "anteroom",
- "bolt-lang",
- "player",
- "serde",
-]
-
-[[package]]
-name = "buy-inc"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "anteroom",
- "bolt-lang",
- "player",
- "serde",
-]
-
-[[package]]
-name = "buy-ind"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "anteroom",
- "bolt-lang",
- "player",
- "serde",
-]
-
-[[package]]
-name = "buy-ine"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "anteroom",
- "bolt-lang",
- "player",
- "serde",
-]
-
-[[package]]
 name = "bv"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -933,30 +885,6 @@ dependencies = [
 [[package]]
 name = "cash-out"
 version = "0.1.10"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "anteroom",
- "bolt-lang",
- "player",
- "serde",
-]
-
-[[package]]
-name = "cash-outb"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "anteroom",
- "bolt-lang",
- "player",
- "serde",
-]
-
-[[package]]
-name = "cash-outc"
-version = "0.1.8"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1208,29 +1136,6 @@ dependencies = [
  "bolt-lang",
  "map",
  "player",
- "players",
- "serde",
-]
-
-[[package]]
-name = "eat-playerb"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "bolt-lang",
- "map",
- "player",
- "serde",
-]
-
-[[package]]
-name = "eat-playerc"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "bolt-lang",
- "map",
- "player",
  "serde",
 ]
 
@@ -1333,18 +1238,6 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 [[package]]
 name = "exit-game"
 version = "0.1.10"
-dependencies = [
- "anchor-lang",
- "bolt-lang",
- "map",
- "player",
- "players",
- "serde",
-]
-
-[[package]]
-name = "exit-gameb"
-version = "0.1.8"
 dependencies = [
  "anchor-lang",
  "bolt-lang",
@@ -1535,23 +1428,12 @@ dependencies = [
 
 [[package]]
 name = "init-player"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "bolt-lang",
- "map",
- "player",
- "serde",
-]
-
-[[package]]
-name = "init-players"
 version = "0.1.10"
 dependencies = [
  "anchor-lang",
  "bolt-lang",
  "map",
- "players",
+ "player",
  "serde",
 ]
 
@@ -1879,14 +1761,6 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "player"
-version = "0.1.10"
-dependencies = [
- "anchor-lang",
- "bolt-lang",
-]
-
-[[package]]
-name = "players"
 version = "0.1.10"
 dependencies = [
  "anchor-lang",
@@ -2550,29 +2424,6 @@ dependencies = [
 [[package]]
 name = "spawn-player"
 version = "0.1.10"
-dependencies = [
- "anchor-lang",
- "bolt-lang",
- "map",
- "player",
- "players",
- "serde",
-]
-
-[[package]]
-name = "spawn-playerb"
-version = "0.1.8"
-dependencies = [
- "anchor-lang",
- "bolt-lang",
- "map",
- "player",
- "serde",
-]
-
-[[package]]
-name = "spawn-playerc"
-version = "0.1.8"
 dependencies = [
  "anchor-lang",
  "bolt-lang",

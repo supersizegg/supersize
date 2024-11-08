@@ -1,6 +1,6 @@
 [package]
 name = "init-player"
-version = "0.1.8"
+version = "0.1.10"
 description = "Created with Bolt"
 edition = "2021"
 

@@ -38,16 +38,15 @@ import {WalletNotConnectedError} from '@solana/wallet-adapter-base';
 import * as anchor from "@coral-xyz/anchor";
 const bs58 = require('bs58');
 
-const FOOD_COMPONENT = new PublicKey("Dnh8jDMM6HDY1bXHt55Fi2yKfUPiu4TMhAJiotfb4oHq"); //2D7pVfWpF8NAqBFJQ5FHfMLzQR2wRZk8dRUf5SV1Hw5N, DEmfhh4qTaeXsJztECTtiU61m5ygTGrQPC4CnvQwqnVA
-const MAP_COMPONENT = new PublicKey("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb"); //73x8SGXgkhk84Yk943eJRAVAW3yGoQz5m1Q2sb2THLsA, 6YbpcyDerGUMFXnW8rAP6rg7Xknp3knLeXLmZNpVgCzv
-const PLAYER_COMPONENT = new PublicKey("2ewyq31Atu7yLcYMg51CEa22HmcCSJwM4jjHH8kKVAJw");  //39c3gAHBe74wPgfhP5wBRCdcNHuMBY53awGBBjJUeWSw, Hc3Mh3NYXrEy8yHdLXeCmejFtr8e98AE9j3NApkZv7Yf
-//const PLAYERS_COMPONENT = new PublicKey("DM7jvvNssHqKjKXsSoJjrzAQXp9X8rTCDFskyGAjSXQB"); //DSjd5Y9zWmfXmnhm9vdzqAR1HvbaTs45ueo15SRsAoUq, AjK6CRGGmcVSvcCd7PQZJuPqewjoqRtLxno8qvhuTCQR
-const ANTEROOM_COMPONENT = new PublicKey("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW");  //6PWyQF9YxtQLCZeYtJhPftVg4qXv2pHGyT5NteJVjacJ, 334RfoujN9JQqxXQ3Cx4ZW9Xs6QnoiPm4eQE94XKxrXn
+const FOOD_COMPONENT = new PublicKey("BEox2GnPkZ1upBAdUi7FVqTstjsC4tDjsbTpTiE17bah"); 
+const MAP_COMPONENT = new PublicKey("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb"); 
+const PLAYER_COMPONENT = new PublicKey("2ewyq31Atu7yLcYMg51CEa22HmcCSJwM4jjHH8kKVAJw");  
+const ANTEROOM_COMPONENT = new PublicKey("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW"); 
 
-const INIT_ANTEROOM = new PublicKey("DbKbkJC5Dw6RvQUkaM4CH7Z5hTcWGP51t7hZ3Hu42rXp"); //5oEk3USUXwmriWFsH5cKzyfmbetYuWvRQpk4ZTzdqs47, 9rcYNGJ2xmAtdSDfXM86DhGxKxLmigYKChScFT1R2QE3
-const INIT_GAME = new PublicKey("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");  //68caW8nVmZnUSunBotTTM5wuYQ3aymEsEHuTnsXgec65, 3afF5EsmrUyzAukV5gK8VcCtHFaroEigQC5LZtSLSooQ
-const INIT_PLAYER = new PublicKey("58N5j49P3u351T6DSFKhPeKwBiXGnXwaYE1nWjtVkRZQ"); //84UTvkLscZVoznsgC4ppfQ3xSjBxod617g1nwTqEiMLM, 4Viwh8k4jYCuxWF1ogTA484y4UaTspbFhBph9UhJ2o4A
-const INIT_FOOD = new PublicKey("3YdRbDukWkyE2tBPoUhPSJzB1MCE1gKnoNjx5WdEq6aE"); //6vFNtK3uopAUxJ4AhXbsfKyb9JZPkKnPvkFXEpUwNSEc, 57ZASAqcrm2ErhB9cJ5eBJWNWxu2B7xiy1BqMwYN6ywT
+const INIT_ANTEROOM = new PublicKey("AxmRc9buNLgWVMinrH2WunSxKmdsBXVCghhYZgh2hJT6");
+const INIT_GAME = new PublicKey("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");  
+const INIT_PLAYER = new PublicKey("58N5j49P3u351T6DSFKhPeKwBiXGnXwaYE1nWjtVkRZQ"); 
+const INIT_FOOD = new PublicKey("4euz4ceqv5ugh1x6wZP3BsLNZHqBxQwXcK59psw5KeQw"); 
 
 type ActiveGame = {
     worldPda: PublicKey;
@@ -67,12 +66,14 @@ interface GameComponentProps {
     isSubmitting: Boolean;
     newGameCreated: ActiveGame | null;
     activeGames: ActiveGame[];
+    gamewallet: string;
     setTransactionError: SetState<string | null>;
     setTransactionSuccess: SetState<string | null>;
     setIsSubmitting: SetState<boolean>;
     setActiveGames: SetState<ActiveGame[]>;
     setbuildViewerNumber: SetState<number>;
     setNewGameCreated: SetState<ActiveGame | null>;
+    setGameWallet: SetState<string>;
 }
 
 type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
@@ -86,12 +87,14 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
     isSubmitting, 
     newGameCreated,
     activeGames,
+    gamewallet,
     setTransactionError,
     setTransactionSuccess,
     setIsSubmitting,
     setActiveGames,
     setbuildViewerNumber,
     setNewGameCreated,
+    setGameWallet,
 }) => {
     const { publicKey, sendTransaction } = useWallet(); 
     const [panelContent, setPanelContent] = useState<JSX.Element | null>(null);
@@ -165,19 +168,31 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         return null;
     }, [connection, isSubmitting, sendTransaction]);
 
+    function getTopLeftCorner(index: number, mapSize: number): { x: number, y: number } {
+        const sectionSize = 1000; 
+        const sectionsPerRow = mapSize / sectionSize; 
+        const mapSectionCount = sectionsPerRow * sectionsPerRow;
+        const wrappedIndex = index % mapSectionCount;
+        const row = Math.floor(wrappedIndex / sectionsPerRow);
+        const col = wrappedIndex % sectionsPerRow;
+        const x = col * sectionSize;
+        const y = row * sectionSize;
+    
+        return { x, y };
+    }
+
     /**
      * Create a new game transaction
      */
     const newGameTx = useCallback(async (game_size: number, max_buyin: number, min_buyin: number, game_owner_wallet_string: string, game_token_string: string, game_name: string) => {
         if (!publicKey) throw new WalletNotConnectedError();
-        //await sendSol(playerKey);
         const base_buyin = Math.sqrt(max_buyin * min_buyin);
         const max_multiple = max_buyin / base_buyin;
-        const min_multiple = min_buyin / base_buyin;
+        const min_multiple = base_buyin / min_buyin;
         if (max_multiple > 10 || min_multiple > 10) {
             throw new Error("Min-Max buy-in spread too large (max 100x).");
         }
-
+        console.log(min_multiple, max_multiple, base_buyin)
         let maxplayer = 20;
         let foodcomponents = 32;
         let cost = 0.4;
@@ -188,7 +203,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         }
         if(game_size==6000){
             maxplayer=40;
-            foodcomponents = 64;
+            foodcomponents = 72;
             cost = 0.8;
         }
         if(game_size==10000){
@@ -257,7 +272,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             payer:  playerKey, 
             connection: connection,
           });
-        const txSign = await submitTransaction(initNewWorld.transaction, "confirmed", true);  //submitTransactionUser(initNewWorld.transaction); 
+        const txSign = await submitTransaction(initNewWorld.transaction, "confirmed", true);  
         const worldPda = initNewWorld.worldPda;
         console.log(
             `World entity signature: ${txSign}`
@@ -278,7 +293,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             { extraSeed: mapseed }
         )
         const transaction = new anchor.web3.Transaction().add(addMapEntityIx);
-        const signaturemap = await submitTransaction(transaction, "confirmed", true); //await submitTransactionUser(transaction);
+        const signaturemap = await submitTransaction(transaction, "confirmed", true); 
         console.log(
             `Map entity signature: ${signaturemap}`
         );
@@ -310,12 +325,9 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         
             transactionfood.add(addEntityIx);
         
-            // Submit the transaction in batches of 16
             if (i % batchSize === 0 || i === totalEntities) {
-                const signaturefood = await submitTransaction(transactionfood, "confirmed", true); //await submitTransactionUser(transactionfood);
+                const signaturefood = await submitTransaction(transactionfood, "confirmed", true); 
                 console.log(`Food entity batch signature: ${signaturefood}`);
-        
-                // Reset transaction for the next batch
                 transactionfood = new Transaction();
             }
         }
@@ -348,12 +360,10 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         
             playercomponentstransaction.add(addEntityIx);
         
-            // Submit the transaction in batches of 16
             if (i % playerBatchSize === 0 || i === totalPlayers) {
-                const signatureplayerscomponents = await submitTransaction(playercomponentstransaction, "confirmed", true); //await submitTransactionUser(playercomponentstransaction);
+                const signatureplayerscomponents = await submitTransaction(playercomponentstransaction, "confirmed", true);
                 console.log(`Player entity batch signature: ${signatureplayerscomponents}`);
         
-                // Reset transaction for the next batch
                 playercomponentstransaction = new anchor.web3.Transaction();
             }
         }
@@ -394,10 +404,8 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
 
         const initbatchSize = 10;        
         for (let i = 0; i < newfoodEntityPdas.length; i += initbatchSize) {
-            // Create a new transaction for each batch of 10
             const initfoodcomponenttransaction = new anchor.web3.Transaction();
         
-            // Process up to `batchSize` items in each transaction
             const batch = newfoodEntityPdas.slice(i, i + initbatchSize);
             for (const foodPda of batch) {
                 const initComponent = await InitializeComponent({
@@ -409,16 +417,13 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 newfoodComponentPdas.push(initComponent.componentPda);
             }
         
-            // Submit the transaction for the current batch
             const signature1food = await submitTransaction(initfoodcomponenttransaction, "confirmed", true);  //await submitTransactionUser(initfoodcomponenttransaction);
             console.log(`Init food component signature for batch: ${signature1food}`);
         }
 
         for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSize) {
-            // Create a new transaction for each batch of 10
             const initplayerscomponenttransaction = new anchor.web3.Transaction();
         
-            // Process up to `playerBatchSize` items in each transaction
             const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSize);
             for (const playerPda of playerBatch) {
                 const initPlayerComponent = await InitializeComponent({
@@ -430,7 +435,6 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 newplayerComponentPdas.push(initPlayerComponent.componentPda);
             }
         
-            // Submit the transaction for the current batch
             const signature1players = await submitTransaction(initplayerscomponenttransaction, "confirmed", true); //await submitTransactionUser(initplayerscomponenttransaction);
             console.log(`Init players component signature for batch: ${signature1players}`);
         }
@@ -447,18 +451,15 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             `Init anteroom component signature: ${signature1ante}`
         );
 
-        //set up vault
-        //const decimals = 9;
-        let vault_program_id = new PublicKey("Fd4CtjtcwwkES5rdeiMaYxJUaQYkGXD4dkNku9ik5PKk");
-        //let mint_of_token = new PublicKey("AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp");
+        let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
         let map_component_id = initMapIx.componentPda;
         console.log('map component', map_component_id)
         let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("token_account_owner_pda"), map_component_id.toBuffer()],
         vault_program_id
         );
-        //const owner_token_account = new PublicKey("BDcjDpR9i62tqxVCB62fpa37kvcAWeciWQC2VfUjXvZu");
         const tokenVault = await getAssociatedTokenAddress(mint_of_token, tokenAccountOwnerPda, true);
+        setGameWallet(tokenAccountOwnerPda.toString());
         const createTokenAccountTx = createAssociatedTokenAccountInstruction(
             playerKey,
             tokenVault,
@@ -467,7 +468,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         );
         const combinedTx = new Transaction()
         .add(createTokenAccountTx); 
-        const createvaultsig = await submitTransaction(combinedTx, "confirmed", true); //await submitTransactionUser(combinedTx);
+        const createvaultsig = await submitTransaction(combinedTx, "confirmed", true); 
         console.log(
             `Created pda + vault signature: ${createvaultsig}`
         );
@@ -486,25 +487,26 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             args: {
                 name:game_name,
                 size: game_size,
-                entry_fee: 1.0,
-                entry_fee_upper_bound_mul: 10,
-                entry_fee_lower_bound_mul: 100,
-                frozen: true,
+                entry_fee: base_buyin,
+                entry_fee_upper_bound_mul: max_multiple,
+                entry_fee_lower_bound_mul: min_multiple,
+                frozen: false,
             },
           });
           inittransaction.add(initGame.transaction);
-          const signatureinitgame = await submitTransaction(inittransaction, "confirmed", true);  //await submitTransactionUser(inittransaction); 
+          const signatureinitgame = await submitTransaction(inittransaction, "confirmed", true);  
           console.log(
               `Init func game signature: ${signatureinitgame}`
           );
 
-          for (let i = 0; i < newfoodEntityPdas.length; i += initbatchSize) {
-            // Create a new transaction for each batch of 10
-            const initfoodtransaction = new anchor.web3.Transaction();
-        
-            // Process up to `foodBatchSize` items in each transaction
-            const foodBatch = newfoodEntityPdas.slice(i, i + initbatchSize);
+          let overallIndex = 0;
+          let initFoodBatchSize = 5;
+          for (let i = 0; i < newfoodEntityPdas.length; i += initFoodBatchSize) {
+            const initfoodtransaction = new anchor.web3.Transaction();        
+            const foodBatch = newfoodEntityPdas.slice(i, i + initFoodBatchSize);
             for (const foodPda of foodBatch) {
+                const { x, y } = getTopLeftCorner(overallIndex, game_size);
+                console.log(`Coordinates for foodPda at index ${overallIndex}: (${x}, ${y})`);        
                 const initFood = await ApplySystem({
                     authority: playerKey,
                     world: worldPda,
@@ -519,21 +521,22 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                         },
                     ],
                     systemId: INIT_FOOD,
+                    args: {
+                        top_left_x:x,
+                        top_left_y: y,
+                    },
                 });
                 initfoodtransaction.add(initFood.transaction);
+                overallIndex = overallIndex + 1;
             }
         
-            // Submit the transaction for the current batch
             const signatureinitfood = await submitTransaction(initfoodtransaction, "confirmed", true); //await submitTransactionUser(initfoodtransaction);
             console.log(`Init func food signature for batch: ${signatureinitfood}`);
         }
 
 
         for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSize) {
-            // Create a new transaction for each batch of 10
-            const initplayertransaction = new anchor.web3.Transaction();
-        
-            // Process up to `playerBatchSize` items in each transaction
+            const initplayertransaction = new anchor.web3.Transaction();        
             const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSize);
             for (const playerPda of playerBatch) {
                 const initPlayer = await ApplySystem({
@@ -554,7 +557,6 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 initplayertransaction.add(initPlayer.transaction);
             }
         
-            // Submit the transaction for the current batch
             const signatureplayerdinited = await submitTransaction(initplayertransaction, "confirmed", true); //await submitTransactionUser(initplayertransaction);
             console.log(`Init func players signature for batch: ${signatureplayerdinited}`);
             }
@@ -600,42 +602,22 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
         );
         let delbatchSize = 5;
         for (let i = 0; i < newfoodEntityPdas.length; i += delbatchSize) {
-            // Create a new transaction for each batch of 10
             const playertx = new anchor.web3.Transaction();
         
-            // Process up to `delegationBatchSize` items in each transaction
             const batch = newfoodEntityPdas.slice(i, i + delbatchSize);
             batch.forEach((foodEntityPda, index) => {
                 const fooddelegateIx = createDelegateInstruction({
                     entity: foodEntityPda,
-                    account: newfoodComponentPdas[i + index], // Adjust index to get the correct component
+                    account: newfoodComponentPdas[i + index],
                     ownerProgram: FOOD_COMPONENT,
                     payer: playerKey,
                 });
                 playertx.add(fooddelegateIx);
             });
         
-            // Submit the transaction for the current batch
             const delsignature2 = await submitTransaction(playertx, "confirmed", true);
             console.log(`Delegation signature food for batch: ${delsignature2}`);
         }
-
-        /*const realplayertx = new anchor.web3.Transaction();
-
-        newplayerEntityPdas.forEach((playerEntityPda, index) => {
-            const playerdelegateIx = createDelegateInstruction({
-                entity: playerEntityPda,
-                account: newplayerComponentPdas[index],
-                ownerProgram: PLAYER_COMPONENT,
-                payer: playerKey,
-                });
-                realplayertx.add(playerdelegateIx);
-        });
-        
-        const delsignature3 = await submitTransaction(realplayertx, "confirmed", true);
-        console.log(
-            `Delegation signature players: ${delsignature3}`
-        );*/
 
         if (delsignature != null) {
             const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: maxplayer, size: game_size}
@@ -666,11 +648,11 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                     <div style={{ marginTop: "2vw", width: "60%" }}>
                     <h1 style={{ margin: "2vw", marginLeft:"4vw", fontFamily: "conthrax", fontSize: "36px" }}>Earn Fees</h1>
                     <p style={{ marginLeft: "4vw", fontFamily: "terminus", fontSize: "20px", width: "80%" }}>
-                      Supersize will be playable using SPL tokens. For paid games, a fee will be charged on each player buy-in. 
-                      The game owner will recieve the majority of game fees. Fees accumulate in each game’s chosen SPL token.
+                      Supersize will be playable using SPL tokens.
+                      The game owner recieves a 1% fee charged on each player exit. Fees accumulate in each game’s chosen SPL token.
                     </p>
                     </div>
-                    <img src={`${process.env.PUBLIC_URL}/Group6.png`} width="100vw" height="auto" alt="Image" style={{ width: "25vw",height: "25vw", marginRight:"1vw", alignSelf:"center" }}/>
+                    <img src={`${process.env.PUBLIC_URL}/Group7.png`} width="100vw" height="auto" alt="Image" style={{ width: "25vw",height: "25vw", marginRight:"1vw", alignSelf:"center" }}/>
                   </div>
                 );
               case 3:
@@ -683,9 +665,9 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                       <br /><br />
                     </p>
                     <div style={{display: "flex", flexDirection:"column", marginLeft:"2vw", marginTop:"1vw"}}>
-                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/Logomark_white.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"20px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://docs.magicblock.gg/Forever%20Games', '_blank');}}> docs.magicblock.gg/Forever%20Games </a></div>
-                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/GitBook.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"10px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://docs.supersize.app', '_blank');}}> docs.supersize.app</a></div>
-                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/github-mark-white.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"10px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://github.com/magicblock-labss', '_blank');}}> github.com/magicblock-labs </a></div>
+                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/Logomark_white.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"20px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://docs.magicblock.gg/Forever%20Games', '_blank');}}> docs.magicblock.gg </a></div>
+                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/GitBook.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"10px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://docs.supersize.gg', '_blank');}}> docs.supersize.gg</a></div>
+                    <div style={{display: "flex", flexDirection:"row", color:"white", alignItems:"center"}}><img style={{marginTop:"1vw"}} src={`${process.env.PUBLIC_URL}/github-mark-white.png`} width="30vw" height="auto" alt="Image" /> <a style={{marginTop:"10px", marginLeft:"1vw", cursor:"pointer"}} onClick={() => {window.open('https://github.com/Lewarn00/supersize-solana/', '_blank');}}> github.com/supersize-solana </a></div>
                     </div>
                   </div>
                 );
@@ -742,9 +724,10 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                                 <br />
                             <span style={{ opacity: "0.7" }}>
                               Deploying a game generates a new Supersize world that lives forever and is owned by you. 
+                              100% of tokens sent to your game wallet fund player incentives.
                             </span>
                             <br /><br />
-                             <span className="free-play" style={{display:newGameCreated?'flex':'none', width: 'fit-content', padding:"10px", fontSize:"15px", marginTop:"1vh"}}>New Game ID: {newGameCreated?.worldId.toString()}</span>
+                             <span className="free-play" style={{display:newGameCreated?'flex':'none', width: 'fit-content', padding:"10px", fontSize:"15px", marginTop:"1vh"}}>New Game ID: {newGameCreated?.worldId.toString()}, Game Wallet: {gamewallet}</span>
                           </p>
                         </div>
                         <div style={{ marginRight: "1.5vw", marginTop:"1vw" }}>

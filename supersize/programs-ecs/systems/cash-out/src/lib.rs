@@ -3,7 +3,7 @@ use anteroom::Anteroom;
 use player::Player;
 use anchor_spl::token::{TokenAccount, Transfer};
 
-declare_id!("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS");
+declare_id!("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
 
 #[error_code]
 pub enum SupersizeError {
@@ -54,8 +54,8 @@ pub mod cash_out {
         let vault_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
             &mut (ctx.vault_token_account()?.to_account_info().data.borrow()).as_ref()
         )?;
-        let exit_pid: Pubkey = pubkey!("HnT1pk8zrLfQ36LjhGXVdG3UgcHQXQdFxdAWK26bw5bS"); 
-        let map_pubkey = ctx.accounts.anteroom.map.expect("Expected map Pubkey to be Some");
+        let exit_pid: Pubkey = pubkey!("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr"); 
+        let map_pubkey = ctx.accounts.anteroom.map.expect("Anteroom map key not set");
         let token_account_owner_pda_seeds = &[b"token_account_owner_pda", map_pubkey.as_ref()];
         let (derived_token_account_owner_pda, bump) = Pubkey::find_program_address(token_account_owner_pda_seeds, &exit_pid);
         
@@ -91,9 +91,9 @@ pub mod cash_out {
         let decimals = ctx.accounts.anteroom.token_decimals.ok_or(SupersizeError::MissingTokenDecimals)?;
         let scale_factor = 10_u64.pow(decimals);
         let final_score = ctx.accounts.player.score;
-        let player_amount = (final_score * 95.0) / 100.0;
-        let game_owner_amount = (final_score * 2.0) / 100.0;
-        let supersize_amount = (final_score * 3.0) / 100.0;
+        let player_amount = (final_score * 98.0) / 100.0;
+        let game_owner_amount = (final_score * 1.0) / 100.0;
+        let supersize_amount = (final_score * 1.0) / 100.0;
         let scaled_final_score = (player_amount * scale_factor as f64).round() as u64;  
         let scaled_game_owner_amount = (game_owner_amount * scale_factor as f64).round() as u64;  
         let scaled_supersize_amount = (supersize_amount * scale_factor as f64).round() as u64;  
@@ -139,8 +139,8 @@ pub mod cash_out {
 
         let player = &mut ctx.accounts.player;
         player.score = 0.0;
+        player.tax = 0.0;
         player.authority = None;
-        player.map = None;
         player.payout_token_account = None;
 
         Ok(ctx.accounts)

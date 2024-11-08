@@ -1,9 +1,8 @@
 use bolt_lang::*;
 use player::Player;
 use map::Map;
-use players::Players;
 
-declare_id!("8Gm1Lz8L4dAEypGyctPVnT7p9Y5NapQKvhLdE9dGQLKA");
+declare_id!("F6rDhVKjVTdGKdxEK9UWfFDcxeT3vFbAckX6U2aWeEKZ");
 
 #[error_code]
 pub enum SupersizeError {
@@ -14,7 +13,9 @@ pub enum SupersizeError {
     #[msg("Player authority not found.")]
     AuthorityNotFound,
     #[msg("Player just spawned, 5 second invincibility.")]
-    JustSpawned,
+    OpponentJustSpawned,
+    #[msg("You just spawned, can't eat yet.")]
+    YouJustSpawned,
     #[msg("Component doesn't belong to map.")]
     MapKeyMismatch,
 }
@@ -24,14 +25,12 @@ pub mod eat_player {
 
     pub fn execute(ctx: Context<Components>, _args_p: Vec<u8>) -> Result<Components> {
         let map = &mut ctx.accounts.map;
-        let players = &mut ctx.accounts.players;
         let player1 = &mut ctx.accounts.player1;
         let player2 = &mut ctx.accounts.player2;
         let authority = *ctx.accounts.authority.key;
 
-        require!(map.key() == player1.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
-        require!(map.key() == player2.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
-        require!(map.key() == players.map.expect("players map key not set"), SupersizeError::MapKeyMismatch);
+        require!(map.key() == player1.map.expect("Player map key not set"), SupersizeError::MapKeyMismatch);
+        require!(map.key() == player2.map.expect("Player map key not set"), SupersizeError::MapKeyMismatch);
 
         let player_authority = match player1.authority {
             Some(authority) => authority,  
@@ -48,9 +47,9 @@ pub mod eat_player {
 
         let current_timestamp = Clock::get()?.unix_timestamp;
         let time_passed : i64 = current_timestamp - player2.join_time;
-        require!(time_passed >= 5, SupersizeError::JustSpawned);
+        require!(time_passed >= 5, SupersizeError::OpponentJustSpawned);
         let time_passed_me : i64 = current_timestamp - player1.join_time;
-        require!(time_passed_me >= 5, SupersizeError::JustSpawned);
+        require!(time_passed_me >= 5, SupersizeError::YouJustSpawned);
         
         let player_mass = player1.mass as f64 / 10.0;
         let player_radius = 4.0 + player_mass.sqrt() * 6.0;
@@ -64,30 +63,27 @@ pub mod eat_player {
                 let distance = (((dx as f64).powf(2.0) + (dy as f64).powf(2.0))).sqrt();
                 if distance < player_radius && player_mass > player2.mass as f64 * 0.105{
 
-                    if let Some(pos) = players.playerkeys.iter().position(|key| *key == player2_authority) {
-                        players.playerkeys.remove(pos);
+                    player1.score += player2.score;
+                    player1.mass = (player1.score * 1000.0 / map.base_buyin as f64).ceil() as u64;
 
-                        player1.score += player2.score;
-                        player1.mass = (player1.score * 1000.0 / map.base_buyin as f64).ceil() as u64;
-
-                        map.total_active_buyins = map.total_active_buyins  - player2.buy_in;
-                        
-                        player2.authority = None;
-                        player2.map = None;
-                        player2.buy_in = 0.0;
-                        player2.payout_token_account = None;
-                        player2.current_game_wallet_balance = 0.0;
-                        player2.x = 50000;
-                        player2.y = 50000;
-                        player2.target_x = None;
-                        player2.target_y = None;
-                        player2.score = 0.0;
-                        player2.mass = 0;
-                        player2.speed = 0.0;  
-                        player2.join_time = 0; 
-                        player2.scheduled_removal_time = None;
-                        player2.boost_click_time = None;
-                    }
+                    map.total_active_buyins = map.total_active_buyins  - player2.buy_in;
+                    
+                    player2.authority = None;
+                    player2.buy_in = 0.0;
+                    player2.payout_token_account = None;
+                    player2.current_game_wallet_balance = 0.0;
+                    player2.x = 50000;
+                    player2.y = 50000;
+                    player2.target_x = None;
+                    player2.target_y = None;
+                    player2.score = 0.0;
+                    player2.tax = 0.0;
+                    player2.mass = 0;
+                    player2.speed = 0.0;  
+                    player2.join_time = 0; 
+                    player2.scheduled_removal_time = None;
+                    player2.boost_click_time = None;
+                    
                 
                 }
             }
@@ -101,7 +97,5 @@ pub mod eat_player {
         pub player1: Player,
         pub player2: Player,
         pub map: Map,
-        pub players: Players,
     }
-
 }

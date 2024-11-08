@@ -1,16 +1,15 @@
 use bolt_lang::*;
 use player::Player;
-use players::Players;
 use map::Map;
 
-declare_id!("5hVB37dXEFmEvtu2TST8iXAxvd8VXq3JQmGGLNprMVyo");
+declare_id!("wdH5MUvXcyKM58yffCxhRQfB5jLQHpnWZhhdYhLCThf");
 
 #[error_code]
 pub enum SupersizeError {
+    #[msg("Not owner of this player.")]
+    NotOwner,
     #[msg("Player not in game.")]
     NotInGame,
-    #[msg("Player not in given players componenet.")]
-    NotInPlayers,
     #[msg("Component doesn't belong to map.")]
     MapKeyMismatch,
 }
@@ -21,18 +20,12 @@ pub mod exit_game {
     pub fn execute(ctx: Context<Components>, _args_p: Vec<u8>) -> Result<Components> {  
 
         let player = &mut ctx.accounts.player;
-        let players = &mut ctx.accounts.players;
         let authority = *ctx.accounts.authority.key;
         let map = &mut ctx.accounts.map;
 
-        require!(player.authority == Some(authority), SupersizeError::NotInGame);
+        require!(player.authority == Some(authority), SupersizeError::NotOwner);
         require!(player.mass != 0, SupersizeError::NotInGame);
-        require!(map.key() == player.map.expect("player map key not set"), SupersizeError::MapKeyMismatch);
-        require!(map.key() == players.map.expect("players map key not set"), SupersizeError::MapKeyMismatch);
-
-        if !players.playerkeys.iter().any(|key| *key == authority) {
-            return Err(SupersizeError::NotInPlayers.into());
-        }
+        require!(map.key() == player.map.expect("Player map key not set"), SupersizeError::MapKeyMismatch);
         
         let current_timestamp = Clock::get()?.unix_timestamp;
 
@@ -62,14 +55,7 @@ pub mod exit_game {
                     player.current_game_wallet_balance = 0.0; 
                     player.join_time = 0; 
                     player.scheduled_removal_time = None;
-                    player.boost_click_time = None;
-
-                    if let Some(pos) = players.playerkeys.iter().position(|player| *player == authority) {
-                        players.playerkeys.remove(pos);
-                    }
-                    else{
-                        return Err(SupersizeError::NotInPlayers.into());
-                    } 
+                    player.boost_click_time = None; 
                 }
                 else{
                     player.scheduled_removal_time = None;
@@ -87,7 +73,6 @@ pub mod exit_game {
     pub struct Components {
         pub player: Player,
         pub map: Map,
-        pub players: Players,
     }
 
 }
