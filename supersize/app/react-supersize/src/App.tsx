@@ -39,6 +39,7 @@ import {Connection,
     SystemInstruction, 
     AccountInfo, 
     Commitment, 
+    ComputeBudgetProgram,
     PublicKey} from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import {Idl, Program, Provider, Wallet, AnchorProvider} from "@coral-xyz/anchor";
@@ -58,6 +59,7 @@ import {
   } from "@solana/spl-token";
 import { LIQUIDITY_STATE_LAYOUT_V4 } from "@raydium-io/raydium-sdk";
 import { set } from "@metaplex-foundation/beet";
+import * as crypto from 'crypto-js';
 
 const bs58 = require('bs58');
 
@@ -104,24 +106,34 @@ type ActiveGame = {
     active_players: number;
     max_players: number;
     size: number;
+    image: string;
+    token: string;
   };
 
 const App: React.FC = () => {
     //let { connection } =  useConnection();
-    const  connection =  new Connection("https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+    //const  connection =  new Connection("https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+    const  connection =  new Connection("https://staked.helius-rpc.com?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
     const { publicKey, sendTransaction } = useWallet(); 
     let userKey = publicKey;
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(null);
     const [exitTxn, setExitTxn] = useState<string>('');
-    const endpoints = [
+    /*const endpoints = [
         "https://supersize-fra.magicblock.app",
         "https://supersize.magicblock.app",
         "https://supersize-sin.magicblock.app",
       ];
+    */
+    const endpoints = [
+      "https://supersize-mainnet.magicblock.app",
+      "https://supersize-mainnet-bos.magicblock.app",
+      "https://supersize-mainnet-sin.magicblock.app",
+    ];
       
     const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
     const [enpointDone, setEndpointDone] = useState<boolean>(false);
-    const [wallet] = useState<Keypair>(() => Keypair.generate());
+    //const [wallet] = useState<Keypair>(() => Keypair.generate());
+    const [wallet, setWallet] = useState<Keypair>(Keypair.generate());
     const [playerKey, setPlayerKey] = useState<PublicKey>(wallet.publicKey);
     const walletRef = useRef<Keypair>(wallet);
     const [foodwallet] = useState<Keypair>(() => Keypair.generate());
@@ -151,19 +163,34 @@ const App: React.FC = () => {
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
     const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
-        "https://supersize-sin.magicblock.app": {
-          worldId: new anchor.BN(1355),
-          worldPda: new PublicKey('HfKR5HQupLdpnM7EREJPBK3nh13fRpe8ji61ParfTaVv'),
+        "https://supersize-mainnet-sin.magicblock.app": {
+          worldId: new anchor.BN(1),
+          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
         },
-        "https://supersize.magicblock.app": {
-          worldId: new anchor.BN(1339),
-          worldPda: new PublicKey('2tNAqh9kTgdVYS9eVFacVbAXgiwSL43k7bkJgCByoxky'),
+        "https://supersize-mainnet-bos.magicblock.app": {
+          worldId: new anchor.BN(2),
+          worldPda: new PublicKey('5Fj5HJud66muuDyateWdP2HAPkED7CnyApDQBMreVQQH'),
         },
-        "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1357),
-          worldPda: new PublicKey('6kofJDbfA4DCaX6D7ev2gKa67Ko9C8CioWbp8wdYzyy6'),
+        "https://supersize-mainnet.magicblock.app": {
+          worldId: new anchor.BN(3),
+          worldPda: new PublicKey('8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt'),
         },
       };
+      /*
+      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
+        "https://supersize-sin.magicblock.app": {
+          worldId: new anchor.BN(1),
+          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
+        },
+        "https://supersize.magicblock.app": {
+          worldId: new anchor.BN(1),
+          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
+        },
+        "https://supersize-fra.magicblock.app": {
+          worldId: new anchor.BN(1),
+          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
+        },
+      };*/
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [gamewallet, setGameWallet] = useState("");
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
@@ -217,7 +244,7 @@ const App: React.FC = () => {
 
    const SOL_USDC_POOL_ID = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2"; 
 
-   const provider = new anchor.AnchorProvider(
+   let provider = new anchor.AnchorProvider(
     connection,
     new NodeWallet(wallet),
     {
@@ -227,13 +254,66 @@ const App: React.FC = () => {
     );
 
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
-        new anchor.web3.Connection("https://supersize.magicblock.app", {
-        wsEndpoint: "wss://supersize.magicblock.app",
+        new anchor.web3.Connection("https://supersize-mainnet-sin.magicblock.app", {
+        wsEndpoint: "wss://supersize-mainnet-sin.magicblock.app",
         }),
         new NodeWallet(wallet) 
     ));
+    /*
+    const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
+        new anchor.web3.Connection("https://supersize-fra.magicblock.app", {
+        wsEndpoint: "wss://supersize-fra.magicblock.app",
+        }),
+        new NodeWallet(wallet) 
+    ));*/
 
     anchor.setProvider(provider);
+
+    useEffect(() => {
+        if (publicKey) {
+            const newWallet = deriveKeypairFromPublicKey(publicKey);
+            setWallet(newWallet);
+            setPlayerKey(newWallet.publicKey);
+            walletRef.current = newWallet;
+            if(fastestEndpoint){
+                const wsUrl = fastestEndpoint.replace("https", "wss");
+                providerEphemeralRollup.current = new anchor.AnchorProvider(
+                    new anchor.web3.Connection(fastestEndpoint, {
+                    wsEndpoint: wsUrl,
+                    }),
+                    new NodeWallet(newWallet)
+                );
+                provider = new anchor.AnchorProvider(
+                    connection,
+                    new NodeWallet(newWallet),
+                    {
+                        preflightCommitment: 'processed',
+                        commitment: 'processed',
+                    }
+                    );
+            }
+            console.log(newWallet, playerKey.toString());
+        }
+    }, [publicKey, savedPublicKey]);
+
+    useEffect(() => {
+        if (publicKey) {
+            setSavedPublicKey(publicKey); 
+        }
+    }, [publicKey]);
+
+    function deriveSeedFromPublicKey(userPublicKey: PublicKey): Uint8Array {
+        const salt = 'supersizeSalt'; 
+        const hash = crypto.SHA256(userPublicKey.toBuffer().toString() + salt);
+        const hashArray = new Uint8Array(Buffer.from(hash.toString(crypto.enc.Hex), 'hex'));
+        return hashArray.slice(0, 32); 
+    }
+    
+    function deriveKeypairFromPublicKey(userPublicKey: PublicKey): Keypair {
+        const seed = deriveSeedFromPublicKey(userPublicKey);
+        const keypair = Keypair.fromSeed(seed);
+        return keypair;
+    }
 
     const handleOptionClick = (option: any) => {
         setSelectedOption(option);
@@ -273,12 +353,6 @@ const App: React.FC = () => {
 
         checkEndpoints();
     }, []);
-  
-    useEffect(() => {
-    if (publicKey) {
-        setSavedPublicKey(publicKey); 
-    }
-    }, [publicKey]);
 
     useEffect(() => {
         if (buyIn > 10) {
@@ -301,7 +375,12 @@ const App: React.FC = () => {
     
         console.log('Updated providerEphemeralRollup:', providerEphemeralRollup.current);
         const { worldId, worldPda } = endpointToWorldMap[fastestEndpoint];
-        setActiveGames([{ worldId: worldId, worldPda: worldPda} as ActiveGame]);
+        //setActiveGames([{ worldId: worldId, worldPda: worldPda} as ActiveGame]);
+        const newGameInfo : ActiveGame = {worldId: worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:`${process.env.PUBLIC_URL}/token.png`, token:"LOADING"}
+        //setNewGameCreated(newGameInfo);
+        setActiveGames([newGameInfo]);
+        fetchAndLogMapData();
+        setOpenGameInfo(new Array(activeGames.length).fill(false));
         setEndpointDone(true);
         console.log(fastestEndpoint);
         }
@@ -459,6 +538,16 @@ const App: React.FC = () => {
             target_x: player.targetX,
             target_y: player.targetY,
             } as Blob);
+
+        if(Math.sqrt(player.mass) == 0 &&
+        player.x === 50000 &&
+        player.y === 50000 &&
+        player.score != 0.0
+        ){
+            setCashingOut(true);
+            setGameEnded(2);
+            setGameId(null);
+        }
     }, [setCurrentPlayer, playerKey, allFood]);
 
     useEffect(() => {
@@ -505,7 +594,7 @@ const App: React.FC = () => {
 
     const updateMap = useCallback((map: any) => {
         const playerArray = map.players as any[];
-        console.log(map); 
+        //console.log(map); 
         if(map.nextFood){
             if(map.nextFood.x !== nextFood.current.x || map.nextFood.y !== nextFood.current.y){
             //console.log('new food', map.nextFood, nextFood.current);
@@ -701,17 +790,33 @@ const App: React.FC = () => {
             }
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = walletRef.current.publicKey;
-            transaction.sign(walletRef.current);
+            //transaction.sign(walletRef.current);
 
+            /*const accountKeys = transaction.compileMessage().accountKeys;
+            const publicKeys = accountKeys.map(key => key.toBase58());
+            const feeEstimate = await getPriorityFeeEstimate("high", publicKeys);
+            console.log(feeEstimate);
+            const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+              microLamports: feeEstimate.priorityFeeEstimate,
+            });*/
+            //180025000, 
+            //1000001
+            //1000001
+            //transaction.add(computePriceIx);
+            transaction.sign(walletRef.current);
             const signature = await provider.connection.sendRawTransaction(transaction.serialize(), {
               skipPreflight: skipPre,
               preflightCommitment: commitmetLevel,
             });
+            console.log(signature);
             await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature }, commitmetLevel);
-
+            //const signature = await sendAndConfirmTransaction(connection, transaction, [
+            //    walletRef.current,
+            //]);
             setTransactionSuccess(`Transaction confirmed`);
             return signature; 
         } catch (error) {
+            console.log(error);
             setTransactionError(`Transaction failed: ${error}`);
         } finally {
             setIsSubmitting(false);
@@ -729,7 +834,7 @@ const App: React.FC = () => {
                 signature,
                 (result) => {
                     if (result.err) {
-                        console.error(`Error with signature ${signature}`, result.err);
+                        //console.error(`Error with signature ${signature}`, result.err);
                         reject(result.err);
                     } else {
                         setTimeout(() => resolve(), 1000); 
@@ -763,8 +868,8 @@ const App: React.FC = () => {
         transaction: Transaction,
         connection: anchor.web3.Connection,
         commitment: anchor.web3.Commitment,
-        maxRetries = 5,
-        delay = 1000 
+        maxRetries = 3,
+        delay = 2000 
     ): Promise<string | null> => {
         let attempts = 0;
         let signature: string | null = null;
@@ -786,7 +891,6 @@ const App: React.FC = () => {
             } catch (error) {
                 console.error(`Attempt ${attempts + 1} failed:`, error);
             }
-    
             attempts++;
             await new Promise((resolve) => setTimeout(resolve, delay));
         }
@@ -795,31 +899,47 @@ const App: React.FC = () => {
         return null; // Return null if all retries fail
     };
 
+    async function getPriorityFeeEstimate(priorityLevel : string, publicKeys : string[]) {
+        const response = await fetch("https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 'helius-example',
+            method: 'getPriorityFeeEstimate',
+            params: [
+            {
+                accountKeys: publicKeys,
+                options: {
+                recommended: true,
+                },
+            }
+            ],
+        }),
+        });
+        const data = await response.json();
+        console.log(
+          "Fee in function for",
+          priorityLevel,
+          " :",
+          data.result.priorityFeeEstimate
+        );
+        return data.result;
+      }
+
     /**
      * Create a new join game transaction
      */
     const joinGameTx = useCallback(async (selectGameId: ActiveGame) => {
         if (!playerKey) throw new WalletNotConnectedError();
         if (!publicKey) throw new WalletNotConnectedError();
-        if (isSubmitting) return null;
+        if (isSubmitting) return;
+        if (isJoining) return;
         setIsJoining(true);
         setScreenSize({width:selectGameId.size, height:selectGameId.size});
         const gameInfo = selectGameId; 
         let maxplayer=20;
         let foodcomponents = 32;
-        setMapSize(selectGameId.size);
-        if(selectGameId.size==4000){
-            maxplayer=20;
-            foodcomponents = 32;
-        }
-        else if(selectGameId.size==6000){
-            maxplayer=40;
-            foodcomponents = 64;
-        }
-        else if(selectGameId.size==10000){
-            maxplayer=100;
-            foodcomponents = 200;
-        }
 
         const mapseed = "origin"; 
         const mapEntityPda = FindEntityPda({
@@ -827,74 +947,39 @@ const App: React.FC = () => {
             entityId: new anchor.BN(0),
             seed: mapseed
         })
+
         const mapComponentPda = FindComponentPda({
             componentId: MAP_COMPONENT,
             entity: mapEntityPda,
         });
-        
-        const anteseed = "ante"; 
-        const anteEntityPda = FindEntityPda({
-            worldId: gameInfo.worldId,
-            entityId: new anchor.BN(0),
-            seed: anteseed
-        })
-        const anteComponentPda = FindComponentPda({
-            componentId: ANTEROOM_COMPONENT,
-            entity: anteEntityPda,
-        });
-        const anteComponentClient= await getComponentsClient(ANTEROOM_COMPONENT);
-        const anteacc = await provider.connection.getAccountInfo(
-            anteComponentPda, "processed"
+        let map_size = 4000;
+        const mapComponentClient = await getComponentsClient(MAP_COMPONENT);
+        const mapacc = await providerEphemeralRollup.current.connection.getAccountInfo(
+            mapComponentPda, "processed"
         );
-        
-        let token_account_owner_pda = new PublicKey(0);
-        let vault_token_account = new PublicKey(0);
-        let mint_of_token_being_sent = new PublicKey(0);
-        let sender_token_account = new PublicKey(0);
-        let payout_token_account = new PublicKey(0);
-        let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
-
-        if(anteacc){
-            const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
-            console.log(anteParsedData);
-            vault_token_account = anteParsedData.vaultTokenAccount;
-            mint_of_token_being_sent = anteParsedData.token;
-            let usertokenAccountInfo = await getAssociatedTokenAddress(
-                mint_of_token_being_sent,        
-                publicKey       
-              ); 
-            payout_token_account = usertokenAccountInfo;
-            const playerTokenAccount = await getAssociatedTokenAddress(mint_of_token_being_sent, playerKey);
-            sender_token_account = playerTokenAccount;
-            const createTokenAccountTx = createAssociatedTokenAccountInstruction(
-                    publicKey,
-                    playerTokenAccount,
-                    playerKey,
-                    mint_of_token_being_sent,
-            );
-            const transferIx = createTransferInstruction(
-                usertokenAccountInfo,
-                playerTokenAccount,
-                publicKey,
-                buyIn * 10 ** anteParsedData.tokenDecimals,
-                [],
-                splToken.TOKEN_PROGRAM_ID,
-            );
-            const soltransfertx = SystemProgram.transfer({
-                fromPubkey: publicKey,
-                toPubkey: playerKey,
-                lamports: 0.007 * LAMPORTS_PER_SOL, 
-            });
-            const combinedTx = new Transaction().add(soltransfertx)
-            .add(createTokenAccountTx).add(transferIx); 
-            const createwalletsig = await submitTransactionUser(combinedTx);
+        if(mapacc){
+            const mapParsedData = mapComponentClient.coder.accounts.decode("map", mapacc.data);
+            console.log('map size', mapParsedData.width)
+            map_size = mapParsedData.width;
+        }
+        setMapSize(map_size);
+        if(map_size==4000){
+            maxplayer=20;
+            foodcomponents = 16*5;
+        }
+        else if(map_size==6000){
+            maxplayer=40;
+            foodcomponents = 36*5;
+        }
+        else if(map_size==10000){
+            maxplayer=100;
+            foodcomponents = 100*5;
         }
 
         entityMatch.current = mapEntityPda;
         const foodEntityPdas: any[] = [];
-        let targetfoodid = 0;
-        let lowestfood = 100;
-        const foodComponentClient= await getComponentsClient(FOOD_COMPONENT);
+        console.log(foodcomponents)
+
         for (let i = 1; i < foodcomponents+1; i++) {
             const foodseed = 'food' + i.toString(); 
             const foodEntityPda =  FindEntityPda({
@@ -902,23 +987,7 @@ const App: React.FC = () => {
                 entityId: new anchor.BN(0),
                 seed: foodseed
             })
-            foodEntityPdas.push(foodEntityPda)
-
-            const foodComponentPda = FindComponentPda({
-                componentId: FOOD_COMPONENT,
-                entity: foodEntityPda,
-            });
-            const foodacc = await providerEphemeralRollup.current.connection.getAccountInfo(
-                foodComponentPda, "processed"
-            );
-            if(foodacc){
-                
-                const foodParsedData = foodComponentClient.coder.accounts.decode("section", foodacc.data);
-                if (foodParsedData.food.length < lowestfood){
-                    lowestfood= foodParsedData.food.length;
-                    targetfoodid = i-1;
-                }
-            }
+            foodEntityPdas.push(foodEntityPda);
         }
 
         const playerEntityPdas: any[] = [];
@@ -926,6 +995,8 @@ const App: React.FC = () => {
         const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
         let newplayerEntityPda : any = null;
         let myPlayerId = '';
+        let myPlayerStatus = 'new_player';
+        let need_to_undelegate = false;
         for (let i = 1; i < maxplayer+1; i++) {
             const playerentityseed = 'player' + i.toString();
             const playerEntityPda =  FindEntityPda({
@@ -941,21 +1012,192 @@ const App: React.FC = () => {
             const playersacc = await provider.connection.getAccountInfo(
                 playersComponentPda, "processed"
             );
-            myPlayerId = playerentityseed;
+            const playersaccER = await providerEphemeralRollup.current.connection.getAccountInfo(
+                playersComponentPda, "processed"
+            );
             if(playersacc){
                 const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
+                //console.log(playersParsedData)
+                if(playersaccER){
+                    const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
+                    //console.log(playersParsedDataER)
+                    if(playersParsedData.authority !== null && playersParsedDataER.authority !== null){
+                    //console.log('player', playersParsedDataER.authority.toString(), playersParsedData.authority.toString());
+                    if(playersParsedData.authority.toString() == playerKey.toString()){
+                        if(playersParsedDataER.authority.toString() == playerKey.toString()){
+                            myPlayerStatus = "rejoin_undelegated";
+                            newplayerEntityPda = playerEntityPda;
+                            myPlayerId = playerentityseed;
+                            need_to_undelegate=false;
+                        }
+                        else{
+                            myPlayerStatus = "rejoin_undelegated";
+                            newplayerEntityPda = playerEntityPda;
+                            myPlayerId = playerentityseed;
+                            need_to_undelegate=false;
+                        }
+                    }
+                    }else if(playersParsedData.authority !== null){
+                        //console.log('player', playersParsedDataER.authority, playersParsedData.authority.toString());
+                        //if(playersParsedData.authority.toString() == playerKey.toString()){
+                        if(playersParsedData.authority.toString() == playerKey.toString()){
+                            myPlayerStatus = "rejoin_undelegated";
+                            newplayerEntityPda = playerEntityPda;
+                            myPlayerId = playerentityseed;
+                        }
+                        
+                    }
+
+                    // comment for now, this is a cleanup function...
+                    // in case you leave the page and get eaten
+                    /*if(playersParsedDataER.authority == null && 
+                        playersParsedData.authority !== null && 
+                        playersParsedDataER.x == 50000 &&
+                        playersParsedDataER.y == 50000 &&
+                        playersParsedDataER.score == 0 && 
+                        newplayerEntityPda == null
+                    ){
+                        // set join time on buy in, check join time here, set again on spawn
+                        // this might cause conflict is players join at the same time
+                        newplayerEntityPda = playerEntityPda;
+                        myPlayerId = playerentityseed;
+                        need_to_undelegate=true;
+                    }*/
+                }
+                //console.log('player auth', playersParsedData.authority);
                 if(playersParsedData.authority == null && newplayerEntityPda == null){
                     newplayerEntityPda = playerEntityPda;
-                    break;
+                    myPlayerId = playerentityseed;
+                    need_to_undelegate=false;
                 }
             }
             else{
-                newplayerEntityPda = playerEntityPda;
-                break;
+                if(newplayerEntityPda == null){
+                    newplayerEntityPda = playerEntityPda;
+                    myPlayerId = playerentityseed;
+                    need_to_undelegate=false;
+                }
             }
             }
-                console.log('myPlayer', myPlayerId)
+            console.log('my player', myPlayerId, myPlayerStatus);
+
+            const anteseed = "ante"; 
+            const anteEntityPda = FindEntityPda({
+                worldId: gameInfo.worldId,
+                entityId: new anchor.BN(0),
+                seed: anteseed
+            })
+            const anteComponentPda = FindComponentPda({
+                componentId: ANTEROOM_COMPONENT,
+                entity: anteEntityPda,
+            });
+            const anteComponentClient= await getComponentsClient(ANTEROOM_COMPONENT);
+            const anteacc = await provider.connection.getAccountInfo(
+                anteComponentPda, "processed"
+            );
+            
+            let token_account_owner_pda = new PublicKey(0);
+            let vault_token_account = new PublicKey(0);
+            let mint_of_token_being_sent = new PublicKey(0);
+            let sender_token_account = new PublicKey(0);
+            let payout_token_account = new PublicKey(0);
+            let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
+    
+            if(anteacc){
+                const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
+                console.log(anteParsedData);
+                vault_token_account = anteParsedData.vaultTokenAccount;
+                mint_of_token_being_sent = anteParsedData.token;
+                let usertokenAccountInfo = await getAssociatedTokenAddress(
+                    mint_of_token_being_sent,        
+                    publicKey       
+                  ); 
+                payout_token_account = usertokenAccountInfo;
+                const playerTokenAccount = await getAssociatedTokenAddress(mint_of_token_being_sent, playerKey);
+                sender_token_account = playerTokenAccount;
+                const playerbalance = await connection.getBalance(playerKey, 'processed');
+                let targetBalance = 0.013 * LAMPORTS_PER_SOL;
+                const amountToTransfer = targetBalance > playerbalance ? targetBalance - playerbalance : 0;
+                const tokenAccountInfo = await connection.getAccountInfo(playerTokenAccount);
+                let tokenaccountInfobalance = BigInt(0);
+                if (tokenAccountInfo) {
+                    const tokenaccountInfodata = await getAccount(connection, sender_token_account);
+                    let tokenaccountInfobalance = tokenaccountInfodata.amount;
+                }
+                console.log(amountToTransfer);
+                if(amountToTransfer > 0){
+                    const createTokenAccountTx = createAssociatedTokenAccountInstruction(
+                            publicKey,
+                            playerTokenAccount,
+                            playerKey,
+                            mint_of_token_being_sent,
+                    );
+                    const transferIx = createTransferInstruction(
+                        usertokenAccountInfo,
+                        playerTokenAccount,
+                        publicKey,
+                        buyIn * 10 ** anteParsedData.tokenDecimals,
+                        [],
+                        splToken.TOKEN_PROGRAM_ID,
+                    );
+                    const soltransfertx = SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: playerKey,
+                        lamports: amountToTransfer, 
+                    });
+                    
+                    const combinedTx = new Transaction();
+                    if(amountToTransfer > 0){
+                        combinedTx.add(soltransfertx);
+                    }
+
+                    if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session"){
+                    if (!tokenAccountInfo) {
+                        combinedTx.add(createTokenAccountTx);
+                        combinedTx.add(transferIx); 
+                    }else if(                    
+                        tokenaccountInfobalance == BigInt(0)
+                    ){
+                        combinedTx.add(transferIx); 
+                    }
+                    }
+
+                    if(amountToTransfer > 0 || ( (tokenaccountInfobalance == BigInt(0) || !tokenAccountInfo) && 
+                    myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" ) 
+                    || myPlayerStatus == "new_player"){
+                        const createwalletsig = await submitTransactionUser(combinedTx);
+                    }
+                }
+            }
+                const playerComponentPda = FindComponentPda({
+                    componentId: PLAYER_COMPONENT,
+                    entity: newplayerEntityPda,
+                });
+
+                if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session"){
+                    try {
+                        const undelegateIx = createUndelegateInstruction({
+                            payer: playerKey,
+                            delegatedAccount: playerComponentPda,
+                            componentPda: PLAYER_COMPONENT,
+                            });
+                        const undeltx = new anchor.web3.Transaction()
+                        .add(undelegateIx);
+                        if (!walletRef.current) {
+                            throw new Error('Wallet is not initialized');
+                        } 
+                        undeltx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
+                        undeltx.feePayer = walletRef.current.publicKey;
+                        undeltx.sign(walletRef.current);
+                        const playerundelsignature = await providerEphemeralRollup.current.sendAndConfirm(undeltx, [], { skipPreflight: false });
+                        console.log('undelegate', playerundelsignature)
+                    } catch (error) {
+                        console.log('Error undelegating:', error);
+                    }
+                }
+
                 console.log('vault', vault_token_account.toString(), 'sender', sender_token_account.toString());
+                if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session"){
                 const applyBuyInSystem = await ApplySystem({
                     authority: playerKey,
                     world: gameInfo.worldPda,
@@ -1011,7 +1253,14 @@ const App: React.FC = () => {
                         },
                       ],
                   });
-                const buyintx = new anchor.web3.Transaction().add(applyBuyInSystem.transaction);
+                  const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: 1000002,
+                });
+                const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+                    units: 100_000,
+                });
+                const buyintx = new anchor.web3.Transaction().add(computePriceIx).add(computeLimitIx)
+                .add(applyBuyInSystem.transaction);
                 //const buyinsignature = await submitTransaction(buyintx, "confirmed", true);
                 const buyinsignature = await retrySubmitTransaction(buyintx, connection, "confirmed");
                 //if buy in fails, reclaim sol + coins, if succeeds everything else will work
@@ -1035,39 +1284,59 @@ const App: React.FC = () => {
                     const solTransferInstruction = SystemProgram.transfer({
                         fromPubkey: playerKey,
                         toPubkey: publicKey,
-                        lamports: playerbalance - 5000,
+                        lamports: playerbalance - 1500000,
                     });
                     reclaim_transaction.add(transfertokens);
                     reclaim_transaction.add(closeInstruction);
                     reclaim_transaction.add(solTransferInstruction);
+                    const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                        microLamports: 1000002,
+                    });
+                    const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+                        units: 10_000,
+                    });
+                    reclaim_transaction.add(computePriceIx).add(computeLimitIx);
                     const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
                     console.log(
                         `buy in failed, reclaimed tokens: ${reclaimsig}`
                     );
-                    throw new Error('Buy in failed, reclaimed SOL');
+                    setTransactionError("Buy in failed, reclaimed SOL and tokens");
+                    setIsSubmitting(false);
+                    return;
+                    //throw new Error('Buy in failed, reclaimed SOL');
                 }
                 else{
                     console.log(
                         `buy in signature: ${buyinsignature}`
                     );
                 }
-                
-                const playerdeltx = new anchor.web3.Transaction();
-                const playerComponentPda = FindComponentPda({
-                    componentId: PLAYER_COMPONENT,
+                }
+
+            //if(myPlayerStatus !== "resume_session"){
+                try {
+                    const playerdeltx = new anchor.web3.Transaction();
+                    const playerdelegateIx = createDelegateInstruction({
                     entity: newplayerEntityPda,
-                });
-                const playerdelegateIx = createDelegateInstruction({
-                entity: newplayerEntityPda,
-                account: playerComponentPda,
-                ownerProgram: PLAYER_COMPONENT,
-                payer: playerKey,
-                });
-                playerdeltx.add(playerdelegateIx)
-                const playerdelsignature = await submitTransaction(playerdeltx, "confirmed", true); //provider.sendAndConfirm(playertx, [], { skipPreflight: true, commitment: 'finalized' }); 
-                console.log(
-                    `Delegation signature: ${playerdelsignature}`
-                );
+                    account: playerComponentPda,
+                    ownerProgram: PLAYER_COMPONENT,
+                    payer: playerKey,
+                    });
+                    playerdeltx.add(playerdelegateIx);
+                    const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                        microLamports: 1000002,
+                    });
+                    const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+                        units: 80_000,
+                    });
+                    playerdeltx.add(computePriceIx).add(computeLimitIx);
+                    const playerdelsignature = await provider.sendAndConfirm(playerdeltx, [], { skipPreflight: true, commitment: 'finalized' }); //submitTransaction(playerdeltx, "confirmed", true); 
+                    console.log(
+                        `Delegation signature: ${playerdelsignature}`
+                    );
+                } catch (error) {
+                    console.log('Error delegating:', error);
+                }
+            //}
 
             const applySystem = await ApplySystem({
                 authority: playerKey,
@@ -1095,7 +1364,9 @@ const App: React.FC = () => {
             } = await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
 
             if (!walletRef.current) {
-                throw new Error('Wallet is not initialized');
+                setTransactionError("Wallet not found, please retry.");
+                return;
+                //throw new Error('Wallet is not initialized');
             } 
             jointransaction.recentBlockhash = blockhash;
             jointransaction.feePayer = walletRef.current.publicKey;
@@ -1107,8 +1378,32 @@ const App: React.FC = () => {
                    console.log(error)
             });
             console.log('joined game', signature);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            if (signature != null) {
+            
+            let playerJoined = false;
+            let thisGameEnded = false;
+            const startTime = Date.now();
+            while (Date.now() - startTime < 5000) {
+              const playersacc = await providerEphemeralRollup.current.connection.getAccountInfo(playerComponentPda, "processed");
+              if (playersacc) {
+                const playersParsedData = playerClientER.coder.accounts.decode("player", playersacc.data);
+                if (playersParsedData.authority !== null) {
+                    if(playersParsedData.x == 50000 && playersParsedData.y == 50000 && playersParsedData.score !== 0){
+                        thisGameEnded = true;
+                    }
+                    playerJoined = true;
+                    break; 
+                }
+              }
+              await new Promise(resolve => setTimeout(resolve, 100)); 
+            }
+            if (Date.now() - startTime >= 5000) {
+              //throw new Error("New Player not found within 5 seconds.");
+              setTransactionError("New Player not found within 5 seconds, please retry joining.");
+              setIsJoining(false);
+              return;
+            }
+            if (playerJoined) {
+                //dont join until player authority and position are updated
                 setIsJoining(false);
                 setGameId(mapEntityPda); 
                 setMapSize(selectGameId.size);
@@ -1151,7 +1446,6 @@ const App: React.FC = () => {
 
     const preExitGameTx = useCallback(async () => {
         if (!playerKey) throw new WalletNotConnectedError();
-        if (gameId == null) setTransactionError("Not connected to game");
         if(currentWorldId.current==null){
             throw new Error("world not found");
         }
@@ -1171,6 +1465,9 @@ const App: React.FC = () => {
               },
             ],
             systemId: EXIT_GAME,
+            args: {
+                timestamp: performance.now(),
+            },
         });
         const transaction = applySystem.transaction;
         const {
@@ -1183,7 +1480,7 @@ const App: React.FC = () => {
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = walletRef.current.publicKey;
         transaction.sign(walletRef.current);
-        console.log('staged exit')
+        console.log('staged exit');
         const signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
             transaction.serialize(), 
             { skipPreflight: true } 
@@ -1192,7 +1489,6 @@ const App: React.FC = () => {
 
     const exitGameTx = useCallback(async () => {
         if (!playerKey) throw new WalletNotConnectedError();
-        if (gameId == null) setTransactionError("Not connected to game");
         if(currentWorldId.current==null){
             throw new Error("world not found");
         }
@@ -1212,6 +1508,9 @@ const App: React.FC = () => {
               },
             ],
             systemId: EXIT_GAME,
+            args: {
+                timestamp: performance.now(),
+            },
         });
         const transaction = applySystem.transaction;
         const {
@@ -1271,14 +1570,18 @@ const App: React.FC = () => {
                         tx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
                         tx.feePayer = walletRef.current.publicKey;
                         tx.sign(walletRef.current);
-                        const playerdelsignature = await providerEphemeralRollup.current.sendAndConfirm(tx, [], { skipPreflight: false });
-                        await waitSignatureConfirmation(
-                            playerdelsignature,
-                            providerEphemeralRollup.current.connection,
-                            "finalized"
-                          );
-                        console.log('undelegate', playerdelsignature)
-                        
+                        try {
+                            const playerdelsignature = await providerEphemeralRollup.current.sendAndConfirm(tx, [], { skipPreflight: false });
+                            await waitSignatureConfirmation(
+                                playerdelsignature,
+                                providerEphemeralRollup.current.connection,
+                                "finalized"
+                            );
+                            console.log('undelegate', playerdelsignature)
+                        } catch (error) {
+                            console.log('Error undelegating:', error);
+                        }
+
                         const anteComponentPda = FindComponentPda({
                             componentId: ANTEROOM_COMPONENT,
                             entity: anteroomEntity.current,
@@ -1320,7 +1623,6 @@ const App: React.FC = () => {
                             if (playerCashoutAddy){
                                 sender_token_account = playerCashoutAddy;
                             }
-                            //console.log('cashout data', sender_token_account.toString(), playerCashoutAddy?.toString());
                            if(cashingOut && gameEnded==2){
                             const applyCashOutSystem = await ApplySystem({
                                 authority: playerKey,
@@ -1384,15 +1686,23 @@ const App: React.FC = () => {
                                     },
                                   ],
                               });
-                            const cashouttx = new anchor.web3.Transaction().add(applyCashOutSystem.transaction);
+                              const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                                microLamports: 1000002,
+                            });
+                            const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+                                units: 105_000,
+                            });
+                            const cashouttx = new anchor.web3.Transaction().add(computePriceIx).add(computeLimitIx).add(applyCashOutSystem.transaction);
                             //const cashoutsignature = await submitTransaction(cashouttx, "confirmed", true);
                             const cashoutsignature = await retrySubmitTransaction(cashouttx, connection, "confirmed");
                             console.log('cashout', cashoutsignature);
                             if (cashoutsignature){
                                 setCashoutTx(cashoutsignature);
+                            }else{
+                                setTransactionError("Error cashing out, please rejoin game to resume cashout");
                             }
                             }
-                            const reclaim_transaction = new Transaction();
+                            const reclaim_transaction = new Transaction(); //.add(computePriceIx);
                             const playerbalance = await connection.getBalance(playerKey, 'processed');
                             const accountInfo = await getAccount(connection, playerTokenAccount);
                             const transfertokens = createTransferInstruction(
@@ -1411,18 +1721,26 @@ const App: React.FC = () => {
                             const solTransferInstruction = SystemProgram.transfer({
                                 fromPubkey: playerKey,
                                 toPubkey: savedPublicKey,
-                                lamports: playerbalance - 5000,
+                                lamports: playerbalance - 1500000,
                             });
-                            reclaim_transaction.add(transfertokens);
+                            //reclaim_transaction.add(transfertokens);
                             reclaim_transaction.add(closeInstruction);
                             reclaim_transaction.add(solTransferInstruction);
+                            const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                                microLamports: 1000002,
+                            });
+                            const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+                                units: 10_000,
+                            });
+                            reclaim_transaction.add(computePriceIx).add(computeLimitIx);
                             const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
                             console.log("get winnings", reclaimsig, accountInfo.amount, playerbalance);
 
                             if(reclaimsig){
                                 setReclaimTx(reclaimsig);
                             }else{
-                                setGameEnded(4);
+                                setTransactionError("Error cashing out, please rejoin game to resume cashout");
+                                //setGameEnded(4);
                             }
 
                             playersComponentSubscriptionId.current = [];
@@ -1504,11 +1822,8 @@ const App: React.FC = () => {
                 });
 
                 const alltransaction = new anchor.web3.Transaction();
-                let currentSection = getSectionIndex(currentPlayer.x, currentPlayer.y, mapSize, false);
-                let currentSectionBoosting = getSectionIndex(currentPlayer.x, currentPlayer.y, mapSize, true);
-                //let foodtoeat = checkFoodDistances(visibleFood[currentSection], screenSize);
-                //let playerfoodtoeat = checkFoodDistances(visibleFood[currentSectionBoosting], screenSize);
-                if(true){
+                let currentSection = getSectionIndex(currentPlayer.x, currentPlayer.y, mapSize, 2);
+                for (const section_index of currentSection) { 
                     const eatFoodTx = await ApplySystem({
                         authority: playerKey,
                         world: currentWorldId.current,
@@ -1518,7 +1833,7 @@ const App: React.FC = () => {
                                 components: [{ componentId: PLAYER_COMPONENT }],
                                 }, 
                                 {
-                                entity: foodEntities.current[currentSection],
+                                entity: foodEntities.current[section_index],
                                 components: [{ componentId: FOOD_COMPONENT }],
                                 },
                                 {
@@ -1532,31 +1847,6 @@ const App: React.FC = () => {
                         },
                     });
                     alltransaction.add(eatFoodTx.transaction);   
-                }
-                if(true){
-                    const eatPlayerFoodTx = await ApplySystem({
-                        authority: playerKey,
-                        world: currentWorldId.current,
-                        entities: [
-                                {
-                                entity: currentPlayerEntity.current,
-                                components: [{ componentId: PLAYER_COMPONENT }],
-                                }, 
-                                {
-                                entity: foodEntities.current[currentSectionBoosting],
-                                components: [{ componentId: FOOD_COMPONENT }],
-                                },
-                                {
-                                entity: entityMatch.current,
-                                components: [{ componentId: MAP_COMPONENT }],
-                                },
-                        ],
-                        systemId: EAT_FOOD,
-                        args: {
-                            timestamp: performance.now(),
-                        },
-                    });
-                    alltransaction.add(eatPlayerFoodTx.transaction);  
                 }
                 let playerstoeat = checkPlayerDistances(players, screenSize);
                 if(playerstoeat){
@@ -1589,6 +1879,14 @@ const App: React.FC = () => {
                     }
                 }
 
+                let {food_x, food_y } = getClampedFoodPosition(currentPlayer.x, currentPlayer.y, newX, newY, currentPlayer.radius, mapSize, mapSize);
+                let targetSectionBoosting = getSectionIndex(food_x, food_y, mapSize, 2);
+                let selectedSection = targetSectionBoosting.reduce(
+                    (minIndex, currentIndex) =>
+                        foodListLen[currentIndex] < foodListLen[minIndex] ? currentIndex : minIndex,
+                    targetSectionBoosting[0]
+                );
+                //let targetSectionBoosting = getSectionIndex(food_x, food_y, mapSize, true);
                 const makeMove = await ApplySystem({
                     authority: playerKey,
                     world: currentWorldId.current,
@@ -1598,7 +1896,7 @@ const App: React.FC = () => {
                         components: [{ componentId: PLAYER_COMPONENT }],
                       },
                       {
-                        entity: foodEntities.current[currentSectionBoosting],
+                        entity: foodEntities.current[selectedSection],
                         components: [{ componentId: FOOD_COMPONENT }],
                       },
                       { 
@@ -1611,6 +1909,7 @@ const App: React.FC = () => {
                         x: newX,
                         y: newY,
                         boost: isMouseDown,
+                        timestamp: performance.now(),
                     },
                 }); 
                 let transaction = makeMove.transaction;
@@ -1630,51 +1929,9 @@ const App: React.FC = () => {
                 let signature = await processSessionEphemTransaction(alltransaction).catch((error) => {
                     console.log(error)
                 });
-                //console.log(allFood, visibleFood); 
                 setIsSubmitting(false);
                 setTransactionError(null);
                 setTransactionSuccess(null);
-                /*if (gameId && entityMatch.current) {   
-                    setIsSubmitting(false);
-                    setTransactionError(null);
-                    setTransactionSuccess(null);
-                                        
-                    (playersComponentClient.current?.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayer).catch((error: any) => {
-                        console.error("Failed to fetch account:", error);
-                     });
-
-                    for (let i = 0; i < foodEntities.current.length; i++) {
-                        const foodComponenti = FindComponentPda({
-                            componentId: FOOD_COMPONENT,
-                            entity: foodEntities.current[i],
-                        });
-                        (foodComponentClient.current?.account as any).section
-                        .fetch(foodComponenti, "processed")
-                        .then((fetchedData: any) => updateFoodList(fetchedData, i))
-                        .catch((error: any) => {
-                          //console.error("Failed to fetch account:", error);
-                          //food account unpopulated
-                        });
-                    }
-                    
-                    const mapComponent = FindComponentPda({
-                        componentId: MAP_COMPONENT,
-                        entity: entityMatch.current,
-                    });
-                    (mapComponentClient.current?.account as any).map.fetch(mapComponent, "processed").then(updateMap).catch((error: any) => {
-                        console.error("Failed to fetch account:", error);
-                     });
-
-                    for (let i = 0; i < playerEntities.current.length; i++) {
-                        const playersComponenti = FindComponentPda({
-                            componentId: PLAYER_COMPONENT,
-                            entity: playerEntities.current[i],
-                        });
-                        (playersComponentClient.current?.account as any).player.fetch(playersComponenti, "processed").then((fetchedData: any) => updatePlayers(fetchedData, i)).catch((error: any) => {
-                            //console.error("Failed to fetch account:", error);
-                         });
-                    } 
-                }*/
             } catch (error) {
                 setIsSubmitting(false);
                 //console.error("Failed to execute system or submit transaction:", error);
@@ -1689,7 +1946,7 @@ const App: React.FC = () => {
         }, 30); 
         
         return () => clearInterval(intervalId);
-    }, [gameId, currentPlayer, exitHovered]);
+    }, [gameId, currentPlayer, exitHovered, isMouseDown]);
 
     useEffect(() => {
         //const firstHalf = foodListLen.slice(0, Math.floor(foodListLen.length / 2));
@@ -1697,10 +1954,27 @@ const App: React.FC = () => {
 
         const intervalId = setInterval(() => {
             processNewFoodTransaction(nextFood.current.x, nextFood.current.y);
-        }, 400); 
+        }, 200); 
         
         return () => clearInterval(intervalId);
     }, [gameId, nextFood]);
+
+    function getClampedFoodPosition(player_x: number, player_y: number, target_x: number, target_y: number, player_radius: number, map_width: number, map_height: number): { food_x: number; food_y: number } {
+        const dx = target_x - player_x;
+        const dy = target_y - player_y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const unit_x = dx / dist;
+        const unit_y = dy / dist;
+        const pseudo_random_float_x = 1.5;
+        const pseudo_random_float_y = 1.5;
+        const offset_x = -unit_x * player_radius * pseudo_random_float_x;
+        const offset_y = -unit_y * player_radius * pseudo_random_float_y;
+        const food_x = Math.round(player_x + offset_x);
+        const food_y = Math.round(player_y + offset_y);
+        const clamped_food_x = Math.min(Math.max(food_x, 0), map_width);
+        const clamped_food_y = Math.min(Math.max(food_y, 0), map_height);
+        return { food_x: clamped_food_x, food_y: clamped_food_y };
+    }
 
     const checkPlayerDistances = (visiblePlayers: Blob[], screenSize: { width: number, height: number }) => {
         if(currentPlayer?.radius){
@@ -1730,8 +2004,8 @@ const App: React.FC = () => {
         return null;
     };
     
-    function getSectionIndex(x: number, y: number, mapSize: number, duplicateEncoding: boolean = false): number {
-        const sectionSize = 1000; // each section is 1000x1000
+    function getSectionIndex(x: number, y: number, mapSize: number, duplicateEncodings: number = 5): number[] {
+        const sectionSize = 1000; 
         const sectionsPerRow = mapSize / sectionSize;
         const mapSectionCount = sectionsPerRow * sectionsPerRow;
         const adjustedX = Math.min(x, mapSize - 1);
@@ -1741,11 +2015,15 @@ const App: React.FC = () => {
         const row = Math.floor(adjustedY / sectionSize); 
         const col = Math.floor(adjustedX / sectionSize); 
         let baseIndex = row * sectionsPerRow + col;
-        if (duplicateEncoding) {
-            baseIndex += mapSectionCount;
+        //if (duplicateEncoding) {
+        //    baseIndex += mapSectionCount;
+        //}
+        let food_indices : number[] = [];
+        for (let i = 0; i < duplicateEncodings; i++) {
+            food_indices.push(baseIndex + i * mapSectionCount)
         }
-    
-        return baseIndex;
+
+        return food_indices;
     }
 
     const processNewFoodTransaction = async (foodX : number, foodY : number) => {
@@ -1753,9 +2031,6 @@ const App: React.FC = () => {
         const allTransaction = new anchor.web3.Transaction();
         if(currentPlayerEntity.current && entityMatch.current){
         try {
-            /*let current_foodlist = foodListLen.reduce((minIndex, currentValue, currentIndex, array) =>
-                currentValue < array[minIndex] ? currentIndex : minIndex
-            , 0);*/
             const mapComponent = FindComponentPda({
                 componentId: MAP_COMPONENT,
                 entity: entityMatch.current,
@@ -1772,7 +2047,15 @@ const App: React.FC = () => {
                     nextFoody = mapParsedData.nextFood.y;
                 }
             }
-            let currentSection = getSectionIndex(foodX, foodY, mapSize, false);
+            let currentSection = getSectionIndex(foodX, foodY, mapSize, 2);
+            let selectedSection = currentSection.reduce(
+                (minIndex, currentIndex) =>
+                    foodListLen[currentIndex] < foodListLen[minIndex] ? currentIndex : minIndex,
+                currentSection[0]
+            );
+            /*let current_foodlist = foodListLen.reduce((minIndex, currentValue, currentIndex, array) =>
+                currentValue < array[minIndex] ? currentIndex : minIndex
+            , 0);*/
             const newFoodTx = await ApplySystem({
                 authority: foodKey,
                 world: currentWorldId.current,
@@ -1782,7 +2065,7 @@ const App: React.FC = () => {
                         components: [{ componentId: MAP_COMPONENT }],
                     },
                     {
-                        entity: foodEntities.current[currentSection],
+                        entity: foodEntities.current[selectedSection],
                         components: [{ componentId: FOOD_COMPONENT }],
                     },
                 ],  
@@ -1808,7 +2091,7 @@ const App: React.FC = () => {
                 allTransaction.serialize(), 
                 { skipPreflight: true }
             ).catch((error) => {
-                console.log(error); 
+                //console.log(error); 
             });
             if (signature){
                 await waitSignatureConfirmation(
@@ -1819,13 +2102,17 @@ const App: React.FC = () => {
                 //console.log('new food', signature)
             }
         } catch (error) {
-            console.log("Transaction failed", error);
+            //console.log("Transaction failed", error);
         }
         }
         }
     };
 
     const handleExitClick = () => {
+        if (playerExiting) return;
+        if(playerRemovalTimeRef.current !== null){
+        preExitGameTx();
+        }
         preExitGameTx();
         setPlayerExiting(true);
         
@@ -1927,7 +2214,7 @@ const App: React.FC = () => {
         return parseFloat(balance.value.amount) / Math.pow(10, decimals); // Adjust the balance for the token's decimals
         }
         async function parsePoolInfo() {
-        const  mainnet_connection =  new Connection("https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+        const  mainnet_connection =  new Connection("https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
         const info = await mainnet_connection.getAccountInfo(new PublicKey(SOL_USDC_POOL_ID));
         if (!info) return;
         const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(info.data);        
@@ -1956,7 +2243,7 @@ const App: React.FC = () => {
                 try {
                     const worldId = {worldId: new anchor.BN(inputValue.trim())};
                     const worldPda = await FindWorldPda( worldId);
-                    const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0}
+                    const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:""}
                     console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
                     setNewGameCreated(newGameInfo);
                     setActiveGames([newGameInfo, ...activeGames]);
@@ -1971,77 +2258,108 @@ const App: React.FC = () => {
               handleImageClick();
           }
         };
-        useEffect(() => {
-            const fetchAndLogMapData = async () => {
+
+        const fetchAndLogMapData = async () => {
         
-                for (let i = 0; i < activeGames.length; i++) {
-                    const mapseed = "origin"; 
-                    const mapEntityPda = FindEntityPda({
+            for (let i = 0; i < activeGames.length; i++) {
+                const mapseed = "origin"; 
+                const mapEntityPda = FindEntityPda({
+                    worldId: activeGames[i].worldId,
+                    entityId: new anchor.BN(0),
+                    seed: mapseed
+                });
+                const mapComponentPda = FindComponentPda({
+                    componentId: MAP_COMPONENT,
+                    entity: mapEntityPda,
+                });
+                
+                try {
+                    let token_image = `${process.env.PUBLIC_URL}/token.png`;
+                    let token_name = "LOADING";
+                    const anteseed = "ante"; 
+                    const anteEntityPda = FindEntityPda({
                         worldId: activeGames[i].worldId,
                         entityId: new anchor.BN(0),
-                        seed: mapseed
+                        seed: anteseed
+                    })
+                    const anteComponentPda = FindComponentPda({
+                        componentId: ANTEROOM_COMPONENT,
+                        entity: anteEntityPda,
                     });
-                    const mapComponentPda = FindComponentPda({
-                        componentId: MAP_COMPONENT,
-                        entity: mapEntityPda,
-                    });
-                    
-                    try {
-                        const mapComponentClient = await getComponentsClient(MAP_COMPONENT);
-                        const mapacc = await providerEphemeralRollup.current.connection.getAccountInfo(
-                            mapComponentPda, "processed"
-                        );
-                        if (mapacc) {
-                            const mapParsedData = mapComponentClient.coder.accounts.decode("map", mapacc.data);
-                            console.log(`Parsed Data for game ID ${activeGames[i].worldId}:`, mapParsedData);
-                            const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
-                            let activeplayers=0;
-                            for (let player_index = 1; i < mapParsedData.maxPlayers+1; player_index++) {
-                                const playerentityseed = 'player' + player_index.toString();
-                                const playerEntityPda =  FindEntityPda({
-                                    worldId: activeGames[i].worldId,
-                                    entityId: new anchor.BN(0),
-                                    seed: playerentityseed
-                                })
-                                const playersComponentPda = FindComponentPda({
-                                    componentId: PLAYER_COMPONENT,
-                                    entity: playerEntityPda,
-                                });
-                                const playersacc = await provider.connection.getAccountInfo(
-                                    playersComponentPda, "processed"
-                                );
-                                if(playersacc){
-                                    const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
-                                    //console.log(playersParsedData)
-                                    if(playersParsedData.authority != null){
-                                        activeplayers = activeplayers + 1;
-                                    }
-                                }else{
-                                    break;
-                                }
-                            }
-                            setActiveGames(prevActiveGames => {
-                                const updatedGames = prevActiveGames.map(game =>
-                                    game.worldId === activeGames[i].worldId && game.worldPda.toString() === activeGames[i].worldPda.toString()
-                                        ? { ...game, name: mapParsedData.name, active_players: activeplayers, max_players: mapParsedData.maxPlayers, size: mapParsedData.width  } 
-
-                                        : game
-                                );
-                                return updatedGames;
-                            });
-                        } else {
-                            //console.log(providerEphemeralRollup.current)
-                            console.log(`No account info found for game ID ${activeGames[i].worldId}`);
+                    const anteComponentClient= await getComponentsClient(ANTEROOM_COMPONENT);
+                    const anteacc = await provider.connection.getAccountInfo(
+                        anteComponentPda, "processed"
+                    );
+                    let mint_of_token_being_sent = new PublicKey(0);
+                    if(anteacc){
+                        const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
+                        mint_of_token_being_sent = anteParsedData.token;
+                        if(mint_of_token_being_sent.toString() === "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"){
+                            token_image = `${process.env.PUBLIC_URL}/agld.jpg`;
+                            token_name = "AGLD";
+                        }else{
+                            token_image = `${process.env.PUBLIC_URL}/usdc.png`;
+                            token_name = "USDC";
                         }
-                    } catch (error) {
-                        console.log(`Error fetching map data for game ID ${activeGames[i].worldId}:`, error);
                     }
+
+                    const mapComponentClient = await getComponentsClient(MAP_COMPONENT);
+                    const mapacc = await providerEphemeralRollup.current.connection.getAccountInfo(
+                        mapComponentPda, "processed"
+                    );
+                    if (mapacc) {
+                        const mapParsedData = mapComponentClient.coder.accounts.decode("map", mapacc.data);
+                        console.log(`Parsed Data for game ID ${activeGames[i].worldId}:`, mapParsedData);
+                        const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
+                        let activeplayers=0;
+                        for (let player_index = 1; i < mapParsedData.maxPlayers+1; player_index++) {
+                            const playerentityseed = 'player' + player_index.toString();
+                            const playerEntityPda =  FindEntityPda({
+                                worldId: activeGames[i].worldId,
+                                entityId: new anchor.BN(0),
+                                seed: playerentityseed
+                            })
+                            const playersComponentPda = FindComponentPda({
+                                componentId: PLAYER_COMPONENT,
+                                entity: playerEntityPda,
+                            });
+                            const playersacc = await provider.connection.getAccountInfo(
+                                playersComponentPda, "processed"
+                            );
+                            if(playersacc){
+                                const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
+                                //console.log(playersParsedData)
+                                if(playersParsedData.authority != null){
+                                    activeplayers = activeplayers + 1;
+                                }
+                            }else{
+                                break;
+                            }
+                        }
+                        setActiveGames(prevActiveGames => {
+                            const updatedGames = prevActiveGames.map(game =>
+                                game.worldId === activeGames[i].worldId && game.worldPda.toString() === activeGames[i].worldPda.toString()
+                                    ? { ...game, name: mapParsedData.name, active_players: activeplayers, max_players: mapParsedData.maxPlayers, size: mapParsedData.width, image: token_image, token: token_name } 
+
+                                    : game
+                            );
+                            return updatedGames;
+                        });
+                    } else {
+                        //console.log(providerEphemeralRollup.current)
+                        console.log(`No account info found for game ID ${activeGames[i].worldId}`);
+                    }
+                } catch (error) {
+                    console.log(`Error fetching map data for game ID ${activeGames[i].worldId}:`, error);
                 }
-            };
+            }
+        };
+
+        useEffect(() => {
 
             fetchAndLogMapData();
         
-        }, [openGameInfo, enpointDone]);
+        }, [openGameInfo, enpointDone, selectedOption]);
 
       useEffect(() => {
         const scrollableElement = document.querySelector('.info-text-container');
@@ -2277,8 +2595,8 @@ const App: React.FC = () => {
                     </div>
                     <div className="buyInField">
                         <div className="buyInInfo" style={{marginLeft:"5px", width: "30%", display: "flex", alignItems: "center" }}>
-                        <img src={`${process.env.PUBLIC_URL}/agld.jpg`} width="20px" height="auto" alt="Image" style={{alignItems:"center", justifyContent: "center"}}/>
-                        <div style={{height:"20px", display: 'inline', marginLeft:"8px", marginTop:"3px"}}>AGLD</div>
+                        <img src={activeGames[0] ? activeGames[0].image : `${process.env.PUBLIC_URL}/token.png`} width="20px" height="auto" alt="Image" style={{alignItems:"center", justifyContent: "center"}}/>
+                        <div style={{height:"20px", display: 'inline', marginLeft:"8px", marginTop:"3px"}}>{activeGames[0] ? activeGames[0].token : "LOADING"}</div>
                         </div>
                         <input 
                             className="BuyInText"
@@ -2549,6 +2867,7 @@ const App: React.FC = () => {
                 playerKey={playerKey}
                 walletRef={walletRef}
                 provider={provider}
+                providerEphemeralRollup={providerEphemeralRollup}
                 buildViewerNumber={buildViewerNumber}
                 isSubmitting={isSubmitting}
                 newGameCreated={newGameCreated}
@@ -2796,7 +3115,7 @@ const App: React.FC = () => {
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
-                            href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=devnet`} 
+                            href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=mainnet`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                         >
@@ -2846,7 +3165,7 @@ const App: React.FC = () => {
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
-                            href={`https://explorer.solana.com/tx/${cashoutTx}?cluster=devnet`} 
+                            href={`https://explorer.solana.com/tx/${cashoutTx}?cluster=mainnet`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                         >
@@ -2873,7 +3192,7 @@ const App: React.FC = () => {
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
-                            href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=devnet`} 
+                            href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=mainnet`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                         >

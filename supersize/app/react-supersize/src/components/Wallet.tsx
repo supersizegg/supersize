@@ -26,9 +26,9 @@ export class SimpleProvider implements Provider {
 }
 
 export const Wallet: FC<WalletProps> = ({ app }) => {
-    const network = WalletAdapterNetwork.Devnet; //WalletAdapterNetwork.Devnet;
+    const network = WalletAdapterNetwork.Mainnet; //WalletAdapterNetwork.Devnet
     //useMemo(() => clusterApiUrl(network), [network]);
-    const endpoint = "https://sly-blue-cherry.solana-devnet.quiknode.pro/13351562e034e23c97c16dffce573f7a384c080b/"; //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"  // "https://lingering-twilight-crater.solana-devnet.quiknode.pro/e55eae90bfce8f29543b845c6933e0de5941348a/"; 
+    const endpoint = "https://staked.helius-rpc.com?api-key=cba33294-aa96-414c-9a26-03d5563aa676"; 
 
     const wallets = useMemo(() => [
         new PhantomWalletAdapter(),
