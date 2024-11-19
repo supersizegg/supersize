@@ -112,23 +112,23 @@ type ActiveGame = {
 
 const App: React.FC = () => {
     //let { connection } =  useConnection();
-    //const  connection =  new Connection("https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
-    const  connection =  new Connection("https://staked.helius-rpc.com?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+    const  connection =  new Connection("https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+    //const  connection =  new Connection("https://staked.helius-rpc.com?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
     const { publicKey, sendTransaction } = useWallet(); 
     let userKey = publicKey;
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(null);
     const [exitTxn, setExitTxn] = useState<string>('');
-    /*const endpoints = [
+    const endpoints = [
         "https://supersize-fra.magicblock.app",
         "https://supersize.magicblock.app",
         "https://supersize-sin.magicblock.app",
       ];
-    */
+    /*
     const endpoints = [
       "https://supersize-mainnet.magicblock.app",
       "https://supersize-mainnet-bos.magicblock.app",
       "https://supersize-mainnet-sin.magicblock.app",
-    ];
+    ];*/
       
     const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
     const [enpointDone, setEndpointDone] = useState<boolean>(false);
@@ -162,7 +162,7 @@ const App: React.FC = () => {
     const [moveSignature, setMoveSignature] = useState<string | null>(null);
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
-    const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
+    /* const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-mainnet-sin.magicblock.app": {
           worldId: new anchor.BN(1),
           worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
@@ -175,22 +175,22 @@ const App: React.FC = () => {
           worldId: new anchor.BN(3),
           worldPda: new PublicKey('8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt'),
         },
-      };
-      /*
+      };*/
+      
       const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-sin.magicblock.app": {
-          worldId: new anchor.BN(1),
-          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
+          worldId: new anchor.BN(1646),
+          worldPda: new PublicKey('5ruXTp8pWoiat5QQTr2NeQa5381btFTpwvSxhxUZf3xS'),
         },
         "https://supersize.magicblock.app": {
-          worldId: new anchor.BN(1),
-          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
+          worldId: new anchor.BN(1645),
+          worldPda: new PublicKey('F7tPww5apcPt2CbBdjqmkvDZXQT8k5rbz62UrZYa7z9o'),
         },
         "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1),
-          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
+          worldId: new anchor.BN(1642),
+          worldPda: new PublicKey('618CRNGjU2GYqaZKuVGWteDzzX4VpzLFTb15Ts3bCwfk'),
         },
-      };*/
+      };
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [gamewallet, setGameWallet] = useState("");
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
@@ -253,19 +253,19 @@ const App: React.FC = () => {
     }
     );
 
-    const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
+    /*const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-mainnet-sin.magicblock.app", {
         wsEndpoint: "wss://supersize-mainnet-sin.magicblock.app",
         }),
         new NodeWallet(wallet) 
-    ));
-    /*
+    ));*/
+    
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-fra.magicblock.app", {
         wsEndpoint: "wss://supersize-fra.magicblock.app",
         }),
         new NodeWallet(wallet) 
-    ));*/
+    ));
 
     anchor.setProvider(provider);
 
@@ -1025,7 +1025,7 @@ const App: React.FC = () => {
                     //console.log('player', playersParsedDataER.authority.toString(), playersParsedData.authority.toString());
                     if(playersParsedData.authority.toString() == playerKey.toString()){
                         if(playersParsedDataER.authority.toString() == playerKey.toString()){
-                            myPlayerStatus = "rejoin_undelegated";
+                            myPlayerStatus = "resume_session";
                             newplayerEntityPda = playerEntityPda;
                             myPlayerId = playerentityseed;
                             need_to_undelegate=false;
