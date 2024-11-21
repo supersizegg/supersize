@@ -179,16 +179,16 @@ const App: React.FC = () => {
       
       const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-sin.magicblock.app": {
-          worldId: new anchor.BN(1646),
-          worldPda: new PublicKey('5ruXTp8pWoiat5QQTr2NeQa5381btFTpwvSxhxUZf3xS'),
+          worldId: new anchor.BN(1656),
+          worldPda: new PublicKey('3grBdZ6VSV7F5ciSkog5KxQ8iEuDps2FC1L3gYtC5oPR'),
         },
         "https://supersize.magicblock.app": {
-          worldId: new anchor.BN(1645),
-          worldPda: new PublicKey('F7tPww5apcPt2CbBdjqmkvDZXQT8k5rbz62UrZYa7z9o'),
+          worldId: new anchor.BN(1653),
+          worldPda: new PublicKey('44pNoTqCWknyqKv2Z4XDsed65pVZ9D6UejHHRiKB3znf'),
         },
         "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1642),
-          worldPda: new PublicKey('618CRNGjU2GYqaZKuVGWteDzzX4VpzLFTb15Ts3bCwfk'),
+          worldId: new anchor.BN(1654),
+          worldPda: new PublicKey('6HqUD4H8b3cybqDvFkxfSSX5hQprKRcvKjR2b66mtSkx'),
         },
       };
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
@@ -239,6 +239,7 @@ const App: React.FC = () => {
    const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
    const [selectedOption, setSelectedOption] = useState("Europe");
    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+   const lastUpdateRef = useRef<number | null>(null); // Track the last update time
 
    const options = ["Europe", "America", "Asia"];
 
@@ -520,7 +521,8 @@ const App: React.FC = () => {
         player.x === 50000 &&
         player.y === 50000 &&
         player.score == 0.0 &&
-        !cashingOut){
+        !cashingOut &&
+        !isJoining){
             setGameEnded(1);
             setGameId(null);
         }
@@ -542,7 +544,8 @@ const App: React.FC = () => {
         if(Math.sqrt(player.mass) == 0 &&
         player.x === 50000 &&
         player.y === 50000 &&
-        player.score != 0.0
+        player.score != 0.0 &&
+        !isJoining
         ){
             setCashingOut(true);
             setGameEnded(2);
@@ -996,6 +999,7 @@ const App: React.FC = () => {
         let newplayerEntityPda : any = null;
         let myPlayerId = '';
         let myPlayerStatus = 'new_player';
+        let needToUndelegate = false;
         let need_to_undelegate = false;
         for (let i = 1; i < maxplayer+1; i++) {
             const playerentityseed = 'player' + i.toString();
@@ -1015,60 +1019,72 @@ const App: React.FC = () => {
             const playersaccER = await providerEphemeralRollup.current.connection.getAccountInfo(
                 playersComponentPda, "processed"
             );
+            //console.log('player', playerEntityPda.toString())
             if(playersacc){
                 const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
-                //console.log(playersParsedData)
-                if(playersaccER){
-                    const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
-                    //console.log(playersParsedDataER)
-                    if(playersParsedData.authority !== null && playersParsedDataER.authority !== null){
-                    //console.log('player', playersParsedDataER.authority.toString(), playersParsedData.authority.toString());
-                    if(playersParsedData.authority.toString() == playerKey.toString()){
-                        if(playersParsedDataER.authority.toString() == playerKey.toString()){
-                            myPlayerStatus = "resume_session";
-                            newplayerEntityPda = playerEntityPda;
-                            myPlayerId = playerentityseed;
-                            need_to_undelegate=false;
+                if(playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"){
+                    //console.log(playersParsedData, playersacc.owner.toString(), playersaccER?.owner.toString())
+                        if(playersParsedData.authority !== null){
+                        if(playersaccER){
+                            const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
+                            console.log(playersParsedDataER)
+                             //console.log('player', playersParsedDataER.authority.toString(), playersParsedData.authority.toString());
+                            if(playersParsedData.authority.toString() == playerKey.toString()){
+                                if(playersParsedDataER.authority.toString() == playerKey.toString()){
+                                    console.log(playersParsedData.authority.toString())
+                                    myPlayerStatus = "resume_session";
+                                    newplayerEntityPda = playerEntityPda;
+                                    myPlayerId = playerentityseed;
+                                    need_to_undelegate=false;
+                                    console.log('my player', newplayerEntityPda.toString())
+                                }
+                                else{
+                                    myPlayerStatus = "rejoin_session";
+                                    newplayerEntityPda = playerEntityPda;
+                                    myPlayerId = playerentityseed;
+                                    need_to_undelegate=false;
+                                }
+                            }else{
+                                // comment for now, this is a cleanup function...
+                                // in case you leave the page and get eaten
+                                /*if(playersParsedDataER.authority == null && 
+                                    playersParsedData.authority !== null && 
+                                    playersParsedDataER.x == 50000 &&
+                                    playersParsedDataER.y == 50000 &&
+                                    playersParsedDataER.score == 0 && 
+                                    newplayerEntityPda == null
+                                ){
+                                    // set join time on buy in, check join time here, set again on spawn
+                                    // this might cause conflict is players join at the same time
+                                    newplayerEntityPda = playerEntityPda;
+                                    myPlayerId = playerentityseed;
+                                    need_to_undelegate=true;
+                                }*/
+                            }
+                        }else if(playersParsedData.authority !== null){
+                            if(playersParsedData.authority.toString() == playerKey.toString()){
+                                myPlayerStatus = "rejoin_undelegated";
+                                newplayerEntityPda = playerEntityPda;
+                                myPlayerId = playerentityseed;
+                            }
                         }
-                        else{
-                            myPlayerStatus = "rejoin_undelegated";
-                            newplayerEntityPda = playerEntityPda;
-                            myPlayerId = playerentityseed;
-                            need_to_undelegate=false;
                         }
-                    }
-                    }else if(playersParsedData.authority !== null){
-                        //console.log('player', playersParsedDataER.authority, playersParsedData.authority.toString());
-                        //if(playersParsedData.authority.toString() == playerKey.toString()){
-                        if(playersParsedData.authority.toString() == playerKey.toString()){
-                            myPlayerStatus = "rejoin_undelegated";
-                            newplayerEntityPda = playerEntityPda;
-                            myPlayerId = playerentityseed;
-                        }
-                        
-                    }
-
-                    // comment for now, this is a cleanup function...
-                    // in case you leave the page and get eaten
-                    /*if(playersParsedDataER.authority == null && 
-                        playersParsedData.authority !== null && 
-                        playersParsedDataER.x == 50000 &&
-                        playersParsedDataER.y == 50000 &&
-                        playersParsedDataER.score == 0 && 
-                        newplayerEntityPda == null
-                    ){
-                        // set join time on buy in, check join time here, set again on spawn
-                        // this might cause conflict is players join at the same time
-                        newplayerEntityPda = playerEntityPda;
-                        myPlayerId = playerentityseed;
-                        need_to_undelegate=true;
-                    }*/
                 }
-                //console.log('player auth', playersParsedData.authority);
-                if(playersParsedData.authority == null && newplayerEntityPda == null){
+                else if(playersParsedData.authority == null && newplayerEntityPda == null){
+                    //console.log(playersParsedData)
                     newplayerEntityPda = playerEntityPda;
                     myPlayerId = playerentityseed;
                     need_to_undelegate=false;
+                }
+                else{
+                if(playersParsedData.authority !== null){
+                    if(playersParsedData.authority.toString() == playerKey.toString()){
+                        myPlayerStatus = "rejoin_undelegated";
+                        newplayerEntityPda = playerEntityPda;
+                        myPlayerId = playerentityseed;
+                        need_to_undelegate=false;
+                    }
+                } 
                 }
             }
             else{
@@ -1151,7 +1167,7 @@ const App: React.FC = () => {
                         combinedTx.add(soltransfertx);
                     }
 
-                    if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session"){
+                    if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session"){
                     if (!tokenAccountInfo) {
                         combinedTx.add(createTokenAccountTx);
                         combinedTx.add(transferIx); 
@@ -1173,31 +1189,42 @@ const App: React.FC = () => {
                     componentId: PLAYER_COMPONENT,
                     entity: newplayerEntityPda,
                 });
+                console.log('component pda', playerComponentPda.toString())
 
-                if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session"){
+                if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session"
+                    && myPlayerStatus !== "new_player" 
+                ){
                     try {
                         const undelegateIx = createUndelegateInstruction({
                             payer: playerKey,
                             delegatedAccount: playerComponentPda,
                             componentPda: PLAYER_COMPONENT,
                             });
-                        const undeltx = new anchor.web3.Transaction()
+                        let undeltx = new anchor.web3.Transaction()
                         .add(undelegateIx);
                         if (!walletRef.current) {
                             throw new Error('Wallet is not initialized');
                         } 
                         undeltx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
                         undeltx.feePayer = walletRef.current.publicKey;
-                        undeltx.sign(walletRef.current);
+                        //console.log(walletRef.current.publicKey.toString(), playerKey.toString(), newplayerEntityPda.toString(), providerEphemeralRollup.current.wallet.publicKey.toString());
+                        //undeltx.sign(walletRef.current);
+                        undeltx = await providerEphemeralRollup.current.wallet.signTransaction(undeltx);
                         const playerundelsignature = await providerEphemeralRollup.current.sendAndConfirm(undeltx, [], { skipPreflight: false });
-                        console.log('undelegate', playerundelsignature)
+                        /*const playerundelsignature = await providerEphemeralRollup.current.connection.sendRawTransaction(
+                            undeltx.serialize(), 
+                            { skipPreflight: true } 
+                        ).catch((error) => {
+                               console.log(error)
+                        });*/
+                        console.log('undelegate', playerundelsignature);
                     } catch (error) {
                         console.log('Error undelegating:', error);
                     }
                 }
 
                 console.log('vault', vault_token_account.toString(), 'sender', sender_token_account.toString());
-                if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session"){
+                if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session"){
                 const applyBuyInSystem = await ApplySystem({
                     authority: playerKey,
                     world: gameInfo.worldPda,
@@ -1261,8 +1288,8 @@ const App: React.FC = () => {
                 });
                 const buyintx = new anchor.web3.Transaction().add(computePriceIx).add(computeLimitIx)
                 .add(applyBuyInSystem.transaction);
-                //const buyinsignature = await submitTransaction(buyintx, "confirmed", true);
-                const buyinsignature = await retrySubmitTransaction(buyintx, connection, "confirmed");
+                const buyinsignature = await submitTransaction(buyintx, "confirmed", true);
+                //const buyinsignature = await retrySubmitTransaction(buyintx, connection, "confirmed");
                 //if buy in fails, reclaim sol + coins, if succeeds everything else will work
                 if(buyinsignature == null){
                     const reclaim_transaction = new Transaction();
@@ -1312,7 +1339,7 @@ const App: React.FC = () => {
                 }
                 }
 
-            //if(myPlayerStatus !== "resume_session"){
+            if(myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session"){
                 try {
                     const playerdeltx = new anchor.web3.Transaction();
                     const playerdelegateIx = createDelegateInstruction({
@@ -1322,21 +1349,36 @@ const App: React.FC = () => {
                     payer: playerKey,
                     });
                     playerdeltx.add(playerdelegateIx);
-                    const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                    playerdeltx.feePayer = walletRef.current.publicKey;
+                    playerdeltx.recentBlockhash = (await provider.connection.getLatestBlockhash()).blockhash;
+                    playerdeltx.sign(walletRef.current);
+                    /*const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
                         microLamports: 1000002,
                     });
                     const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
                         units: 80_000,
                     });
-                    playerdeltx.add(computePriceIx).add(computeLimitIx);
-                    const playerdelsignature = await provider.sendAndConfirm(playerdeltx, [], { skipPreflight: true, commitment: 'finalized' }); //submitTransaction(playerdeltx, "confirmed", true); 
+                    playerdeltx.add(computePriceIx).add(computeLimitIx);*/
+                    const playerdelsignature = await provider.sendAndConfirm(playerdeltx, [], { skipPreflight: true, commitment: 'confirmed' }); //submitTransaction(playerdeltx, "confirmed", true); 
+                    /*const playerdelsignature = await provider.connection.sendRawTransaction(
+                        playerdeltx.serialize(), 
+                        { skipPreflight: true } 
+                    ).catch((error) => {
+                           console.log(error)
+                    });*/
                     console.log(
                         `Delegation signature: ${playerdelsignature}`
                     );
+                    const acc = await providerEphemeralRollup.current.connection.getAccountInfo(
+                        playerComponentPda
+                    );
+                    if(acc){
+                    console.log('confirm del', acc.owner.toString());
+                    }
                 } catch (error) {
                     console.log('Error delegating:', error);
                 }
-            //}
+            }
 
             const applySystem = await ApplySystem({
                 authority: playerKey,
@@ -1379,9 +1421,9 @@ const App: React.FC = () => {
             });
             console.log('joined game', signature);
             
-            let playerJoined = false;
+            let playerJoined = true;
             let thisGameEnded = false;
-            const startTime = Date.now();
+            /*const startTime = Date.now();
             while (Date.now() - startTime < 5000) {
               const playersacc = await providerEphemeralRollup.current.connection.getAccountInfo(playerComponentPda, "processed");
               if (playersacc) {
@@ -1401,10 +1443,9 @@ const App: React.FC = () => {
               setTransactionError("New Player not found within 5 seconds, please retry joining.");
               setIsJoining(false);
               return;
-            }
+            }*/
             if (playerJoined) {
                 //dont join until player authority and position are updated
-                setIsJoining(false);
                 setGameId(mapEntityPda); 
                 setMapSize(selectGameId.size);
                 entityMatch.current = mapEntityPda;
@@ -1431,6 +1472,9 @@ const App: React.FC = () => {
                 setAllFood(new Array(foodEntityPdas.length).fill([]));
                 setFoodListLen(new Array(foodEntityPdas.length).fill(0));
                 await subscribeToGame(); 
+                setTimeout(() => {
+                    setIsJoining(false);
+                }, 5000);
             }
         
     }, [playerKey, submitTransaction, subscribeToGame]);
@@ -1777,7 +1821,7 @@ const App: React.FC = () => {
                 }
         };
         cleanUp();
-    }, [gameEnded, gameId]);
+    }, [gameEnded]);
 
     useEffect(() => {
         if(currentPlayer){
@@ -1929,6 +1973,7 @@ const App: React.FC = () => {
                 let signature = await processSessionEphemTransaction(alltransaction).catch((error) => {
                     console.log(error)
                 });
+                lastUpdateRef.current = Date.now();
                 setIsSubmitting(false);
                 setTransactionError(null);
                 setTransactionSuccess(null);
@@ -1947,6 +1992,36 @@ const App: React.FC = () => {
         
         return () => clearInterval(intervalId);
     }, [gameId, currentPlayer, exitHovered, isMouseDown]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if(lastUpdateRef.current !== null){
+            const now = Date.now();
+            if (now - lastUpdateRef.current > 1000) {
+                console.log("Forcing update to currentPlayer.x");
+                setCurrentPlayer((prev) => {
+                    if (!prev) {
+                        return null; // Handle the case where currentPlayer is null
+                    }
+                    return {
+                        ...prev,
+                        x: prev.x + 1, // Increment x
+                        y: prev.y ?? 0, // Ensure y is not undefined
+                        name: prev.name ?? "unnamed", // Provide a default for optional fields
+                        authority: prev.authority ?? null,
+                        radius: prev.radius ?? 0,
+                        mass: prev.mass ?? 0,
+                        score: prev.score ?? 0,
+                        target_x: prev.target_x ?? 0,
+                        target_y: prev.target_y ?? 0,
+                    };
+                });            
+            }
+        }
+        }, 1000);
+
+        return () => clearInterval(interval); // Cleanup interval on unmount
+    }, [gameId]);
 
     useEffect(() => {
         //const firstHalf = foodListLen.slice(0, Math.floor(foodListLen.length / 2));
