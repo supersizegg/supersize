@@ -60,7 +60,7 @@ pub mod buy_in {
         let wallet_balance = vault_token_account.amount / 10_u64.pow(decimals);
         let player_payout_account = Some(ctx.payout_token_account()?.key());
         let transfer_instruction = Transfer {
-            from: ctx.sender_token_account()?.to_account_info(),
+            from: ctx.payout_token_account()?.to_account_info(),
             to: ctx.vault_token_account()?.to_account_info(),
             authority: ctx.signer()?.to_account_info(),
         };
@@ -73,15 +73,15 @@ pub mod buy_in {
         let transfer_amount = (buy_in * scale_factor as f64).round() as u64;
         anchor_spl::token::transfer(cpi_ctx, transfer_amount)?;
 
+        let player_authority = Some(ctx.player_account()?.key());
         let player = &mut ctx.accounts.player;
-        let authority = *ctx.accounts.authority.key;
-
-        let player_key = Some(authority);
-        player.authority = player_key;
+        
+        player.authority = player_authority;
         player.payout_token_account = player_payout_account;
         player.buy_in = buy_in;
         player.current_game_wallet_balance = wallet_balance as f64;
-        
+        player.join_time = Clock::get()?.unix_timestamp;
+
         Ok(ctx.accounts)
     }
 
@@ -101,7 +101,7 @@ pub mod buy_in {
         #[account(mut)]
         vault_token_account: Account<'info, TokenAccount>,
         #[account(mut)]
-        sender_token_account: Account<'info, TokenAccount>,
+        player_account: Account<'info, TokenAccount>,
         #[account(mut)]
         payout_token_account: Account<'info, TokenAccount>,
         #[account(mut)]
