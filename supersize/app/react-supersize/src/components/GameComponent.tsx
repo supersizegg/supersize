@@ -46,10 +46,13 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
   let delta = 0.0;
   let accumulator = 0.0;
   
+  let previousPlayersPos = playersRef.current;  
+  let currentPlayersPos = playersRef.current; 
+
   let previousPlayerPos = currentPlayerRef.current;  
   let currentPlayerPos = currentPlayerRef.current; 
   useEffect(() => {
-    foodRef.current = visibleFood;
+    foodRef.current = visibleFood; //maybe need more frequent
   }, [visibleFood]);
   useEffect(() => {
     playersRef.current = players;
@@ -64,6 +67,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     delta = 0.0;
     accumulator = 0.0;  
     currentPlayerPos = currentPlayerRef.current;
+    currentPlayersPos = playersRef.current; //maybe too much
   };
   
   const loop = (time: number) => {
@@ -74,15 +78,43 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
   
     while (accumulator >= timeStep) {
       previousPlayerPos = currentPlayerPos;
-      
+      previousPlayersPos = currentPlayersPos;
+
       if(currentPlayerPos){
         currentPlayerPos = updatePlayerPosition(currentPlayerPos, currentPlayerPos.target_x, currentPlayerPos.target_y, timeStep);
+        currentPlayersPos.forEach(blob => {
+          blob = updatePlayerPosition(blob, blob.target_x, blob.target_y, timeStep);
+        });
       }
       accumulator -= timeStep;
     }
     const alpha = accumulator / timeStep;
     if(previousPlayerPos && currentPlayerPos){
       renderWithInterpolation(previousPlayerPos, currentPlayerPos, alpha);
+      currentPlayersPos.forEach((blob, index) => {
+        if(blob && previousPlayersPos[index]){
+          const interpolatedX = previousPlayersPos[index].x + (blob.x - previousPlayersPos[index].x) * alpha;
+          const interpolatedY = previousPlayersPos[index].y + (blob.y - previousPlayersPos[index].y) * alpha;
+          if(currentPlayerRef.current){
+            blob.x = interpolatedX;
+            blob.y = interpolatedY;
+          }
+          const canvas = canvasRef.current;
+          if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              
+              //canvas.width = screenSize.width * scale;
+              //canvas.height = screenSize.height * scale;
+              //ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+              playersRef.current.forEach(blob => {
+                drawPlayer(ctx, blob, scale);
+              });
+            }
+          }
+        }
+      });
     }
 
     window.requestAnimationFrame(loop);

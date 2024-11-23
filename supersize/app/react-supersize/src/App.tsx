@@ -778,6 +778,7 @@ const App: React.FC = () => {
             
         } catch (error) {
             setTransactionError(`Transaction failed: ${error}`);
+            setIsJoining(false);
         } finally {
             setIsSubmitting(false);
         }
@@ -796,7 +797,8 @@ const App: React.FC = () => {
             } = await provider.connection.getLatestBlockhashAndContext();
 
             if (!walletRef.current) {
-                throw new Error('Wallet is not initialized');
+                setTransactionError('Wallet is not initialized');
+                return null;
             }
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = walletRef.current.publicKey;
@@ -941,10 +943,17 @@ const App: React.FC = () => {
      * Create a new join game transaction
      */
     const joinGameTx = useCallback(async (selectGameId: ActiveGame) => {
-        if (!playerKey) throw new WalletNotConnectedError();
-        if (!publicKey) throw new WalletNotConnectedError();
+        if (!playerKey){
+            setTransactionError("Wallet not connected");
+            return;
+        }
+        if (!publicKey){
+            setTransactionError("Wallet not connected");
+            return;
+        }
         if (isSubmitting) return;
         if (isJoining) return;
+        if (selectGameId.name == "loading") return;
         setIsJoining(true);
         setScreenSize({width:selectGameId.size, height:selectGameId.size});
         const gameInfo = selectGameId; 
@@ -1113,9 +1122,6 @@ const App: React.FC = () => {
                         });
                     let undeltx = new anchor.web3.Transaction()
                     .add(undelegateIx);
-                    if (!walletRef.current) {
-                        throw new Error('Wallet is not initialized');
-                    } 
                     undeltx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
                     undeltx.feePayer = walletRef.current.publicKey;
                     undeltx.sign(walletRef.current);
@@ -1283,7 +1289,6 @@ const App: React.FC = () => {
                     setIsSubmitting(false);
                     setIsJoining(false);
                     return;
-                    //throw new Error('Buy in failed, reclaimed SOL');
                 }
             }
 
@@ -1323,7 +1328,6 @@ const App: React.FC = () => {
             console.log('joined game', signature);
             
             if (signature) {
-                //dont join until player authority and position are updated
                 setGameId(mapEntityPda); 
                 setMapSize(selectGameId.size);
                 entityMatch.current = mapEntityPda;
@@ -1367,9 +1371,13 @@ const App: React.FC = () => {
     }
 
     const preExitGameTx = useCallback(async () => {
-        if (!playerKey) throw new WalletNotConnectedError();
+        if (!playerKey){
+            setTransactionError('Wallet is not initialized');
+            return null;
+        }
         if(currentWorldId.current==null){
-            throw new Error("world not found");
+            setTransactionError('world not found');
+            return null;
         }
         const player_entity = currentPlayerEntity.current as PublicKey;
         const map_entity = entityMatch.current as PublicKey;
@@ -1396,9 +1404,6 @@ const App: React.FC = () => {
             context: { slot: minContextSlot },
             value: { blockhash, lastValidBlockHeight }
         } = await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
-        if (!walletRef.current) {
-            throw new Error('Wallet is not initialized');
-        } 
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = walletRef.current.publicKey;
         transaction.sign(walletRef.current);
@@ -1410,9 +1415,13 @@ const App: React.FC = () => {
     }, [playerKey, submitTransaction, subscribeToGame]);
 
     const exitGameTx = useCallback(async () => {
-        if (!playerKey) throw new WalletNotConnectedError();
+        if (!playerKey){
+            setTransactionError('Wallet is not initialized');
+            return null;
+        }
         if(currentWorldId.current==null){
-            throw new Error("world not found");
+            setTransactionError('world not found');
+            return null;
         }
         const player_entity = currentPlayerEntity.current as PublicKey;
         const map_entity = entityMatch.current as PublicKey;
@@ -1439,10 +1448,6 @@ const App: React.FC = () => {
             context: { slot: minContextSlot },
             value: { blockhash, lastValidBlockHeight }
         } = await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
-
-        if (!walletRef.current) {
-            throw new Error('Wallet is not initialized');
-        } 
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = walletRef.current.publicKey;
         transaction.sign(walletRef.current);
@@ -1467,7 +1472,8 @@ const App: React.FC = () => {
             !cashingOut)
         ) {
             if(currentWorldId.current==null){
-                throw new Error("world not found");
+                setTransactionError('world not found');
+                return;
             }
             //console.log(currentPlayer)
             if(currentPlayerEntity.current && anteroomEntity.current && entityMatch.current){
@@ -1487,9 +1493,6 @@ const App: React.FC = () => {
                     });
                 const tx = new anchor.web3.Transaction()
                 .add(undelegateIx);
-                if (!walletRef.current) {
-                    throw new Error('Wallet is not initialized');
-                } 
                 tx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
                 tx.feePayer = walletRef.current.publicKey;
                 tx.sign(walletRef.current);
@@ -1832,9 +1835,6 @@ const App: React.FC = () => {
                     value: { blockhash, lastValidBlockHeight }
                 } = await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
     
-                if (!walletRef.current) {
-                    throw new Error('Wallet is not initialized');
-                }
                 alltransaction.recentBlockhash = blockhash;
                 alltransaction.feePayer = walletRef.current.publicKey;
                 alltransaction.sign(walletRef.current);
@@ -1937,7 +1937,6 @@ const App: React.FC = () => {
         if(currentPlayer?.radius){
             const centerX = screenSize.width / 2;
             const centerY = screenSize.height / 2;
-            //console.log(visibleFood)
             return visibleFood.some(food => {
                 const distance = Math.sqrt((food.x - centerX) ** 2 + (food.y - centerY) ** 2);
                 return distance < currentPlayer.radius;
@@ -1952,14 +1951,9 @@ const App: React.FC = () => {
         const mapSectionCount = sectionsPerRow * sectionsPerRow;
         const adjustedX = Math.min(x, mapSize - 1);
         const adjustedY = Math.min(y, mapSize - 1);
-        //const row = Math.floor(adjustedX / sectionSize);
-        //const col = Math.floor(adjustedY / sectionSize);
         const row = Math.floor(adjustedY / sectionSize); 
         const col = Math.floor(adjustedX / sectionSize); 
         let baseIndex = row * sectionsPerRow + col;
-        //if (duplicateEncoding) {
-        //    baseIndex += mapSectionCount;
-        //}
         let food_indices : number[] = [];
         for (let i = 0; i < duplicateEncodings; i++) {
             food_indices.push(baseIndex + i * mapSectionCount)
@@ -2021,10 +2015,6 @@ const App: React.FC = () => {
                 value: { blockhash, lastValidBlockHeight }
             } = await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
 
-            if (!walletRef.current) {
-                throw new Error('Wallet is not initialized');
-            }
-
             allTransaction.add(newFoodTx.transaction);
             allTransaction.recentBlockhash = blockhash;
             allTransaction.feePayer = foodwalletRef.current.publicKey;
@@ -2041,7 +2031,6 @@ const App: React.FC = () => {
                     providerEphemeralRollup.current.connection,
                     "finalized"
                   );
-                //console.log('new food', signature)
             }
         } catch (error) {
             //console.log("Transaction failed", error);
@@ -2063,11 +2052,10 @@ const App: React.FC = () => {
         }, 1000);
         
         const startTime = Date.now();
-        // Set up an interval to continually check if 6 seconds have passed
         const checkRemovalTime = setInterval(() => {
-            if (playerRemovalTimeRef.current && !playerRemovalTimeRef.current.isZero()) { // Ensure it's not zero
-              const startTime = playerRemovalTimeRef.current.toNumber() * 1000; // Convert to ms
-              clearInterval(checkRemovalTime); // Stop checking for `playerRemovalTime`
+            if (playerRemovalTimeRef.current && !playerRemovalTimeRef.current.isZero()) {
+              const startTime = playerRemovalTimeRef.current.toNumber() * 1000; 
+              clearInterval(checkRemovalTime); 
         
               const timeoutinterval = setInterval(() => {
                 const currentTime = Date.now();
@@ -2084,7 +2072,7 @@ const App: React.FC = () => {
                 }
               }, 1000);
             }
-          }, 100); // Check every 100ms if `playerRemovalTime` has been updated
+          }, 100); 
       };
     
       useEffect(() => {
@@ -2146,22 +2134,21 @@ const App: React.FC = () => {
                 const totalTransactions = recentSamples.reduce((total, sample) => total + sample.numTransactions, 0);
                 const averageTransactions = totalTransactions / recentSamples.length;
                 setCurrentTPS(Math.round(averageTransactions));
-                //console.log(recentSamples[0].numTransactions);
         };
         getTPS();
       }, []);
 
         async function getTokenBalance(connection: Connection, vault: PublicKey, decimals: number): Promise<number> {
         const balance = await connection.getTokenAccountBalance(vault);
-        return parseFloat(balance.value.amount) / Math.pow(10, decimals); // Adjust the balance for the token's decimals
+        return parseFloat(balance.value.amount) / Math.pow(10, decimals); 
         }
         async function parsePoolInfo() {
         const  mainnet_connection =  new Connection("https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
         const info = await mainnet_connection.getAccountInfo(new PublicKey(SOL_USDC_POOL_ID));
         if (!info) return;
         const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(info.data);        
-        const baseTokenDecimals = 9; // Decimals for SOL
-        const quoteTokenDecimals = 6; // Decimals for USDC
+        const baseTokenDecimals = 9; 
+        const quoteTokenDecimals = 6; 
         const baseTokenBalance = await getTokenBalance(mainnet_connection, poolState.baseVault, baseTokenDecimals);
         const quoteTokenBalance = await getTokenBalance(mainnet_connection, poolState.quoteVault, quoteTokenDecimals);        
         const priceOfBaseInQuote = quoteTokenBalance / baseTokenBalance;
@@ -2288,7 +2275,6 @@ const App: React.FC = () => {
                             return updatedGames;
                         });
                     } else {
-                        //console.log(providerEphemeralRollup.current)
                         console.log(`No account info found for game ID ${activeGames[i].worldId}`);
                     }
                 } catch (error) {
