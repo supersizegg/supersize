@@ -123,6 +123,7 @@ const App: React.FC = () => {
         "https://supersize.magicblock.app",
         "https://supersize-sin.magicblock.app",
       ];
+      
     /*
     const endpoints = [
       "https://supersize-mainnet.magicblock.app",
@@ -175,7 +176,7 @@ const App: React.FC = () => {
           worldId: new anchor.BN(3),
           worldPda: new PublicKey('8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt'),
         },
-      };*/
+      }; */
       
       const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-sin.magicblock.app": {
@@ -187,8 +188,8 @@ const App: React.FC = () => {
           worldPda: new PublicKey('44pNoTqCWknyqKv2Z4XDsed65pVZ9D6UejHHRiKB3znf'),
         },
         "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1654),
-          worldPda: new PublicKey('6HqUD4H8b3cybqDvFkxfSSX5hQprKRcvKjR2b66mtSkx'),
+          worldId: new anchor.BN(1658),
+          worldPda: new PublicKey('7bm6JGFXqWuMuX9r1E89bz3z3o37YCVZ87BJZrVaatp8'),
         },
       };
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
@@ -267,7 +268,7 @@ const App: React.FC = () => {
         }),
         new NodeWallet(wallet) 
     ));
-
+    
     anchor.setProvider(provider);
 
     useEffect(() => {
@@ -522,8 +523,6 @@ const App: React.FC = () => {
         const elapsedTime = currentTime - startTime;
         //console.log('elapsed time', elapsedTime)
         if(Math.sqrt(player.mass) == 0 &&
-        player.x === 50000 &&
-        player.y === 50000 &&
         player.score == 0.0 &&
         !cashingOut &&
         !isJoining){
@@ -551,8 +550,6 @@ const App: React.FC = () => {
             } as Blob);
 
         if(Math.sqrt(player.mass) == 0 &&
-        player.x === 50000 &&
-        player.y === 50000 &&
         player.score != 0.0 &&
         !isJoining
         ){
@@ -778,6 +775,7 @@ const App: React.FC = () => {
 
             setTransactionSuccess(`Transaction confirmed`);
             return signature;
+            
         } catch (error) {
             setTransactionError(`Transaction failed: ${error}`);
         } finally {
@@ -1027,24 +1025,18 @@ const App: React.FC = () => {
             const playersaccER = await providerEphemeralRollup.current.connection.getAccountInfo(
                 playersComponentPda, "processed"
             );
-            //console.log('player', playerEntityPda.toString())
             if(playersacc){
                 const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
                 if(playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"){
-                    //console.log(playersParsedData, playersacc.owner.toString(), playersaccER?.owner.toString())
                     if(playersParsedData.authority !== null){
                         if(playersaccER){
                             const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
-                            //console.log(playersParsedDataER)
-                             //console.log('player', playersParsedDataER.authority.toString(), playersParsedData.authority.toString());
                             if(playersParsedData.authority.toString() == playerKey.toString()){
                                 if(playersParsedDataER.authority.toString() == playerKey.toString()){
-                                    //console.log(playersParsedData.authority.toString())
                                     myPlayerStatus = "resume_session";
                                     newplayerEntityPda = playerEntityPda;
                                     myPlayerId = playerentityseed;
                                     need_to_undelegate=false;
-                                    //console.log('my player', newplayerEntityPda.toString())
                                 }
                                 else{
                                     myPlayerStatus = "rejoin_session";
@@ -1053,8 +1045,6 @@ const App: React.FC = () => {
                                     need_to_undelegate=false;
                                 }
                             }else{
-                                // comment for now, this is a cleanup function...
-                                // in case you leave the page and get eaten
                                 if(playersParsedDataER.authority == null && 
                                     playersParsedData.authority !== null && 
                                     playersParsedDataER.x == 50000 &&
@@ -1083,7 +1073,6 @@ const App: React.FC = () => {
                     }
                 }
                 else if(playersParsedData.authority == null && newplayerEntityPda == null){
-                    //console.log(playersParsedData)
                     newplayerEntityPda = playerEntityPda;
                     myPlayerId = playerentityseed;
                     need_to_undelegate=false;
@@ -1163,7 +1152,6 @@ const App: React.FC = () => {
 
             if(anteacc){
                 const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
-                console.log(anteParsedData);
                 vault_token_account = anteParsedData.vaultTokenAccount;
                 mint_of_token_being_sent = anteParsedData.token;
                 let usertokenAccountInfo = await getAssociatedTokenAddress(
@@ -1171,33 +1159,13 @@ const App: React.FC = () => {
                     publicKey       
                   ); 
                 payout_token_account = usertokenAccountInfo;
-                const playerTokenAccount = await getAssociatedTokenAddress(mint_of_token_being_sent, playerKey);
-                sender_token_account = playerTokenAccount;
+                
+                /*
                 const playerbalance = await connection.getBalance(playerKey, 'processed');
                 let targetBalance = 0.002 * LAMPORTS_PER_SOL;
                 const amountToTransfer = targetBalance > playerbalance ? targetBalance - playerbalance : 0;
-                const tokenAccountInfo = await connection.getAccountInfo(playerTokenAccount);
-                let tokenaccountInfobalance = BigInt(0);
-                if (tokenAccountInfo) {
-                    const tokenaccountInfodata = await getAccount(connection, sender_token_account);
-                    let tokenaccountInfobalance = tokenaccountInfodata.amount;
-                }
                 console.log(amountToTransfer);
                 if(amountToTransfer > 0){
-                    const createTokenAccountTx = createAssociatedTokenAccountInstruction(
-                            publicKey,
-                            playerTokenAccount,
-                            playerKey,
-                            mint_of_token_being_sent,
-                    );
-                    const transferIx = createTransferInstruction(
-                        usertokenAccountInfo,
-                        playerTokenAccount,
-                        publicKey,
-                        buyIn * 10 ** anteParsedData.tokenDecimals,
-                        [],
-                        splToken.TOKEN_PROGRAM_ID,
-                    );
                     const soltransfertx = SystemProgram.transfer({
                         fromPubkey: publicKey,
                         toPubkey: playerKey,
@@ -1205,13 +1173,12 @@ const App: React.FC = () => {
                     });
                     
                     combinedTx.add(soltransfertx);
-                }
+                } */
                 }else{
                     setTransactionError("Failed to find game token info");
                     return;
                 }
 
-                console.log('vault', vault_token_account.toString(), 'sender', sender_token_account.toString());
                 if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session"){
                 const applyBuyInSystem = await ApplySystem({
                     authority: publicKey,
@@ -1237,7 +1204,7 @@ const App: React.FC = () => {
                           isSigner: false,
                         },
                         {
-                          pubkey: playerKey, //sender_token_account
+                          pubkey: playerKey, 
                           isWritable: true,
                           isSigner: false,
                         },
@@ -1293,7 +1260,7 @@ const App: React.FC = () => {
                     }
                 } catch (error) {
                     console.log('Error delegating:', error);
-                    const reclaim_transaction = new Transaction();
+                    {/* const reclaim_transaction = new Transaction();
                     const playerbalance = await connection.getBalance(playerKey, 'processed');
                     const solTransferInstruction = SystemProgram.transfer({
                         fromPubkey: playerKey,
@@ -1311,9 +1278,10 @@ const App: React.FC = () => {
                     const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
                     console.log(
                         `buy in failed, reclaimed tokens: ${reclaimsig}`
-                    );
-                    setTransactionError("Buy in failed, reclaimed SOL and tokens");
+                    ); */}
+                    setTransactionError("Buy in failed, please retry");
                     setIsSubmitting(false);
+                    setIsJoining(false);
                     return;
                     //throw new Error('Buy in failed, reclaimed SOL');
                 }
@@ -1343,12 +1311,6 @@ const App: React.FC = () => {
                 context: { slot: minContextSlot },
                 value: { blockhash, lastValidBlockHeight }
             } = await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
-
-            if (!walletRef.current) {
-                setTransactionError("Wallet not found, please retry.");
-                return;
-                //throw new Error('Wallet is not initialized');
-            } 
             jointransaction.recentBlockhash = blockhash;
             jointransaction.feePayer = walletRef.current.publicKey;
             jointransaction.sign(walletRef.current);
@@ -1360,30 +1322,7 @@ const App: React.FC = () => {
             });
             console.log('joined game', signature);
             
-            let playerJoined = true;
-            let thisGameEnded = false;
-            /*const startTime = Date.now();
-            while (Date.now() - startTime < 5000) {
-              const playersacc = await providerEphemeralRollup.current.connection.getAccountInfo(playerComponentPda, "processed");
-              if (playersacc) {
-                const playersParsedData = playerClientER.coder.accounts.decode("player", playersacc.data);
-                if (playersParsedData.authority !== null) {
-                    if(playersParsedData.x == 50000 && playersParsedData.y == 50000 && playersParsedData.score !== 0){
-                        thisGameEnded = true;
-                    }
-                    playerJoined = true;
-                    break; 
-                }
-              }
-              await new Promise(resolve => setTimeout(resolve, 100)); 
-            }
-            if (Date.now() - startTime >= 5000) {
-              //throw new Error("New Player not found within 5 seconds.");
-              setTransactionError("New Player not found within 5 seconds, please retry joining.");
-              setIsJoining(false);
-              return;
-            }*/
-            if (playerJoined) {
+            if (signature) {
                 //dont join until player authority and position are updated
                 setGameId(mapEntityPda); 
                 setMapSize(selectGameId.size);
@@ -1517,233 +1456,238 @@ const App: React.FC = () => {
         
     }, [playerKey, submitTransaction, subscribeToGame]);
 
-    useEffect(() => {
-        const cleanUp = async () => {
-                if (
-                    currentPlayer &&
-                    Math.sqrt(currentPlayer.mass) == 0 &&
-                    currentPlayer.x === 50000 &&
-                    currentPlayer.y === 50000 && 
-                    ((cashingOut && gameEnded==2) ||
-                    !cashingOut)
-                ) {
-                    if(currentWorldId.current==null){
-                        throw new Error("world not found");
-                    }
-                    //console.log(currentPlayer)
-                    if(currentPlayerEntity.current && anteroomEntity.current && entityMatch.current){
-                        const myplayerComponent = FindComponentPda({
-                            componentId: PLAYER_COMPONENT,
-                            entity: currentPlayerEntity.current,
-                        });
-                        let newplayersComponentClient = await getComponentsClient(PLAYER_COMPONENT);
-                        (newplayersComponentClient.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayerCashout).catch((error: any) => {
-                            console.error("Failed to fetch account:", error);
-                            });
-                        const undelegateIx = createUndelegateInstruction({
-                            payer: playerKey,
-                            delegatedAccount: myplayerComponent,
-                            componentPda: PLAYER_COMPONENT,
-                            });
-                        const tx = new anchor.web3.Transaction()
-                        .add(undelegateIx);
-                        if (!walletRef.current) {
-                            throw new Error('Wallet is not initialized');
-                        } 
-                        tx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
-                        tx.feePayer = walletRef.current.publicKey;
-                        tx.sign(walletRef.current);
-                        try {
-                            const playerdelsignature = await providerEphemeralRollup.current.sendAndConfirm(tx, [], { skipPreflight: false });
-                            await waitSignatureConfirmation(
-                                playerdelsignature,
-                                providerEphemeralRollup.current.connection,
-                                "finalized"
-                            );
-                            console.log('undelegate', playerdelsignature)
-                        } catch (error) {
-                            console.log('Error undelegating:', error);
-                        }
 
-                        const anteComponentPda = FindComponentPda({
-                            componentId: ANTEROOM_COMPONENT,
-                            entity: anteroomEntity.current,
-                        });
-                        const anteComponentClient= await getComponentsClient(ANTEROOM_COMPONENT);
-                        const anteacc = await provider.connection.getAccountInfo(
-                            anteComponentPda, "processed"
-                        );
-                        const mapComponent = FindComponentPda({
-                            componentId: MAP_COMPONENT,
-                            entity: entityMatch.current,
-                        });
-
-                        let token_account_owner_pda = new PublicKey(0);
-                        let vault_token_account = new PublicKey(0);
-                        let mint_of_token_being_sent = new PublicKey(0);
-                        let sender_token_account = new PublicKey(0);
-                        let owner_token_account = new PublicKey(0);
-                        let supersize_token_account = new PublicKey(0);
-                        let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
-                
-                        if(anteacc && savedPublicKey){
-                            const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
-                            vault_token_account = anteParsedData.vaultTokenAccount;
-                            mint_of_token_being_sent = anteParsedData.token;
-                            owner_token_account = anteParsedData.gamemasterTokenAccount;
-                            //supersize_token_account = anteParsedData.gamemasterTokenAccount;
-                            supersize_token_account = await getAssociatedTokenAddress(mint_of_token_being_sent, new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB"));
-                            let usertokenAccountInfo = await getAssociatedTokenAddress(
-                                mint_of_token_being_sent,       
-                                savedPublicKey     
-                              ); 
-                            let playerTokenAccount = await getAssociatedTokenAddress(mint_of_token_being_sent, playerKey);
-                            sender_token_account = usertokenAccountInfo;
-                            let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
-                                [Buffer.from("token_account_owner_pda"), mapComponent.toBuffer()],
-                                vault_program_id
-                                );
-                            if (playerCashoutAddy){
-                                sender_token_account = playerCashoutAddy;
-                            }
-                           if(cashingOut && gameEnded==2){
-                            const applyCashOutSystem = await ApplySystem({
-                                authority: playerKey,
-                                world: currentWorldId.current,
-                                entities: [
-                                  {
-                                    entity: currentPlayerEntity.current,
-                                    components: [{ componentId:PLAYER_COMPONENT}],
-                                  },
-                                  {
-                                    entity: anteroomEntity.current,
-                                    components: [{ componentId:ANTEROOM_COMPONENT }],
-                                  },
-                                ], 
-                                systemId: CASH_OUT,
-                                extraAccounts: [
-                                    {
-                                      pubkey: vault_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                    },
-                                    {
-                                      pubkey: sender_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                    },
-                                    {
-                                        pubkey: owner_token_account,
-                                        isWritable: true,
-                                        isSigner: false,
-                                      },
-                                      {
-                                        pubkey: supersize_token_account,
-                                        isWritable: true,
-                                        isSigner: false,
-                                      },
-                                      {
-                                        pubkey: tokenAccountOwnerPda,
-                                        isWritable: true,
-                                        isSigner: false,
-                                      },
-                                    {
-                                      pubkey: playerKey,
-                                      isWritable: true,
-                                      isSigner: false,
-                                    },
-                                    {
-                                      pubkey: SystemProgram.programId,
-                                      isWritable: false,
-                                      isSigner: false,
-                                    },
-                                    {
-                                      pubkey: TOKEN_PROGRAM_ID,
-                                      isWritable: false,
-                                      isSigner: false,
-                                    },
-                                    {
-                                      pubkey: SYSVAR_RENT_PUBKEY,
-                                      isWritable: false,
-                                      isSigner: false,
-                                    },
-                                  ],
-                              });
-                              const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
-                                microLamports: 1000002,
-                            });
-                            const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
-                                units: 105_000,
-                            });
-                            const cashouttx = new anchor.web3.Transaction().add(computePriceIx).add(computeLimitIx).add(applyCashOutSystem.transaction);
-                            //const cashoutsignature = await submitTransaction(cashouttx, "confirmed", true);
-                            const cashoutsignature = await retrySubmitTransaction(cashouttx, connection, "confirmed");
-                            console.log('cashout', cashoutsignature);
-                            if (cashoutsignature){
-                                setCashoutTx(cashoutsignature);
-                            }else{
-                                setTransactionError("Error cashing out, please rejoin game to resume cashout");
-                                return;
-                            }
-                            }
-                            const reclaim_transaction = new Transaction(); //.add(computePriceIx);
-                            const playerbalance = await connection.getBalance(playerKey, 'processed');
-                            const solTransferInstruction = SystemProgram.transfer({
-                                fromPubkey: playerKey,
-                                toPubkey: savedPublicKey,
-                                lamports: playerbalance - 1000000,
-                            });
-                            reclaim_transaction.add(solTransferInstruction);
-                            const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
-                                microLamports: 1000002,
-                            });
-                            const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
-                                units: 10_000,
-                            });
-                            reclaim_transaction.add(computePriceIx).add(computeLimitIx);
-                            const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
-                            console.log("Reclaim SOL", reclaimsig, playerbalance);
-
-                            if(reclaimsig){
-                                setReclaimTx(reclaimsig);
-                            }else{
-                                setTransactionError("Error reclaiming SOL");
-                                //setGameEnded(4);
-                            }
-
-                            playersComponentSubscriptionId.current = [];
-                            currentPlayerEntity.current = null;
-                            entityMatch.current = null;
-                            foodEntities.current = [];
-                            setPlayers([]);
-                            setAllFood([]);
-                            setFoodListLen([]);
-                        }
-                        }
-
-                        setGameId(null);
-                        //if(gameEnded==0){
-                        //    setGameEnded(1);
-                        //}
-                        
-                        if (mapComponentSubscriptionId?.current) {
-                            await providerEphemeralRollup.current.connection.removeAccountChangeListener(mapComponentSubscriptionId.current);
-                        }
-                        if (myplayerComponentSubscriptionId?.current) {
-                            await providerEphemeralRollup.current.connection.removeAccountChangeListener(myplayerComponentSubscriptionId.current);
-                        }
-                        if (foodComponentSubscriptionId?.current) {
-                            for (let i = 0; i < foodEntities.current.length; i++) {
-                                await providerEphemeralRollup.current.connection.removeAccountChangeListener(foodComponentSubscriptionId.current[i]);
-                            }
-                        }
-                        if (playersComponentSubscriptionId?.current) {
-                            for (let i = 0; i < playerEntities.current.length; i++) {
-                                await providerEphemeralRollup.current.connection.removeAccountChangeListener(playersComponentSubscriptionId.current[i]);
-                            }
-                        }
+    const cleanUp = async () => {
+        //currentPlayer.x === 50000 &&
+        //currentPlayer.y === 50000 && 
+        if (
+            currentPlayer &&
+            Math.sqrt(currentPlayer.mass) == 0 &&
+            ((cashingOut && gameEnded==2) ||
+            !cashingOut)
+        ) {
+            if(currentWorldId.current==null){
+                throw new Error("world not found");
+            }
+            //console.log(currentPlayer)
+            if(currentPlayerEntity.current && anteroomEntity.current && entityMatch.current){
+                console.log('cashing out')
+                const myplayerComponent = FindComponentPda({
+                    componentId: PLAYER_COMPONENT,
+                    entity: currentPlayerEntity.current,
+                });
+                let newplayersComponentClient = await getComponentsClient(PLAYER_COMPONENT);
+                (newplayersComponentClient.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayerCashout).catch((error: any) => {
+                    console.error("Failed to fetch account:", error);
+                    });
+                const undelegateIx = createUndelegateInstruction({
+                    payer: playerKey,
+                    delegatedAccount: myplayerComponent,
+                    componentPda: PLAYER_COMPONENT,
+                    });
+                const tx = new anchor.web3.Transaction()
+                .add(undelegateIx);
+                if (!walletRef.current) {
+                    throw new Error('Wallet is not initialized');
+                } 
+                tx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
+                tx.feePayer = walletRef.current.publicKey;
+                tx.sign(walletRef.current);
+                try {
+                    const playerdelsignature = await providerEphemeralRollup.current.sendAndConfirm(tx, [], { skipPreflight: false });
+                    /*await waitSignatureConfirmation(
+                        playerdelsignature,
+                        providerEphemeralRollup.current.connection,
+                        "finalized"
+                    );*/
+                    console.log('undelegate', playerdelsignature)
+                } catch (error) {
+                    console.log('Error undelegating:', error);
                 }
-        };
+
+                const anteComponentPda = FindComponentPda({
+                    componentId: ANTEROOM_COMPONENT,
+                    entity: anteroomEntity.current,
+                });
+                const anteComponentClient= await getComponentsClient(ANTEROOM_COMPONENT);
+                const anteacc = await provider.connection.getAccountInfo(
+                    anteComponentPda, "processed"
+                );
+                const mapComponent = FindComponentPda({
+                    componentId: MAP_COMPONENT,
+                    entity: entityMatch.current,
+                });
+
+                let token_account_owner_pda = new PublicKey(0);
+                let vault_token_account = new PublicKey(0);
+                let mint_of_token_being_sent = new PublicKey(0);
+                let sender_token_account = new PublicKey(0);
+                let owner_token_account = new PublicKey(0);
+                let supersize_token_account = new PublicKey(0);
+                let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
+        
+                if(anteacc && savedPublicKey){
+                    const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
+                    vault_token_account = anteParsedData.vaultTokenAccount;
+                    mint_of_token_being_sent = anteParsedData.token;
+                    owner_token_account = anteParsedData.gamemasterTokenAccount;
+                    //supersize_token_account = anteParsedData.gamemasterTokenAccount;
+                    supersize_token_account = await getAssociatedTokenAddress(mint_of_token_being_sent, new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB"));
+                    let usertokenAccountInfo = await getAssociatedTokenAddress(
+                        mint_of_token_being_sent,       
+                        savedPublicKey     
+                      ); 
+                    sender_token_account = usertokenAccountInfo;
+                    let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+                        [Buffer.from("token_account_owner_pda"), mapComponent.toBuffer()],
+                        vault_program_id
+                        );
+                    if (playerCashoutAddy){
+                        sender_token_account = playerCashoutAddy;
+                    }
+                   if(cashingOut && gameEnded==2){
+                    const applyCashOutSystem = await ApplySystem({
+                        authority: savedPublicKey,
+                        world: currentWorldId.current,
+                        entities: [
+                          {
+                            entity: currentPlayerEntity.current,
+                            components: [{ componentId:PLAYER_COMPONENT}],
+                          },
+                          {
+                            entity: anteroomEntity.current,
+                            components: [{ componentId:ANTEROOM_COMPONENT }],
+                          },
+                        ], 
+                        systemId: CASH_OUT,
+                        extraAccounts: [
+                            {
+                              pubkey: vault_token_account,
+                              isWritable: true,
+                              isSigner: false,
+                            },
+                            {
+                              pubkey: sender_token_account,
+                              isWritable: true,
+                              isSigner: false,
+                            },
+                            {
+                                pubkey: owner_token_account,
+                                isWritable: true,
+                                isSigner: false,
+                              },
+                              {
+                                pubkey: supersize_token_account,
+                                isWritable: true,
+                                isSigner: false,
+                              },
+                              {
+                                pubkey: tokenAccountOwnerPda,
+                                isWritable: true,
+                                isSigner: false,
+                              },
+                            {
+                              pubkey: savedPublicKey,
+                              isWritable: true,
+                              isSigner: false,
+                            },
+                            {
+                              pubkey: SystemProgram.programId,
+                              isWritable: false,
+                              isSigner: false,
+                            },
+                            {
+                              pubkey: TOKEN_PROGRAM_ID,
+                              isWritable: false,
+                              isSigner: false,
+                            },
+                            {
+                              pubkey: SYSVAR_RENT_PUBKEY,
+                              isWritable: false,
+                              isSigner: false,
+                            },
+                          ],
+                      });
+                    const cashouttx = new anchor.web3.Transaction().add(applyCashOutSystem.transaction); 
+                    const cashoutsignature = await submitTransactionUser(cashouttx);
+
+                    console.log('cashout', cashoutsignature);
+                    if (cashoutsignature){
+                        setCashoutTx(cashoutsignature);
+                        playersComponentSubscriptionId.current = [];
+                        currentPlayerEntity.current = null;
+                        entityMatch.current = null;
+                        foodEntities.current = [];
+                        setPlayers([]);
+                        setAllFood([]);
+                        setFoodListLen([]);
+                        setGameId(null);
+                    }else{
+                        setCashoutTx("error");
+                        setTransactionError("Error cashing out, please retry");
+                        return;
+                    }
+                    }else{
+                        playersComponentSubscriptionId.current = [];
+                        currentPlayerEntity.current = null;
+                        entityMatch.current = null;
+                        foodEntities.current = [];
+                        setPlayers([]);
+                        setAllFood([]);
+                        setFoodListLen([]);
+                        setGameId(null);
+                    }
+                    
+                    /*const reclaim_transaction = new Transaction(); //.add(computePriceIx);
+                    const playerbalance = await connection.getBalance(playerKey, 'processed');
+                    const solTransferInstruction = SystemProgram.transfer({
+                        fromPubkey: playerKey,
+                        toPubkey: savedPublicKey,
+                        lamports: playerbalance - 1000000,
+                    });
+                    reclaim_transaction.add(solTransferInstruction);
+                    const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                        microLamports: 1000002,
+                    });
+                    const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+                        units: 10_000,
+                    });
+                    reclaim_transaction.add(computePriceIx).add(computeLimitIx);
+                    const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
+                    console.log("Reclaim SOL", reclaimsig, playerbalance);
+
+                    if(reclaimsig){
+                        setReclaimTx(reclaimsig);
+                    }else{
+                        setTransactionError("Error reclaiming SOL");
+                        //setGameEnded(4);
+                    }*/
+                }
+                }
+                //if(gameEnded==0){
+                //    setGameEnded(1);
+                //}
+                
+                if (mapComponentSubscriptionId?.current) {
+                    await providerEphemeralRollup.current.connection.removeAccountChangeListener(mapComponentSubscriptionId.current);
+                }
+                if (myplayerComponentSubscriptionId?.current) {
+                    await providerEphemeralRollup.current.connection.removeAccountChangeListener(myplayerComponentSubscriptionId.current);
+                }
+                if (foodComponentSubscriptionId?.current) {
+                    for (let i = 0; i < foodEntities.current.length; i++) {
+                        await providerEphemeralRollup.current.connection.removeAccountChangeListener(foodComponentSubscriptionId.current[i]);
+                    }
+                }
+                if (playersComponentSubscriptionId?.current) {
+                    for (let i = 0; i < playerEntities.current.length; i++) {
+                        await providerEphemeralRollup.current.connection.removeAccountChangeListener(playersComponentSubscriptionId.current[i]);
+                    }
+                }
+        }
+    };
+
+    useEffect(() => {
         cleanUp();
     }, [gameEnded]);
 
@@ -1922,16 +1866,15 @@ const App: React.FC = () => {
             if(lastUpdateRef.current !== null){
             const now = Date.now();
             if (now - lastUpdateRef.current > 1000) {
-                console.log("Forcing update to currentPlayer.x");
                 setCurrentPlayer((prev) => {
                     if (!prev) {
-                        return null; // Handle the case where currentPlayer is null
+                        return null; 
                     }
                     return {
                         ...prev,
-                        x: prev.x + 1, // Increment x
-                        y: prev.y ?? 0, // Ensure y is not undefined
-                        name: prev.name ?? "unnamed", // Provide a default for optional fields
+                        x: prev.x + 1, 
+                        y: prev.y ?? 0, 
+                        name: prev.name ?? "unnamed", 
                         authority: prev.authority ?? null,
                         radius: prev.radius ?? 0,
                         mass: prev.mass ?? 0,
@@ -3111,6 +3054,7 @@ const App: React.FC = () => {
                 >
                     <div className="exitBox" style={{ background: 'black', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                         <p className="superExitInfo">You got eaten!</p>
+                        {/*
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
@@ -3137,7 +3081,7 @@ const App: React.FC = () => {
                             </g>
                         </svg>
                         )}
-                        </div>
+                        </div> */}
                         <button id="returnButton" onClick={() => window.location.reload()}>Return home</button>
                     </div>
                 </div>
@@ -3170,12 +3114,17 @@ const App: React.FC = () => {
                         >
                             Cashout transaction
                         </a>
-                        {cashoutTx != null? (
-                        <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{display:"inline", marginLeft:"5px", marginTop:"2px" }}>
-                            <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
-                            <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
-                        </svg>     
-                        ) : (            
+                        {cashoutTx != null ? (
+                        <>
+                            {cashoutTx != 'error' ? (  
+                            <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{display:"inline", marginLeft:"5px", marginTop:"2px" }}>
+                                <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                                <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                            </svg>    
+                            )
+                            : (<Button buttonClass="retryButton" title={"Retry"} onClickFunction={cleanUp}/> )}
+                        </> 
+                        ) : (          
                         <svg width="52" height="52" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff" style={{ display:"inline", marginLeft:"5px", marginTop:"2px", height:"20px", width:"20px"}}>
                             <g fill="none" fillRule="evenodd">
                                 <g transform="translate(1 1)" strokeWidth="2">
@@ -3188,6 +3137,7 @@ const App: React.FC = () => {
                         </svg>
                         )}
                         </div>
+                        {/*
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
@@ -3214,7 +3164,7 @@ const App: React.FC = () => {
                             </g>
                         </svg>
                         )}
-                        </div>
+                        </div> */}
                         <button id="returnButton" onClick={() => {window.location.reload(); setPlayerCashout(0);}}>Return home</button>
                     </div>
                 </div>

@@ -38,10 +38,17 @@ pub mod cash_out {
 
         let authority = *ctx.accounts.authority.key;
 
-        require!(ctx.accounts.player.authority == Some(authority), SupersizeError::NotOwner);
+        //require!(ctx.accounts.player.authority == Some(authority), SupersizeError::NotOwner);
         require!(ctx.accounts.player.map == ctx.accounts.anteroom.map, SupersizeError::MapKeyMismatch);
         require!(ctx.accounts.player.mass == 0, SupersizeError::StillInGame);
 
+        let player_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
+            &mut (ctx.sender_token_account()?.to_account_info().data.borrow()).as_ref()
+        )?;
+        require!(
+            player_token_account.owner == authority,
+            SupersizeError::NotOwner
+        );
         require!(
             ctx.sender_token_account()?.key() == ctx.accounts.player.payout_token_account.expect("Player payout account not set"),
             SupersizeError::InvalidPayoutAccount
