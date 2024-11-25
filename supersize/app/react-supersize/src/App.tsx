@@ -188,8 +188,8 @@ const App: React.FC = () => {
       
       const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-sin.magicblock.app": {
-          worldId: new anchor.BN(1656),
-          worldPda: new PublicKey('3grBdZ6VSV7F5ciSkog5KxQ8iEuDps2FC1L3gYtC5oPR'),
+          worldId: new anchor.BN(1660),
+          worldPda: new PublicKey('BWd4agmrCjgDBDtrQGkdraEPmPV7Shj4TYmDTRfG5yKB'),
         },
         "https://supersize.magicblock.app": {
           worldId: new anchor.BN(1659),
