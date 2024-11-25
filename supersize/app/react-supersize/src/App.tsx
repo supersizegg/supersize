@@ -5,6 +5,7 @@ import CreateGame from "./components/CreateGame";
 import GameComponent from "./components/GameComponent";
 import CreateGameComponent from "./components/CreateGameComponent";
 import Alert from "./components/Alert";
+import Leaderboard from "./components/Leaderboard";
 
 import {
     AddEntity,
@@ -59,6 +60,8 @@ import {
   } from "@solana/spl-token";
 import { LIQUIDITY_STATE_LAYOUT_V4 } from "@raydium-io/raydium-sdk";
 import { set } from "@metaplex-foundation/beet";
+import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
+
 import * as crypto from 'crypto-js';
 
 const bs58 = require('bs58');
@@ -83,6 +86,7 @@ const CASH_OUT = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
 interface Food {
     x: number;
     y: number;
+    color: string;
 }
 interface Blob {
     name: string;
@@ -97,6 +101,7 @@ interface Blob {
     removal: BN;
     target_x: number;
     target_y: number;
+    timestamp: number;
 }
 
 type ActiveGame = {
@@ -108,6 +113,9 @@ type ActiveGame = {
     size: number;
     image: string;
     token: string;
+    base_buyin: number;
+    min_buyin: number;
+    max_buyin: number;
   };
 
 const App: React.FC = () => {
@@ -184,8 +192,8 @@ const App: React.FC = () => {
           worldPda: new PublicKey('3grBdZ6VSV7F5ciSkog5KxQ8iEuDps2FC1L3gYtC5oPR'),
         },
         "https://supersize.magicblock.app": {
-          worldId: new anchor.BN(1653),
-          worldPda: new PublicKey('44pNoTqCWknyqKv2Z4XDsed65pVZ9D6UejHHRiKB3znf'),
+          worldId: new anchor.BN(1659),
+          worldPda: new PublicKey('9ry6WApsZivMZUnoirWkxWaLqZhQLCs6ALQV6qZzzBX'),
         },
         "https://supersize-fra.magicblock.app": {
           worldId: new anchor.BN(1658),
@@ -219,6 +227,7 @@ const App: React.FC = () => {
     
     const [panelContent, setPanelContent] = useState<JSX.Element | null>(null);
     const [buildViewerNumber, setbuildViewerNumber] = useState(0);
+    const [leaderBoardActive, setLeaderboardActive] = useState(false)
     const [isHovered, setIsHovered] = useState([false,false,false,false,false,false]);
 
    const [gameEnded, setGameEnded] = useState(0);
@@ -235,7 +244,7 @@ const App: React.FC = () => {
    const [footerVisible, setFooterVisible] = useState(false);
    const [playerExiting, setPlayerExiting] = useState(false);
    const [countdown, setCountdown] = useState(5);
-   const [buyIn, setBuyIn] = useState(1.0); 
+   const [buyIn, setBuyIn] = useState(0.0); 
 
    const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
    const [selectedOption, setSelectedOption] = useState("Europe");
@@ -357,13 +366,15 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (buyIn > 10) {
-            setBuyIn(10.0); 
+        if(activeGames[0]){
+            if (buyIn > activeGames[0].max_buyin) {
+                setBuyIn(activeGames[0].max_buyin); 
+            }
+            if (buyIn < activeGames[0].min_buyin){
+                setBuyIn(activeGames[0].min_buyin);
+            }
         }
-        if (buyIn < 0.1){
-            setBuyIn(0.1);
-        }
-    }, [buyIn]);
+    }, [buyIn, activeGames]);
 
     useEffect(() => {
         if (fastestEndpoint) {
@@ -378,7 +389,7 @@ const App: React.FC = () => {
         console.log('Updated providerEphemeralRollup:', providerEphemeralRollup.current);
         const { worldId, worldPda } = endpointToWorldMap[fastestEndpoint];
         //setActiveGames([{ worldId: worldId, worldPda: worldPda} as ActiveGame]);
-        const newGameInfo : ActiveGame = {worldId: worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:`${process.env.PUBLIC_URL}/token.png`, token:"LOADING"}
+        const newGameInfo : ActiveGame = {worldId: worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:`${process.env.PUBLIC_URL}/token.png`, token:"LOADING", base_buyin: 0, min_buyin: 0, max_buyin: 0}
         //setNewGameCreated(newGameInfo);
         setActiveGames([newGameInfo]);
         fetchAndLogMapData();
@@ -427,8 +438,13 @@ const App: React.FC = () => {
         const foodArray = section.food as any[];  
         const visibleFood: Food[] = [];
         const foodData: Food[] = [];
-        foodArray.forEach((foodItem) => {
-            foodData.push({ x: foodItem.x, y: foodItem.y });
+        foodArray.forEach((foodItem, index) => {
+            /*const colors = [
+                '#da375c', '#d7f5e2', '#fae661', '#e9392d', '#91cf97', '#4d6bad', '#5fb1f2', 
+              ];
+            const randomColor = colors[index % colors.length];
+            console.log(randomColor)*/
+            foodData.push({ x: foodItem.x, y: foodItem.y, color: 'None'});
             if (currentPlayer) {
                 const halfWidth = screenSize.width / 2;
                 const halfHeight = screenSize.height / 2;
@@ -473,6 +489,7 @@ const App: React.FC = () => {
             removal: player.scheduledRemovalTime,
             target_x: player.target_x,
             target_y: player.target_y,
+            timestamp: performance.now(),
         }));
         setLeaderboard(top10Players);
 
@@ -547,6 +564,7 @@ const App: React.FC = () => {
             removal: player.scheduledRemovalTime,
             target_x: player.targetX,
             target_y: player.targetY,
+            timestamp: performance.now(),
             } as Blob);
 
         if(Math.sqrt(player.mass) == 0 &&
@@ -581,8 +599,8 @@ const App: React.FC = () => {
                     accumulator.push({
                         name: playerx.name,
                         authority: playerx.authority,
-                        x: diffX + screenSize.width / 2,
-                        y: diffY + screenSize.height / 2,
+                        x: playerx.x, //diffX + screenSize.width / 2,
+                        y: playerx.y, //diffY + screenSize.height / 2,
                         radius: 4 + Math.sqrt(playerx.mass / 10) * 6,
                         mass: playerx.mass,
                         score: playerx.score,
@@ -591,6 +609,7 @@ const App: React.FC = () => {
                         removal: playerx.removal,
                         target_x: playerx.target_x,
                         target_y: playerx.target_y,
+                        timestamp: performance.now(),
                     });
                 }
             }
@@ -599,7 +618,7 @@ const App: React.FC = () => {
         }, []);
         setPlayers(newVisiblePlayers);
         }
-      }, [currentPlayer, allplayers]);
+      }, [currentPlayer]);
 
     const updateMap = useCallback((map: any) => {
         const playerArray = map.players as any[];
@@ -633,6 +652,7 @@ const App: React.FC = () => {
                         removal: player.scheduledRemovalTime,
                         target_x: player.targetX,
                         target_y: player.targetY,
+                        timestamp: performance.now(),
                     }; 
                     const updatedPlayers = [...prevPlayers];
                     updatedPlayers[player_index] = newPlayer;
@@ -1349,6 +1369,7 @@ const App: React.FC = () => {
                     removal: new BN(0),
                     target_x: 0,
                     target_y: 0,
+                    timestamp: 0,
                 }; 
                 setAllPlayers(new Array(playerEntityPdas.length).fill(emptyPlayer));
                 setAllFood(new Array(foodEntityPdas.length).fill([]));
@@ -1702,8 +1723,9 @@ const App: React.FC = () => {
                 const diffY = foodItem.y - currentPlayer.y;
                 if (Math.abs(diffX) <= screenSize.width / 2 && Math.abs(diffY) <= screenSize.height / 2) {
                     innerAcc.push({
-                        x: foodItem.x - currentPlayer.x + screenSize.width / 2,
-                        y: foodItem.y - currentPlayer.y + screenSize.height / 2
+                        x: foodItem.x, // - currentPlayer.x + screenSize.width / 2,
+                        y: foodItem.y, //- currentPlayer.y + screenSize.height / 2
+                        color: foodItem.color
                     });
                 }
                 return innerAcc;
@@ -1841,7 +1863,8 @@ const App: React.FC = () => {
                 let signature = await processSessionEphemTransaction(alltransaction).catch((error) => {
                     console.log(error)
                 });
-                lastUpdateRef.current = Date.now();
+                lastUpdateRef.current = performance.now();
+                //console.log(currentPlayer);
                 setIsSubmitting(false);
                 setTransactionError(null);
                 setTransactionSuccess(null);
@@ -1864,23 +1887,26 @@ const App: React.FC = () => {
     useEffect(() => {
         const interval = setInterval(() => {
             if(lastUpdateRef.current !== null){
-            const now = Date.now();
+            const now = performance.now();
+            //console.log(currentPlayer);
             if (now - lastUpdateRef.current > 1000) {
+                console.log('force update');
                 setCurrentPlayer((prev) => {
                     if (!prev) {
                         return null; 
                     }
                     return {
                         ...prev,
-                        x: prev.x + 1, 
-                        y: prev.y ?? 0, 
-                        name: prev.name ?? "unnamed", 
-                        authority: prev.authority ?? null,
-                        radius: prev.radius ?? 0,
-                        mass: prev.mass ?? 0,
-                        score: prev.score ?? 0,
-                        target_x: prev.target_x ?? 0,
-                        target_y: prev.target_y ?? 0,
+                        x: prev.x, 
+                        y: prev.y, 
+                        name: prev.name, 
+                        authority: prev.authority,
+                        radius: prev.radius,
+                        mass: prev.mass,
+                        score: prev.score,
+                        target_x: prev.target_x,
+                        target_y: prev.target_y,
+                        timestamp: performance.now(),
                     };
                 });            
             }
@@ -2172,7 +2198,7 @@ const App: React.FC = () => {
                 try {
                     const worldId = {worldId: new anchor.BN(inputValue.trim())};
                     const worldPda = await FindWorldPda( worldId);
-                    const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:""}
+                    const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:"", base_buyin: 0, min_buyin: 0, max_buyin: 0}
                     console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
                     setNewGameCreated(newGameInfo);
                     setActiveGames([newGameInfo, ...activeGames]);
@@ -2187,6 +2213,39 @@ const App: React.FC = () => {
               handleImageClick();
           }
         };
+
+        const fetchTokenMetadata = async (tokenAddress: string): Promise<{ name: string; image: string }> => {
+            const response = await fetch(connection.rpcEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: "get-asset",
+                method: "getAsset",
+                params: {
+                  id: tokenAddress,
+                },
+              }),
+            });
+          
+            const data = await response.json();
+          
+            if (data.error) {
+              throw new Error(data.error.message);
+            }
+          
+            // Extract metadata URI from the response
+            const metadataUri = data.result.content.json_uri;
+            const metadataResponse = await fetch(metadataUri);
+            const metadataJson = await metadataResponse.json();
+          
+            return {
+              name: metadataJson.name,
+              image: metadataJson.image,
+            };
+          };
 
         const fetchAndLogMapData = async () => {
         
@@ -2205,6 +2264,9 @@ const App: React.FC = () => {
                 try {
                     let token_image = `${process.env.PUBLIC_URL}/token.png`;
                     let token_name = "LOADING";
+                    let base_buyin = 0;
+                    let min_buyin = 0;
+                    let max_buyin = 0;
                     const anteseed = "ante"; 
                     const anteEntityPda = FindEntityPda({
                         worldId: activeGames[i].worldId,
@@ -2222,13 +2284,25 @@ const App: React.FC = () => {
                     let mint_of_token_being_sent = new PublicKey(0);
                     if(anteacc){
                         const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
+                        console.log(anteParsedData)
                         mint_of_token_being_sent = anteParsedData.token;
+                        base_buyin = anteParsedData.baseBuyin;
+                        max_buyin = anteParsedData.maxBuyin;
+                        min_buyin = anteParsedData.minBuyin;
                         if(mint_of_token_being_sent.toString() === "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"){
                             token_image = `${process.env.PUBLIC_URL}/agld.jpg`;
                             token_name = "AGLD";
                         }else{
-                            token_image = `${process.env.PUBLIC_URL}/usdc.png`;
-                            token_name = "USDC";
+                            //token_image = `${process.env.PUBLIC_URL}/usdc.png`;
+                            //token_name = "USDC";
+                            try {
+                                const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
+                                //console.log('metadata', name, image)
+                                token_image = image;
+                                token_name = name;
+                            } catch (error) {
+                                console.error("Error fetching token data:", error);
+                            }
                         }
                     }
 
@@ -2268,7 +2342,7 @@ const App: React.FC = () => {
                         setActiveGames(prevActiveGames => {
                             const updatedGames = prevActiveGames.map(game =>
                                 game.worldId === activeGames[i].worldId && game.worldPda.toString() === activeGames[i].worldPda.toString()
-                                    ? { ...game, name: mapParsedData.name, active_players: activeplayers, max_players: mapParsedData.maxPlayers, size: mapParsedData.width, image: token_image, token: token_name } 
+                                    ? { ...game, name: mapParsedData.name, active_players: activeplayers, max_players: mapParsedData.maxPlayers, size: mapParsedData.width, image: token_image, token: token_name, base_buyin: base_buyin, min_buyin: min_buyin, max_buyin: max_buyin } 
 
                                     : game
                             );
@@ -2399,7 +2473,7 @@ const App: React.FC = () => {
     return (
         <>
         <div className="supersize">
-        <div className="topbar" style={{display: gameId == null && gameEnded == 0 ? 'flex' : 'none',background: buildViewerNumber==1 ? "rgba(0, 0, 0, 0.3)" : "rgb(0, 0, 0)",height: isMobile && buildViewerNumber == 1 ? '20vh' : buildViewerNumber == 1 ? '10vh' : '4vh', zIndex: 9999999}}>
+        <div className="topbar" style={{display: gameId == null && gameEnded == 0 && buildViewerNumber != 9 ? 'flex' : 'none',background: buildViewerNumber==1 ? "rgba(0, 0, 0, 0.3)" : "rgb(0, 0, 0)",height: isMobile && buildViewerNumber == 1 ? '20vh' : buildViewerNumber == 1 ? '10vh' : '4vh', zIndex: 9999999}}>
             {buildViewerNumber == 0 ? (
                 <>
                 <div
@@ -2440,7 +2514,8 @@ const App: React.FC = () => {
                     {buildViewerNumber ==1 ?
                         (   
                              <span className="titleText" style={{cursor:"pointer"}} onClick={(e) => {e.stopPropagation(); setbuildViewerNumber(0);}}> SUPERSIZE </span>
-                        ) : (        
+                        )     
+                        : (        
                         <div>
                         <>
                         <div
@@ -2490,6 +2565,12 @@ const App: React.FC = () => {
             }
             <div className="left-side" style={{alignItems : "center", justifyContent:"center", display: 'flex', zIndex: 9999999 }}>
             <>
+            {
+                leaderBoardActive ?
+                <img src="/leaderboardhighlight.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem"}} onMouseLeave={() => setLeaderboardActive(false)} onClick={() => { setbuildViewerNumber(9); }} />
+                :
+                <img src="/leaderboard.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem"}} onMouseEnter={() => setLeaderboardActive(true)} onClick={() => { setbuildViewerNumber(9); }} />
+            }
             {buildViewerNumber != 1 ? (
                 <div className="wallet-buttons" style={{ marginTop:"0vh", zIndex: 9999999}}>
                 <WalletMultiButton />
@@ -2522,26 +2603,77 @@ const App: React.FC = () => {
                         />
                     </div>
                     <div className="buyInField">
-                        <div className="buyInInfo" style={{marginLeft:"5px", width: "30%", display: "flex", alignItems: "center" }}>
-                        <img src={activeGames[0] ? activeGames[0].image : `${process.env.PUBLIC_URL}/token.png`} width="20px" height="auto" alt="Image" style={{alignItems:"center", justifyContent: "center"}}/>
-                        <div style={{height:"20px", display: 'inline', marginLeft:"8px", marginTop:"3px"}}>{activeGames[0] ? activeGames[0].token : "LOADING"}</div>
-                        </div>
-                        <input 
-                            className="BuyInText"
-                            type="number" 
-                            value={buyIn}
-                            onChange={(e) => setBuyIn(parseFloat(e.target.value))} 
-                            placeholder="0.1"
-                            step="0.01"
-                            min="0.1"
+                    <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center", 
+                        width: "100%", 
+                        position: "relative", 
+                    }}
+                    >
+                    <div
+                        className="buyInInfo"
+                        style={{
+                        marginLeft: "5px",
+                        width: "fit-content",
+                        display: "flex",
+                        alignItems: "center",
+                        flexShrink: 1, 
+                        overflow: "hidden", 
+                        whiteSpace: "nowrap", 
+                        textOverflow: "ellipsis",
+                        }}
+                    >
+                        <img
+                        src={activeGames[0] ? activeGames[0].image : `${process.env.PUBLIC_URL}/token.png`}
+                        width="20px"
+                        height="auto"
+                        alt="Image"
+                        style={{
+                            flexShrink: 0, 
+                            marginRight: "8px",
+                        }}
                         />
+                        <div
+                        style={{
+                            display: "inline-block",
+                            height: "20px",
+                            overflow: "hidden",
+                            whiteSpace: "nowrap",
+                            textOverflow: "ellipsis",
+                            marginTop: "3px",
+                            flexShrink: 1, 
+                        }}
+                        >
+                        {activeGames[0] ? activeGames[0].token : "LOADING"}
+                        </div>
+                    </div>
+                    <input
+                        className="BuyInText"
+                        type="number"
+                        value={buyIn}
+                        onChange={(e) => setBuyIn(parseFloat(e.target.value))}
+                        placeholder={activeGames[0] ? activeGames[0].base_buyin.toString() : "0"}
+                        step={activeGames[0] ? activeGames[0].min_buyin / 10 : 0}
+                        min={activeGames[0] ? activeGames[0].min_buyin : 0}
+                        max={activeGames[0] ? activeGames[0].max_buyin : 0}
+                        style={{
+                        flexGrow: 1, 
+                        flexShrink: 0,
+                        marginLeft: "10px",
+                        marginRight: "0",
+                        zIndex: 1,
+                        position: "relative", 
+                        }}
+                    />
+                    </div>
                     </div>
                     <div className="buyInSlider">
                     <input 
                         type="range" 
-                        min="0.1" 
-                        max="10.01" 
-                        step="0.1" 
+                        min={activeGames[0] ? activeGames[0].min_buyin : 0}  
+                        max={activeGames[0] ? (activeGames[0].max_buyin + activeGames[0].min_buyin/10) : 0} 
+                        step={activeGames[0] ? (activeGames[0].min_buyin/10) : 0} 
                         value={buyIn} 
                         onChange={handleSliderChange} 
                         className="slider" 
@@ -2559,7 +2691,7 @@ const App: React.FC = () => {
                                     {openGameInfo[0] ? (
                                     <>
                                     <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>players: {activeGames[0].active_players} / {activeGames[0].max_players}</span>
-                                    <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>game size: {activeGames[0].size}</span>
+                                    <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>token: {activeGames[0].token}</span>
                                     <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>game id: {activeGames[0].worldId.toString()}</span>
                                     </>
                                     ): null}
@@ -2592,7 +2724,7 @@ const App: React.FC = () => {
                                     {openGameInfo[index] ? (
                                     <>
                                     <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>players: {item.active_players} / {item.max_players}</span>
-                                    <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>game size: {item.size}</span>
+                                    <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>token: {activeGames[0].token}</span>
                                     <span style={{ opacity: "0.7", fontSize: "0.7rem", marginBottom:"5px" }}>game id: {item.worldId.toString()}</span>
                                     </>
                                     ): null}
@@ -2789,6 +2921,15 @@ const App: React.FC = () => {
             </div>
           </div>
             ):(
+                <>
+                {
+                buildViewerNumber === 9 ? (
+                <div>
+                    <Leaderboard setbuildViewerNumber={setbuildViewerNumber} />
+                </div>
+                )
+                : 
+                (
                 <div className="game-select" style={{display: gameId == null && gameEnded == 0 ? 'flex' : 'none', height: '86vh', alignItems: 'center', justifyContent: 'center', flexDirection:'column'}}>
                 <CreateGameComponent 
                 connection={connection}
@@ -2810,6 +2951,8 @@ const App: React.FC = () => {
                 setGameWallet={setGameWallet}
                 />
                 </div>
+                )}
+            </>
             )}
             </>
         )}

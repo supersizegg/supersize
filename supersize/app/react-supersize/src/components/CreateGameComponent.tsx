@@ -58,6 +58,9 @@ type ActiveGame = {
     size: number;
     image: string;
     token: string;
+    base_buyin: number;
+    min_buyin: number;
+    max_buyin: number;
   };
   
 interface GameComponentProps {
@@ -777,7 +780,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 token_image = `${process.env.PUBLIC_URL}/usdc.png`;
                 token_name = "USDC";
             }
-            const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: maxplayer, size: game_size, image:token_image, token: token_name}
+            const newGameInfo : ActiveGame = {worldId: initNewWorld.worldId, worldPda: initNewWorld.worldPda, name: game_name, active_players: 0, max_players: maxplayer, size: game_size, image:token_image, token: token_name, base_buyin: base_buyin, min_buyin: min_buyin, max_buyin: max_buyin}
             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
             setNewGameCreated(newGameInfo);
             const copiedActiveGameIds: ActiveGame[] = [...activeGames];
