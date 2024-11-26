@@ -5,7 +5,7 @@ import CreateGame from "./components/CreateGame";
 import GameComponent from "./components/GameComponent";
 import CreateGameComponent from "./components/CreateGameComponent";
 import Alert from "./components/Alert";
-import Leaderboard from "./components/Leaderboard";
+//import Leaderboard from "./components/Leaderboard";
 
 import {
     AddEntity,
@@ -120,7 +120,7 @@ type ActiveGame = {
 
 const App: React.FC = () => {
     //let { connection } =  useConnection();
-    const  connection =  new Connection("https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+    const  connection =  new Connection("https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d"); //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
     //const  connection =  new Connection("https://staked.helius-rpc.com?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
     const { publicKey, sendTransaction } = useWallet(); 
     let userKey = publicKey;
@@ -196,8 +196,8 @@ const App: React.FC = () => {
           worldPda: new PublicKey('9ry6WApsZivMZUnoirWkxWaLqZhQLCs6ALQV6qZzzBX'),
         },
         "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1658),
-          worldPda: new PublicKey('7bm6JGFXqWuMuX9r1E89bz3z3o37YCVZ87BJZrVaatp8'),
+          worldId: new anchor.BN(1663),
+          worldPda: new PublicKey('8MbGSevivB9WiL481gMEy7KKAu5CozgmdQcGe1UuFMiU'),
         },
       };
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
@@ -278,7 +278,7 @@ const App: React.FC = () => {
         new NodeWallet(wallet) 
     ));
     
-    anchor.setProvider(provider);
+    anchor.setProvider(provider); 
 
     useEffect(() => {
         if (publicKey) {
@@ -2169,7 +2169,7 @@ const App: React.FC = () => {
         return parseFloat(balance.value.amount) / Math.pow(10, decimals); 
         }
         async function parsePoolInfo() {
-        const  mainnet_connection =  new Connection("https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
+        const  mainnet_connection =  new Connection("https://floral-convincing-dawn.solana-mainnet.quiknode.pro/73d5d52678fd227b48dd0aec6a8e94ac9dd61f59"); //"https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
         const info = await mainnet_connection.getAccountInfo(new PublicKey(SOL_USDC_POOL_ID));
         if (!info) return;
         const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(info.data);        
@@ -2215,7 +2215,7 @@ const App: React.FC = () => {
         };
 
         const fetchTokenMetadata = async (tokenAddress: string): Promise<{ name: string; image: string }> => {
-            const response = await fetch(connection.rpcEndpoint, {
+            const response = await fetch("https://devnet.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -2284,7 +2284,7 @@ const App: React.FC = () => {
                     let mint_of_token_being_sent = new PublicKey(0);
                     if(anteacc){
                         const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
-                        console.log(anteParsedData)
+                        //console.log(anteParsedData)
                         mint_of_token_being_sent = anteParsedData.token;
                         base_buyin = anteParsedData.baseBuyin;
                         max_buyin = anteParsedData.maxBuyin;
@@ -2566,10 +2566,12 @@ const App: React.FC = () => {
             <div className="left-side" style={{alignItems : "center", justifyContent:"center", display: 'flex', zIndex: 9999999 }}>
             <>
             {
+                /*
                 leaderBoardActive ?
-                <img src="/leaderboardhighlight.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem"}} onMouseLeave={() => setLeaderboardActive(false)} onClick={() => { setbuildViewerNumber(9); }} />
+                <img src="/leaderboardhighlight.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem", display: buildViewerNumber == 1 ? "none" : "block"}} onMouseLeave={() => setLeaderboardActive(false)} onClick={() => { setbuildViewerNumber(9); }} />
                 :
-                <img src="/leaderboard.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem"}} onMouseEnter={() => setLeaderboardActive(true)} onClick={() => { setbuildViewerNumber(9); }} />
+                <img src="/leaderboard.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem", display: buildViewerNumber == 1 ? "none" : "block"}} onMouseEnter={() => setLeaderboardActive(true)} onClick={() => { setbuildViewerNumber(9); }} />
+                */
             }
             {buildViewerNumber != 1 ? (
                 <div className="wallet-buttons" style={{ marginTop:"0vh", zIndex: 9999999}}>
@@ -2925,7 +2927,7 @@ const App: React.FC = () => {
                 {
                 buildViewerNumber === 9 ? (
                 <div>
-                    <Leaderboard setbuildViewerNumber={setbuildViewerNumber} />
+                    {/* <Leaderboard setbuildViewerNumber={setbuildViewerNumber} /> */}
                 </div>
                 )
                 : 
