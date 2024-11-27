@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import axios from 'axios';
-
 interface Player {
     name: string;
     total: number;
@@ -25,35 +24,124 @@ interface Users {
     }
 }
 
-const players: Player[] = [
-    { name: "Top1VM", total: 228897624 },
-    { name: "oRCNLD...DohgjM", total: 17436402 },
-    { name: "f×r", total: 14711066 },
-    { name: "CL888P...ENthbj", total: 11188228 },
-    { name: "tenko", total: 10392967 },
-    { name: "DEG", total: 10088151 },
-    { name: "maff", total: 9438682 },
-    { name: "moropy", total: 8921661 },
-    { name: "woo", total: 5942167 },
-];
-
 const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> = ({ setbuildViewerNumber }) => {
+    const network = "devnet";
     const [season, setSeason] = useState({
-        icon: "/usdc.png",
-        name: "USDC"
+        icon: `${process.env.PUBLIC_URL}/token.png`,
+        name: "LOADING"
     });
     const [users, setUsers] = useState<Player[]>([]);
     const [rank, setRank] = useState<number | null>(null);
     const { publicKey } = useWallet();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const options = [{ icon: "/usdc.png", name: "USDC" }, { icon: "/Solana_logo.png", name: "SOL" }];
+    const [homeHover, setHomeHover] = useState(false);
+
+    const tokens = [{network: "devnet", token: "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp"}, {network: "mainnet", token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"}]
+    //const options = [{ icon: "/usdc.png", name: "Magical Gem" }, { icon: "/usdc.png", name: "USDC" }, { icon: "/Solana_logo.png", name: "SOL" }];
+    const options = useRef([{icon: `${process.env.PUBLIC_URL}/token.png`, name: "LOADING"}]);
+
     const [userInfo, setUserInfo] = useState<UserInfo>({
         position: 0,
         points: 0
     });
     const [toggle, setToggle] = useState(false);
+
+    useEffect(() => {
+        const loadTokenMetadata = async () => {
+          try {
+            const matchedTokens = tokens.filter(token => token.network === network);
+            
+            const promises = matchedTokens.map(async token => {
+              const metadata = await fetchTokenMetadata(token.token, network);
+              return {
+                icon: metadata.image,
+                name: metadata.name,
+              };
+            });
+      
+            const optionsData = await Promise.all(promises);
+      
+            options.current = optionsData;
+            setSeason(options.current[0]);
+            console.log("Updated options:", options.current);
+          } catch (error) {
+            console.error("Error loading token metadata:", error);
+          }
+        };
+      
+        loadTokenMetadata();
+      }, [network]);
+
+    const fetchTokenMetadata = async (
+        tokenAddress: string,
+        network: string
+      ): Promise<{ name: string; image: string }> => {
+        try {
+          const rpcEndpoint = `https://${network}.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937`;
+          
+          const response = await fetch(rpcEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "getAsset",
+              params: [tokenAddress],
+            }),
+          });
+      
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Error fetching asset:", errorText);
+            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+          }
+      
+          const data = await response.json();
+          if (data.error) {
+            throw new Error(data.error.message);
+          }
+      
+          const content = data.result?.content;
+          if (!content) {
+            throw new Error("Content not found in response");
+          }
+      
+          const jsonUri = content.json_uri;
+          if (jsonUri) {
+            const metadataResponse = await fetch(jsonUri);
+            if (!metadataResponse.ok) {
+              const errorText = await metadataResponse.text();
+              console.error("Error fetching metadata from json_uri:", errorText);
+              throw new Error(`HTTP Error: ${metadataResponse.status} ${metadataResponse.statusText}`);
+            }
+            const metadataJson = await metadataResponse.json();
+            return {
+              name: metadataJson.name || "Unknown",
+              image: metadataJson.image || "",
+            };
+          }
+      
+          const name = content.metadata?.symbol || "Unknown";
+          const image = content.links?.image || content.files?.[0]?.uri || "";
+      
+          if (!image) {
+            throw new Error("Image URI not found");
+          }
+      
+          return { name, image };
+        } catch (error) {
+          console.error("Error fetching token metadata:", error);
+          throw error;
+        }
+      };
+
     useEffect(() => {
         if (!publicKey) {
+            return;
+        }
+        if(options.current[0].name === "LOADING"){
             return;
         }
         (async () => {
@@ -64,67 +152,81 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                 position: res.data.position,
                 points: res.data.points
             })
-
-
+            console.log("topParticipants:::::",res.data.topParticipants)
             const participants = res.data.topParticipants.map((participant: any) => (
                 { 
                     name: participant.name, 
-                    total: participant.winning.usdc
+                    total: participant.winAmount
                 }
             ))
-
             setUsers(participants)
 
         })()
     }, [publicKey, season.name]);
 
     return (
-        <div style={{
-            backgroundColor: "#141A17",
-            color: "#fff",
-            padding: "50px",
-            paddingInline: "100px",
-            height: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            fontFamily: '"VT323", monospace',
-            fontWeight: 400,
-            fontStyle: "normal"
-        }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <svg
-                    viewBox="0 0 1024 1024"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="#fff"
-                    style={{ width: "24px", height: "24px", cursor: "pointer" }}
-                    onClick={() => {
-                        setbuildViewerNumber(0);
-                    }}
-                >
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier">
-                        <path fill="#fff" d="M224 480h640a32 32 0 1 1 0 64H224a32 32 0 0 1 0-64z"></path>
-                        <path fill="#fff" d="m237.248 512 265.408 265.344a32 32 0 0 1-45.312 45.312l-288-288a32 32 0 0 1 0-45.312l288-288a32 32 0 1 1 45.312 45.312L237.248 512z"></path>
-                    </g>
-                </svg>
+        <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: '4vh' }}>
+            <div
+                            style={{
+                                width: '4vh',
+                                height: '4vh',
+                                display: 'flex',
+                                cursor: "pointer",
+                                alignItems : "center", 
+                                justifyContent:"center",
+                                marginLeft:"2vw",
+                                marginTop:"4vh"
+                            }}
+                            onMouseEnter={() => setHomeHover(true)}
+                            onMouseLeave={() => setHomeHover(false)}
+                            onClick={() => {setbuildViewerNumber(0); setHomeHover(false);}}
+                            >
+                            <img
+                                src={`${process.env.PUBLIC_URL}/home.png`}
+                                width="35px"
+                                height="auto"
+                                alt="Image"
+                                style={{
+                                    position: "absolute",
+                                    opacity: homeHover ? 0.2 : 0.8,
+                                    transition: 'opacity 0.0s ease background 0.3s ease 0s, color 0.3s ease 0s',
+                                }}
+                            />
+                            {homeHover && (
+                                <img
+                                src={`${process.env.PUBLIC_URL}/homehighlight.png`}
+                                width="35px"
+                                height="auto"
+                                alt="Highlighted Image"
+                                style={{
+                                    position: 'absolute',
+                                    opacity: homeHover ? 0.8 : 0.2,
+                                    transition: 'opacity 0.3s ease',
+                                }}
+                                />
+                            )}
+                        </div>
                 <div
                     className="dropdown-container"
                     onClick={() => {
                         console.log("Toggle")
                         setToggle(!toggle);
+                        if(options.current.length > 1){
                         setIsDropdownOpen((prev: boolean) => !prev)
+                        }
                     }
                     }
+                    style={{marginRight: "2vw", width:"fit-content", marginTop: "5vh"}}
                 >
-                    <div className={`selected-option ${isDropdownOpen ? "open" : ""}`} style={{ display: "flex", alignItems: "center" }}>
+                    <div className={`selected-option ${isDropdownOpen ? "open" : ""}`} style={{ display: "flex", alignItems: "center", whiteSpace:"nowrap", width:"fit-content" }}>
                         <img src={season.icon} alt={season.name} style={{ width: "24px", height: "24px", marginRight: "8px" }} />
                         {season.name}
                     </div>
 
-                    {isDropdownOpen && (
+                    {isDropdownOpen &&  (
                         <div className="dropdown-menu">
-                            {options
+                            {options.current
                                 .filter((option) => option.name !== season.name)
                                 .map((option) => (
                                     <div
@@ -147,15 +249,27 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                     )}
                 </div>
             </div>
+        <div style={{
+            backgroundColor: "black",
+            color: "#fff",
+            marginTop: "1vh",
+            paddingInline: "100px",
+            height: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: 'Terminus',
+            fontWeight: 400,
+            fontStyle: "normal"
+        }}>
             <div style={{ position: "relative", marginTop: "60px" }}>
                 <h2 style={{
                     position: "absolute",
-                    top: "-36px",
+                    top: "-30px",
                     left: "10px",
                     fontSize: "30px",
-                    backgroundColor: "#141A17",
+                    backgroundColor: "black",
                     padding: "10px",
-                    color: "#3BAC71"
+                    color: "rgb(103, 244, 182)"
                 }}>
                     MY RANKING
                 </h2>
@@ -164,15 +278,15 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "50%" }}>
                             <div style={{ textAlign: "center", marginBottom: "16px" }}>
                                 <div style={{ fontSize: "25px", opacity: 0.8, marginBottom: "4px", color: "gray" }}>Global Ranking</div>
-                                <div style={{ fontSize: "40px", color: "#3BAC71" }}>
+                                <div style={{ fontSize: "40px", color: "rgb(103, 244, 182)" }}>
                                     {userInfo.position} <span style={{ fontSize: "16px", opacity: 0.8, color: "#fff" }}>/ {users.length}</span>
                                 </div>
                             </div>
                         </div>
                         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "50%" }}>
                             <div style={{ textAlign: "center", marginBottom: "16px" }}>
-                                <div style={{ fontSize: "25px", opacity: 0.8, marginBottom: "4px", color: "gray" }}>Total Points</div>
-                                <div style={{ fontSize: "40px", color: "#3BAC71" }}>{userInfo.points}</div>
+                                <div style={{ fontSize: "25px", opacity: 0.8, marginBottom: "4px", color: "gray" }}>Total Winnings</div>
+                                <div style={{ fontSize: "40px", color: "rgb(103, 244, 182)" }}>{userInfo.points}</div>
                             </div>
                         </div>
                     </div>
@@ -187,7 +301,7 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                 flexDirection: "column"
             }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead style={{ width: "100%", borderBottom: "1px solid gray", fontSize: "24px", color: "#00FF00" }}>
+                    <thead style={{ width: "100%", borderBottom: "1px solid gray", fontSize: "24px", color: "rgb(103, 244, 182)" }}>
                         <tr>
                             <th style={{ textAlign: "left", padding: "12px", opacity: 0.8 }}>Rank</th>
                             <th style={{ textAlign: "left", padding: "12px", opacity: 0.8 }}>Player</th>
@@ -215,6 +329,7 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

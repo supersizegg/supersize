@@ -16,10 +16,26 @@ app.use(express.json());
 //@ts-ignore
 app.post("/create-contest", async (req: express.Request, res: express.Response) => {
   const { name, tokenAddress } = req.body;
-  await prisma.contests.create({
-    data: { name, tokenAddress }
-  });
-  return res.json({ success: true });
+  if (!name || !tokenAddress) {
+    return res.status(400).json({ error: "Name and token address are required" });
+  }
+
+  try {
+    let contest;
+   contest = await prisma.contests.findUnique({
+      where: { name }
+    });
+
+    if (!contest) {
+      await prisma.contests.create({
+        data: { name, tokenAddress }
+      });
+    }
+    console.log(contest);
+    return res.json({ contest });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to create contest" });
+  }
 });
 
 //@ts-ignore
@@ -29,24 +45,27 @@ app.post("/create-user", async (req: express.Request, res: express.Response) => 
   if (!walletAddress || !name) {
     return res.status(400).json({ error: "Wallet address and name are required" });
   }
-  if (contestId !== "USDC" && contestId !== "SOL" && contestId !== "AGLD") {
-    return res.status(400).json({ error: "Invalid contest ID" });
-  }
+  //if (contestId !== "USDC" && contestId !== "SOL" && contestId !== "AGLD") {
+  //  return res.status(400).json({ error: "Invalid contest ID" });
+  //}
   try {
-    const user = await prisma.user.create({
-    data: {
-      walletAddress,
-      name,
-      contestId
+    let user;
+
+    user = await prisma.user.findUnique({
+      where: { walletAddress_contestId: { walletAddress, contestId } }
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          walletAddress,
+          name,
+          contestId
     }
   });
-    const winner = await prisma.winning.create({
-      data: {
-        userWalletAddress: walletAddress,
-        id: user.id
-      }
-    });
-    return res.json({ user, winner });
+    }
+    
+    return res.json({ user });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: "Failed to create user" });
@@ -55,41 +74,30 @@ app.post("/create-user", async (req: express.Request, res: express.Response) => 
 
 //@ts-ignore
 app.post("/update-wins", async (req: express.Request, res: express.Response) => {
-  const { walletAddress, updateId, amount }: { walletAddress: string; updateId: string; amount: number } = req.body;
-  if (!walletAddress || updateId !== "USDC" && updateId !== "SOL" && updateId !== "AGLD") {
-    return res.status(400).json({ error: "Invalid request" });
-  }
-  console.log(walletAddress, updateId, amount);
+  const { walletAddress, contestId, amount }: { walletAddress: string; contestId: string; amount: number } = req.body;
+  //if (!walletAddress || contestId !== "USDC" && contestId !== "SOL" && contestId !== "AGLD") {
+  //  return res.status(400).json({ error: "Invalid request" });
+  //}
+    
+  const user = await prisma.user.findUnique({
+    where: { walletAddress_contestId: { walletAddress, contestId } }
+  });
 
-  try {
-    if (updateId === "USDC") {
-      console.log("USDC");
-      await prisma.winning.update({
-        where: { userWalletAddress: walletAddress },
+  if (!user) {
+    return res.status(400).json({ error: "User not found" });
+  }
+
+  try {   
+      await prisma.user.update({
+        where: { walletAddress_contestId: { walletAddress, contestId } },
         data: {
-          usdc: amount
+          winAmount: {
+            increment: amount
+          }
         }
-      })
-      console.log("USDC updated");
-    } else if (updateId === "SOL") {
-      await prisma.winning.update({
-        where: { userWalletAddress: walletAddress },
-        data: {
-          sol: amount
-        }
-      })
-    } else if (updateId === "AGLD") {
-      await prisma.winning.update({
-        where: { userWalletAddress: walletAddress },
-        data: {
-          agld: amount
-        }
-      })
+      })   
 
       return res.json({ success: true });
-
-    }
-    return res.json({ success: true });
   } catch (error) {
     return res.status(500).json({ error: "Failed to update wins" });
   } 
@@ -108,8 +116,8 @@ app.get("/get-user-position", async (req: express.Request, res: express.Response
       where: { name: contestName as string },
       include: {
         participants: {
-          include: {
-            winning: true
+          orderBy: {
+            winAmount: "desc"
           }
         }
       }
@@ -119,24 +127,15 @@ app.get("/get-user-position", async (req: express.Request, res: express.Response
       return res.status(400).json({ error: "Contest not found" });
     }
 
-    const sortedParticipants = returnParticipantInfo(contest.participants, contest.name);
-
-    const position = sortedParticipants.findIndex(p => p.walletAddress === walletAddress) + 1;
+    const position = contest.participants.findIndex(p => p.walletAddress === walletAddress) + 1;
 
     if (position === 0) {
       return res.status(400).json({ error: "User not found in contest" });
     }
 
-    const topParticipants = sortedParticipants.slice(0, 100);
+    const topParticipants = contest.participants.slice(0, 100);
 
-    let points = 0;
-    if (contest.name === "USDC") {
-      points = sortedParticipants[position - 1].winning?.usdc || 0;
-    } else if (contest.name === "SOL") {
-      points = sortedParticipants[position - 1].winning?.sol || 0;
-    } else if (contest.name === "AGLD") {
-      points = sortedParticipants[position - 1].winning?.agld || 0;
-    }
+    let points = contest.participants[position - 1].winAmount;
  
     return res.json({ 
       position,

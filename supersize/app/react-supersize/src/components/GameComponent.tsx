@@ -71,7 +71,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
   
   useEffect(() => {
     currentPlayerRef.current = currentPlayer;
-    //playersRef.current = players;
+    playersRef.current = players;
     foodRef.current = visibleFood;
   }, [currentPlayer]);
 

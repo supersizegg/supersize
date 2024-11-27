@@ -63,6 +63,7 @@ import { set } from "@metaplex-foundation/beet";
 import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
 import * as crypto from 'crypto-js';
+import axios from "axios";
 
 const bs58 = require('bs58');
 
@@ -121,24 +122,27 @@ type ActiveGame = {
 const App: React.FC = () => {
     //let { connection } =  useConnection();
     const  connection =  new Connection("https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d"); 
-    
+    //const  connection =  new Connection("https://floral-convincing-dawn.solana-mainnet.quiknode.pro/73d5d52678fd227b48dd0aec6a8e94ac9dd61f59"); 
+
     const { publicKey, sendTransaction } = useWallet(); 
     let userKey = publicKey;
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(null);
     const [exitTxn, setExitTxn] = useState<string>('');
+    
     const endpoints = [
         "https://supersize-fra.magicblock.app",
         "https://supersize.magicblock.app",
         "https://supersize-sin.magicblock.app",
       ];
-      
+    
     /*
     const endpoints = [
       "https://supersize-mainnet.magicblock.app",
       "https://supersize-mainnet-bos.magicblock.app",
       "https://supersize-mainnet-sin.magicblock.app",
-    ];*/
-      
+    ];
+    */
+
     const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
     const [enpointDone, setEndpointDone] = useState<boolean>(false);
     //const [wallet] = useState<Keypair>(() => Keypair.generate());
@@ -171,7 +175,7 @@ const App: React.FC = () => {
     const [moveSignature, setMoveSignature] = useState<string | null>(null);
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
-    /* const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
+     /* const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-mainnet-sin.magicblock.app": {
           worldId: new anchor.BN(1),
           worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
@@ -200,6 +204,7 @@ const App: React.FC = () => {
           worldPda: new PublicKey('8MbGSevivB9WiL481gMEy7KKAu5CozgmdQcGe1UuFMiU'),
         },
       };
+      
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [gamewallet, setGameWallet] = useState("");
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
@@ -231,7 +236,8 @@ const App: React.FC = () => {
     const [isHovered, setIsHovered] = useState([false,false,false,false,false,false]);
 
    const [gameEnded, setGameEnded] = useState(0);
-   const [playerCashout, setPlayerCashout] = useState(0);
+   const playerCashout = useRef(0);
+   const playerBuyIn = useRef(0);
    const [playerTax, setPlayerTax] = useState(0);
    const playerRemovalTimeRef = useRef<BN | null>(null);
    const [cashoutTx, setCashoutTx] = useState<string| null>(null);
@@ -262,15 +268,16 @@ const App: React.FC = () => {
         preflightCommitment: 'processed',
         commitment: 'processed',
     }
-    );
-
-    /*const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
+    );  
+    /*
+    const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-mainnet-sin.magicblock.app", {
         wsEndpoint: "wss://supersize-mainnet-sin.magicblock.app",
         }),
         new NodeWallet(wallet) 
-    ));*/
-    
+    ));
+    */
+
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-fra.magicblock.app", {
         wsEndpoint: "wss://supersize-fra.magicblock.app",
@@ -526,18 +533,16 @@ const App: React.FC = () => {
       
     const updateMyPlayerCashout = useCallback((player: any) => {
         console.log('updating cashout data', player);
-        setPlayerCashout(player.score);
+        playerCashout.current = player.score;
         setPlayerTax(player.tax);
         setPlayerCashoutAddy(player.payoutTokenAccount)
     }, [setCurrentPlayer, playerKey, allFood]);
 
     const updateMyPlayer = useCallback((player: any) => {
         if(player.scheduledRemovalTime){
+            //console.log(player.scheduledRemovalTime.toNumber() * 1000)
             playerRemovalTimeRef.current = player.scheduledRemovalTime;
         }
-        const startTime = player.joinTime.toNumber() * 1000;       
-        const currentTime = Date.now();
-        const elapsedTime = currentTime - startTime;
         //console.log('elapsed time', elapsedTime)
         if(Math.sqrt(player.mass) == 0 &&
         player.score == 0.0 &&
@@ -550,6 +555,10 @@ const App: React.FC = () => {
                 setGameEnded(1);
                 setGameId(null);
             }
+        }
+        if(playerBuyIn.current == 0
+        ){
+            playerBuyIn.current = player.buyIn;
         }
         setCurrentPlayer({ 
             name: player.name, 
@@ -1061,6 +1070,7 @@ const App: React.FC = () => {
                         if(playersaccER){
                             const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
                             if(playersParsedData.authority.toString() == playerKey.toString()){
+                                if(playersParsedDataER.authority){
                                 if(playersParsedDataER.authority.toString() == playerKey.toString()){
                                     myPlayerStatus = "resume_session";
                                     newplayerEntityPda = playerEntityPda;
@@ -1068,6 +1078,12 @@ const App: React.FC = () => {
                                     need_to_undelegate=false;
                                 }
                                 else{
+                                    myPlayerStatus = "rejoin_session";
+                                    newplayerEntityPda = playerEntityPda;
+                                    myPlayerId = playerentityseed;
+                                    need_to_undelegate=false;
+                                }
+                                }else{
                                     myPlayerStatus = "rejoin_session";
                                     newplayerEntityPda = playerEntityPda;
                                     myPlayerId = playerentityseed;
@@ -1185,7 +1201,25 @@ const App: React.FC = () => {
                     publicKey       
                   ); 
                 payout_token_account = usertokenAccountInfo;
-                
+                const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
+                console.log("token", name);
+                try{
+                    await axios.post("http://localhost:3001/create-contest", {
+                        name: name,
+                        tokenAddress: mint_of_token_being_sent.toString()
+                    })
+                }catch(error){
+                    console.log('error', error)
+                }
+                try{
+                    await axios.post("http://localhost:3001/create-user", {
+                        walletAddress: publicKey.toString(),
+                        contestId: name,
+                        name: publicKey.toString(),
+                    })
+                }catch(error){
+                    console.log('error', error)
+                }
                 /*
                 const playerbalance = await connection.getBalance(playerKey, 'processed');
                 let targetBalance = 0.002 * LAMPORTS_PER_SOL;
@@ -1473,12 +1507,17 @@ const App: React.FC = () => {
         transaction.feePayer = walletRef.current.publicKey;
         transaction.sign(walletRef.current);
         setCashingOut(true);
-        const signature = await providerEphemeralRollup.current.sendAndConfirm(transaction); 
-        console.log('exiting', signature)
-        if (signature != null) {
-            setGameId(null);
-            setGameEnded(2);
+        try {
+            const signature = await providerEphemeralRollup.current.sendAndConfirm(transaction); 
+            console.log('exiting', signature)
+            if (signature != null) {
+                setGameId(null);
+                setGameEnded(2);
+            }
+        } catch (error) {
+            console.log('Error cashing out:', error);
         }
+        //const signature = await providerEphemeralRollup.current.sendAndConfirm(transaction); 
         
     }, [playerKey, submitTransaction, subscribeToGame]);
 
@@ -1555,6 +1594,17 @@ const App: React.FC = () => {
                     vault_token_account = anteParsedData.vaultTokenAccount;
                     mint_of_token_being_sent = anteParsedData.token;
                     owner_token_account = anteParsedData.gamemasterTokenAccount;
+                    const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
+                    console.log('win amount', (playerCashout.current * 0.98) - playerBuyIn.current, playerCashout.current, playerBuyIn.current);
+                    try {
+                        await axios.post('http://localhost:3001/update-wins', {
+                            walletAddress: savedPublicKey?.toString(),
+                            amount: (playerCashout.current * 0.98) - playerBuyIn.current,
+                            contestId: name
+                        })
+                    }catch(error){
+                        console.log('error', error)
+                    }
                     //supersize_token_account = anteParsedData.gamemasterTokenAccount;
                     supersize_token_account = await getAssociatedTokenAddress(mint_of_token_being_sent, new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB"));
                     let usertokenAccountInfo = await getAssociatedTokenAddress(
@@ -1950,7 +2000,7 @@ const App: React.FC = () => {
             const centerY = screenSize.height / 2;
         
             for (const player of visiblePlayers) {
-                const distance = Math.sqrt((player.x - centerX) ** 2 + (player.y - centerY) ** 2);
+                const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
                 if (distance < currentPlayer.radius) {
                     return player.authority;
                 }
@@ -2066,24 +2116,44 @@ const App: React.FC = () => {
     };
 
     const handleExitClick = () => {
-        if (playerExiting) return;
         if(playerRemovalTimeRef.current !== null){
-        preExitGameTx();
+            const currentTime = Date.now();
+            const elapsedTime = currentTime - playerRemovalTimeRef.current.toNumber() * 1000;
+            if (elapsedTime > 10000 || elapsedTime < 5000) {
+                preExitGameTx();
+                setCountdown(5);
+            }
+            else{
+                return;
+            }
         }
-        preExitGameTx();
         setPlayerExiting(true);
-        
+        preExitGameTx().then(() => {
+            if(currentPlayerEntity.current){
+            const myplayerComponent = FindComponentPda({
+                componentId: PLAYER_COMPONENT,
+                entity: currentPlayerEntity.current,
+            });
+            (playersComponentClient.current?.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayer).catch((error: any) => {
+                console.error("Failed to fetch account:", error);
+            });
+            }
+        });
+
         const interval = setInterval(() => {
           setCountdown((prev) => prev - 1);
         }, 1000);
         
-        const startTime = Date.now();
+        let startTime = Date.now();
         const checkRemovalTime = setInterval(() => {
             if (playerRemovalTimeRef.current && !playerRemovalTimeRef.current.isZero()) {
-              const startTime = playerRemovalTimeRef.current.toNumber() * 1000; 
+              startTime = playerRemovalTimeRef.current.toNumber() * 1000; 
               clearInterval(checkRemovalTime); 
         
               const timeoutinterval = setInterval(() => {
+                if (playerRemovalTimeRef.current){
+                startTime = playerRemovalTimeRef.current.toNumber() * 1000; 
+                }
                 const currentTime = Date.now();
                 const elapsedTime = currentTime - startTime;
         
@@ -2215,36 +2285,66 @@ const App: React.FC = () => {
         };
 
         const fetchTokenMetadata = async (tokenAddress: string): Promise<{ name: string; image: string }> => {
-            const response = await fetch("https://devnet.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                jsonrpc: "2.0",
-                id: "get-asset",
-                method: "getAsset",
-                params: {
-                  id: tokenAddress,
+            try {
+              const response = await fetch("https://devnet.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
                 },
-              }),
-            });
+                body: JSON.stringify({
+                  jsonrpc: "2.0",
+                  id: 1, // Unique identifier
+                  method: "getAsset",
+                  params: [tokenAddress], // Token address passed in an array
+                }),
+              });
           
-            const data = await response.json();
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Error fetching asset:", errorText);
+                throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+              }
           
-            if (data.error) {
-              throw new Error(data.error.message);
+              const data = await response.json();
+              
+              if (data.error) {
+                throw new Error(data.error.message);
+              }
+          
+              const content = data.result?.content;
+              if (!content) {
+                throw new Error("Content not found in response");
+              }
+
+              // Check if json_uri is present and not empty
+              const jsonUri = content.json_uri;
+              if (jsonUri) {
+                const metadataResponse = await fetch(jsonUri);
+                if (!metadataResponse.ok) {
+                  const errorText = await metadataResponse.text();
+                  console.error("Error fetching metadata from json_uri:", errorText);
+                  throw new Error(`HTTP Error: ${metadataResponse.status} ${metadataResponse.statusText}`);
+                }
+                const metadataJson = await metadataResponse.json();
+                return {
+                  name: metadataJson.name || "Unknown",
+                  image: metadataJson.image || "",
+                };
+              }
+          
+              // Fallback to metadata from content if json_uri is empty
+              const name = content.metadata?.symbol || "Unknown";
+              const image = content.links?.image || content.files?.[0]?.uri || "";
+          
+              if (!image) {
+                throw new Error("Image URI not found");
+              }
+          
+              return { name, image };
+            } catch (error) {
+              console.error("Error fetching token metadata:", error);
+              throw error;
             }
-          
-            // Extract metadata URI from the response
-            const metadataUri = data.result.content.json_uri;
-            const metadataResponse = await fetch(metadataUri);
-            const metadataJson = await metadataResponse.json();
-          
-            return {
-              name: metadataJson.name,
-              image: metadataJson.image,
-            };
           };
 
         const fetchAndLogMapData = async () => {
@@ -2296,6 +2396,7 @@ const App: React.FC = () => {
                             //token_image = `${process.env.PUBLIC_URL}/usdc.png`;
                             //token_name = "USDC";
                             try {
+                                //console.log(mint_of_token_being_sent.toString())
                                 const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
                                 //console.log('metadata', name, image)
                                 token_image = image;
@@ -2778,7 +2879,7 @@ const App: React.FC = () => {
                 Bigger players move slower than smaller players, but can expend tokens to boost forward and eat them. Click to boost. 
                 <br></br>
                 <br></br>
-                Supersize is playable with any SPL token. Players can exit the game at any time to receive their score in tokens. <br></br>(3% tax on exit)              
+                Supersize is playable with any SPL token. Players can exit the game at any time to receive their score in tokens. <br></br>(2% tax on exit)              
                 <br></br>
                 <br></br>
                 All game logic and state changes are securely recorded on the Solana blockchain in real-time, <br></br>powered by  {' '}
@@ -3233,9 +3334,9 @@ const App: React.FC = () => {
                     }}
                 >
                     <div className="exitBox" style={{ background: 'black', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', userSelect: 'text' }}>
-                        <p className="superExitInfo">Final score: {playerCashout + playerTax}</p>
-                        <p className="superExitInfo">Exit tax: {playerTax + playerCashout * 0.02}</p>
-                        <p className="superExitInfo">Payout: {playerCashout * 0.98}</p>
+                        <p className="superExitInfo">Final score: {playerCashout.current + playerTax}</p>
+                        <p className="superExitInfo">Exit tax: {playerTax + playerCashout.current * 0.02}</p>
+                        <p className="superExitInfo">Payout: {playerCashout.current * 0.98}</p>
                         <div style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                         <a 
                             className="superExitInfo"
@@ -3296,7 +3397,7 @@ const App: React.FC = () => {
                         </svg>
                         )}
                         </div> */}
-                        <button id="returnButton" onClick={() => {window.location.reload(); setPlayerCashout(0);}}>Return home</button>
+                        <button id="returnButton" onClick={() => {window.location.reload();}}>Return home</button>
                     </div>
                 </div>
             )}
@@ -3322,7 +3423,7 @@ const App: React.FC = () => {
                             <br /><br />
                             Txn Receipt: {exitTxn}
                         </p>
-                        <button id="returnButton" onClick={() => {setPlayerCashout(0); window.location.reload();}}>Return home</button>
+                        <button id="returnButton" onClick={() => {window.location.reload();}}>Return home</button>
                     </div>
                 </div>
             )}

@@ -5,7 +5,7 @@
   }
 
   .leaderboard {
-    background-color: #141A17;
+    background-color: black;
     color: #fff;
     padding: 50px;
     padding-inline: 100px;
@@ -27,7 +27,7 @@
     width: 200px;
     padding: 8px;
     background-color: transparent;
-    color: #00FF00;
+    color: "rgb(103, 244, 182)";
     border: 3px solid #fff;
   }
   
@@ -77,7 +77,7 @@
   .leaderboard-table td {
     text-align: left;
     padding: 12px;
-    border-bottom: 1px solid #00FF00;
+    border-bottom: 1px solid "rgb(103, 244, 182)";
   }
   
   .leaderboard-table th {
