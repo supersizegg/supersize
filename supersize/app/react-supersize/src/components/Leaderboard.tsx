@@ -25,7 +25,7 @@ interface Users {
 }
 
 const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> = ({ setbuildViewerNumber }) => {
-    const network = "devnet";
+    const network = "devnet"; //"mainnet"; 
     const [season, setSeason] = useState({
         icon: `${process.env.PUBLIC_URL}/token.png`,
         name: "LOADING"
@@ -145,7 +145,7 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
             return;
         }
         (async () => {
-            const res = await axios.get(`http://localhost:3001/get-user-position?walletAddress=${publicKey.toString()}&contestName=${season.name}`)
+            const res = await axios.get(`https://supersize.lewisarnsten.workers.dev/get-user-position?walletAddress=${publicKey.toString()}&contestName=${season.name}`)
             console.log(res.data)
 
             setUserInfo({

@@ -129,6 +129,7 @@ const App: React.FC = () => {
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(null);
     const [exitTxn, setExitTxn] = useState<string>('');
     
+    
     const endpoints = [
         "https://supersize-fra.magicblock.app",
         "https://supersize.magicblock.app",
@@ -175,7 +176,8 @@ const App: React.FC = () => {
     const [moveSignature, setMoveSignature] = useState<string | null>(null);
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
-     /* const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
+      /*
+      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-mainnet-sin.magicblock.app": {
           worldId: new anchor.BN(1),
           worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
@@ -190,20 +192,21 @@ const App: React.FC = () => {
         },
       }; */
       
+      
       const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-sin.magicblock.app": {
           worldId: new anchor.BN(1666),
           worldPda: new PublicKey('BQ4vkTpteu5EcM5dYTSCGAQKbW5JumeyLm3o6yvyzqHw'),
         },
         "https://supersize.magicblock.app": {
-          worldId: new anchor.BN(1659),
-          worldPda: new PublicKey('9ry6WApsZivMZUnoirWkxWaLqZhQLCs6ALQV6qZzzBX'),
+          worldId: new anchor.BN(1679),
+          worldPda: new PublicKey('7XR47TXSsQNHBeF4jp3yNtdWJUPpeBfTz7V83wprxXqK'),
         },
         "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1663),
-          worldPda: new PublicKey('8MbGSevivB9WiL481gMEy7KKAu5CozgmdQcGe1UuFMiU'),
+          worldId: new anchor.BN(1676),
+          worldPda: new PublicKey('7scyVWfSS3sQhiNA7smqmgMUi4HptWZGMvJczvGCzrKv'),
         },
-      };
+      }; 
       
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [gamewallet, setGameWallet] = useState("");
@@ -275,15 +278,16 @@ const App: React.FC = () => {
         wsEndpoint: "wss://supersize-mainnet-sin.magicblock.app",
         }),
         new NodeWallet(wallet) 
-    ));
-    */
-
+    )); */
+    
+    
+    
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-fra.magicblock.app", {
         wsEndpoint: "wss://supersize-fra.magicblock.app",
         }),
         new NodeWallet(wallet) 
-    ));
+    ));  
     
     anchor.setProvider(provider); 
 
@@ -1203,8 +1207,9 @@ const App: React.FC = () => {
                 payout_token_account = usertokenAccountInfo;
                 const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
                 console.log("token", name);
+                
                 try{
-                    await axios.post("http://localhost:3001/create-contest", {
+                    await axios.post("https://supersize.lewisarnsten.workers.dev/create-contest", {
                         name: name,
                         tokenAddress: mint_of_token_being_sent.toString()
                     })
@@ -1212,7 +1217,7 @@ const App: React.FC = () => {
                     console.log('error', error)
                 }
                 try{
-                    await axios.post("http://localhost:3001/create-user", {
+                    await axios.post("https://supersize.lewisarnsten.workers.dev/create-user", {
                         walletAddress: publicKey.toString(),
                         contestId: name,
                         name: publicKey.toString(),
@@ -1220,6 +1225,7 @@ const App: React.FC = () => {
                 }catch(error){
                     console.log('error', error)
                 }
+                
                 /*
                 const playerbalance = await connection.getBalance(playerKey, 'processed');
                 let targetBalance = 0.002 * LAMPORTS_PER_SOL;
@@ -1596,15 +1602,17 @@ const App: React.FC = () => {
                     owner_token_account = anteParsedData.gamemasterTokenAccount;
                     const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
                     console.log('win amount', (playerCashout.current * 0.98) - playerBuyIn.current, playerCashout.current, playerBuyIn.current);
+                    
                     try {
-                        await axios.post('http://localhost:3001/update-wins', {
+                        await axios.post('https://supersize.lewisarnsten.workers.dev/update-wins', {
                             walletAddress: savedPublicKey?.toString(),
                             amount: (playerCashout.current * 0.98) - playerBuyIn.current,
                             contestId: name
                         })
                     }catch(error){
                         console.log('error', error)
-                    }
+                    } 
+                    
                     //supersize_token_account = anteParsedData.gamemasterTokenAccount;
                     supersize_token_account = await getAssociatedTokenAddress(mint_of_token_being_sent, new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB"));
                     let usertokenAccountInfo = await getAssociatedTokenAddress(
@@ -2667,7 +2675,7 @@ const App: React.FC = () => {
             <div className="left-side" style={{alignItems : "center", justifyContent:"center", display: 'flex', zIndex: 9999999 }}>
             <>
             {
-                
+                  
                 leaderBoardActive ?
                 <img src="/leaderboardhighlight.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem", display: buildViewerNumber == 1 ? "none" : "block"}} onMouseLeave={() => setLeaderboardActive(false)} onClick={() => { setbuildViewerNumber(9); }} />
                 :
@@ -3028,7 +3036,7 @@ const App: React.FC = () => {
                 {
                 buildViewerNumber === 9 ? (
                 <div>
-                    <Leaderboard setbuildViewerNumber={setbuildViewerNumber} /> 
+                     <Leaderboard setbuildViewerNumber={setbuildViewerNumber} />
                 </div>
                 )
                 : 
