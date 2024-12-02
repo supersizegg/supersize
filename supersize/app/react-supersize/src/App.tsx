@@ -60,7 +60,7 @@ import {
   } from "@solana/spl-token";
 import { LIQUIDITY_STATE_LAYOUT_V4 } from "@raydium-io/raydium-sdk";
 import { set } from "@metaplex-foundation/beet";
-import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
+// import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { Client, USDC_MINT } from "@ladderlabs/buddy-sdk";
 import { initBuddyState, initialBuddyLink, useInitBuddyLink,
     useBuddyState, useBuddyLink, BUDDY_STATUS 
