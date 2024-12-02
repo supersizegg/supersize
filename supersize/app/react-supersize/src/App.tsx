@@ -65,63 +65,11 @@ import { Client, USDC_MINT } from "@ladderlabs/buddy-sdk";
 import { initBuddyState, initialBuddyLink, useInitBuddyLink,
     useBuddyState, useBuddyLink, BUDDY_STATUS 
  } from "buddy.link";
-
-import * as crypto from 'crypto-js';
 import axios from "axios";
 
-const bs58 = require('bs58');
-
-const FOOD_COMPONENT = new PublicKey("BEox2GnPkZ1upBAdUi7FVqTstjsC4tDjsbTpTiE17bah"); 
-const MAP_COMPONENT = new PublicKey("2dZ5DLJhEVFRA5xRnRD779ojsWsf3HMi6YB1zmVDdsYb"); 
-const PLAYER_COMPONENT = new PublicKey("2ewyq31Atu7yLcYMg51CEa22HmcCSJwM4jjHH8kKVAJw");  
-const ANTEROOM_COMPONENT = new PublicKey("EbGkJPaMY8XCJCNjkWwk971xzE32X5LBPg5s2g4LDYcW"); 
-
-const INIT_ANTEROOM = new PublicKey("AxmRc9buNLgWVMinrH2WunSxKmdsBXVCghhYZgh2hJT6"); 
-const INIT_GAME = new PublicKey("NrQkd31YsAWX6qyuLgktt4VPG4Q2DY94rBq7fWdRgo7");  
-const EAT_FOOD = new PublicKey("EdLga9mFADH4EjPY6RsG1LF7w8utVuWDgyLVRrA8YzzN"); 
-const EAT_PLAYER = new PublicKey("F6rDhVKjVTdGKdxEK9UWfFDcxeT3vFbAckX6U2aWeEKZ"); 
-const JOIN_GAME = new PublicKey("DViN676ajvuWryjWHxk2EF7MvQLgHNqhj4m32p1xLBDB");
-const MOVEMENT = new PublicKey("9rthxrCfneJKfPtv8PQmYk7hGQsUfeyeDKRp3uC4Uwh6");  
-const EXIT_GAME = new PublicKey("wdH5MUvXcyKM58yffCxhRQfB5jLQHpnWZhhdYhLCThf"); 
-const SPAWN_FOOD = new PublicKey("GP3L2w9SP9DASTJoJdTAQFzEZRHprMLaxGovxeMrvMNe"); 
-const INIT_FOOD = new PublicKey("4euz4ceqv5ugh1x6wZP3BsLNZHqBxQwXcK59psw5KeQw");
-const BUY_IN = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
-const CASH_OUT = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
-
-interface Food {
-    x: number;
-    y: number;
-    color: string;
-}
-interface Blob {
-    name: string;
-    authority: PublicKey | null;
-    x: number;
-    y: number;
-    radius: number;
-    mass: number;
-    score: number;
-    tax: number;
-    speed: number;
-    removal: BN;
-    target_x: number;
-    target_y: number;
-    timestamp: number;
-}
-
-type ActiveGame = {
-    worldPda: PublicKey;
-    worldId: BN;
-    name: string;
-    active_players: number;
-    max_players: number;
-    size: number;
-    image: string;
-    token: string;
-    base_buyin: number;
-    min_buyin: number;
-    max_buyin: number;
-  };
+import { ANTEROOM_COMPONENT, BUY_IN, CASH_OUT, EAT_FOOD, EAT_PLAYER, EXIT_GAME, FOOD_COMPONENT, JOIN_GAME, MAP_COMPONENT, MOVEMENT, PLAYER_COMPONENT, SPAWN_FOOD, connection, endpoints, endpointToWorldMap, options } from "@utils/constants";
+import { Food, Blob, ActiveGame} from "@utils/types";
+import { deriveKeypairFromPublicKey, deriveSeedFromPublicKey } from "@utils/helper";
 
 initBuddyState({
 	...initialBuddyLink,
@@ -134,38 +82,10 @@ initBuddyState({
 });
 
 const App: React.FC = () => {
-    //let { connection } =  useConnection();
-    const  connection =  new Connection("https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d"); 
-    //const  connection =  new Connection("https://floral-convincing-dawn.solana-mainnet.quiknode.pro/73d5d52678fd227b48dd0aec6a8e94ac9dd61f59"); 
-
     const { publicKey, sendTransaction } = useWallet();
-    
-    /* const buddyPublicKey = useWallet();
-    initBuddyState({ ...initialBuddyLink }); 
-    const [organizationName] = useBuddyState("Supersize");
-    useInitBuddyLink(connection, buddyPublicKey, organizationName || "xyz", {
-        debug: false,
-    });
-    const [status,] = useBuddyState(BUDDY_STATUS);
-    const { init } = useBuddyLink(); */
-
     let userKey = publicKey;
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(null);
     const [exitTxn, setExitTxn] = useState<string>('');
-
-    const endpoints = [
-        "https://supersize-fra.magicblock.app",
-        "https://supersize.magicblock.app",
-        "https://supersize-sin.magicblock.app",
-      ];
-    
-    /*
-    const endpoints = [
-      "https://supersize-mainnet.magicblock.app",
-      "https://supersize-mainnet-bos.magicblock.app",
-      "https://supersize-mainnet-sin.magicblock.app",
-    ];
-    */
 
     const [isReferrerModalOpen, setIsReferrerModalOpen] = useState(false);
     const [referrerInput, setReferrerInput] = useState<string>("");
@@ -204,37 +124,6 @@ const App: React.FC = () => {
     const [moveSignature, setMoveSignature] = useState<string | null>(null);
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
-      /*
-      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
-        "https://supersize-mainnet-sin.magicblock.app": {
-          worldId: new anchor.BN(1),
-          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
-        },
-        "https://supersize-mainnet-bos.magicblock.app": {
-          worldId: new anchor.BN(2),
-          worldPda: new PublicKey('5Fj5HJud66muuDyateWdP2HAPkED7CnyApDQBMreVQQH'),
-        },
-        "https://supersize-mainnet.magicblock.app": {
-          worldId: new anchor.BN(3),
-          worldPda: new PublicKey('8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt'),
-        },
-      }; */
-      
-      
-      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
-        "https://supersize-sin.magicblock.app": {
-          worldId: new anchor.BN(1666),
-          worldPda: new PublicKey('BQ4vkTpteu5EcM5dYTSCGAQKbW5JumeyLm3o6yvyzqHw'),
-        },
-        "https://supersize.magicblock.app": {
-          worldId: new anchor.BN(1679),
-          worldPda: new PublicKey('7XR47TXSsQNHBeF4jp3yNtdWJUPpeBfTz7V83wprxXqK'),
-        },
-        "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1676),
-          worldPda: new PublicKey('7scyVWfSS3sQhiNA7smqmgMUi4HptWZGMvJczvGCzrKv'),
-        },
-      }; 
       
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [gamewallet, setGameWallet] = useState("");
@@ -287,8 +176,6 @@ const App: React.FC = () => {
    const [selectedOption, setSelectedOption] = useState("Europe");
    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
    const lastUpdateRef = useRef<number | null>(null); // Track the last update time
-
-   const options = ["Europe", "America", "Asia"];
 
    const SOL_USDC_POOL_ID = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2"; 
 
@@ -396,19 +283,6 @@ const App: React.FC = () => {
             //getRefferal(publicKey);
         }
     }, [publicKey]);
-
-    function deriveSeedFromPublicKey(userPublicKey: PublicKey): Uint8Array {
-        const salt = 'supersizeSalt'; 
-        const hash = crypto.SHA256(userPublicKey.toBuffer().toString() + salt);
-        const hashArray = new Uint8Array(Buffer.from(hash.toString(crypto.enc.Hex), 'hex'));
-        return hashArray.slice(0, 32); 
-    }
-    
-    function deriveKeypairFromPublicKey(userPublicKey: PublicKey): Keypair {
-        const seed = deriveSeedFromPublicKey(userPublicKey);
-        const keypair = Keypair.fromSeed(seed);
-        return keypair;
-    }
 
     const handleOptionClick = (option: any) => {
         setSelectedOption(option);
