@@ -2,20 +2,33 @@ import useSupersize from "@hooks/useSupersize";
 import { useEffect, useRef, useState } from "react";
 
 const LeaderboardDropdown = () => {
-    const network = "devnet"; //"mainnet"; 
+    const network = "devnet"; //"mainnet";
     const [toggle, setToggle] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const tokens = [{ network: "devnet", token: "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp" }, { network: "mainnet", token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" }]
+    const tokens = [
+        {
+            network: "devnet",
+            token: "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp",
+        },
+        {
+            network: "mainnet",
+            token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        },
+    ];
     const { leaderBoardOptions, setSeason, season } = useSupersize();
-
 
     useEffect(() => {
         const loadTokenMetadata = async () => {
             try {
-                const matchedTokens = tokens.filter(token => token.network === network);
+                const matchedTokens = tokens.filter(
+                    (token) => token.network === network,
+                );
 
-                const promises = matchedTokens.map(async token => {
-                    const metadata = await fetchTokenMetadata(token.token, network);
+                const promises = matchedTokens.map(async (token) => {
+                    const metadata = await fetchTokenMetadata(
+                        token.token,
+                        network,
+                    );
                     return {
                         icon: metadata.image,
                         name: metadata.name,
@@ -37,7 +50,7 @@ const LeaderboardDropdown = () => {
 
     const fetchTokenMetadata = async (
         tokenAddress: string,
-        network: string
+        network: string,
     ): Promise<{ name: string; image: string }> => {
         try {
             const rpcEndpoint = `https://${network}.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937`;
@@ -58,7 +71,9 @@ const LeaderboardDropdown = () => {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error("Error fetching asset:", errorText);
-                throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                throw new Error(
+                    `HTTP Error: ${response.status} ${response.statusText}`,
+                );
             }
 
             const data = await response.json();
@@ -76,8 +91,13 @@ const LeaderboardDropdown = () => {
                 const metadataResponse = await fetch(jsonUri);
                 if (!metadataResponse.ok) {
                     const errorText = await metadataResponse.text();
-                    console.error("Error fetching metadata from json_uri:", errorText);
-                    throw new Error(`HTTP Error: ${metadataResponse.status} ${metadataResponse.statusText}`);
+                    console.error(
+                        "Error fetching metadata from json_uri:",
+                        errorText,
+                    );
+                    throw new Error(
+                        `HTTP Error: ${metadataResponse.status} ${metadataResponse.statusText}`,
+                    );
                 }
                 const metadataJson = await metadataResponse.json();
                 return {
@@ -106,13 +126,18 @@ const LeaderboardDropdown = () => {
             onClick={() => {
                 setToggle(!toggle);
                 if (leaderBoardOptions.current.length > 1) {
-                    setIsDropdownOpen((prev: boolean) => !prev)
+                    setIsDropdownOpen((prev: boolean) => !prev);
                 }
-            }
-            }
+            }}
         >
-            <div className={`p-2 w-fit bg-black text-white border border-gray-300 rounded-lg text-center flex whitespace-nowrap items-center ${isDropdownOpen ? "rounded-bl-none rounded-br-none" : ""}`} >
-                <img src={season.icon} alt={season.name} className="w-[24px] h-[24px] mr-2" />
+            <div
+                className={`p-2 w-fit bg-black text-white border border-gray-300 rounded-lg text-center flex whitespace-nowrap items-center ${isDropdownOpen ? "rounded-bl-none rounded-br-none" : ""}`}
+            >
+                <img
+                    src={season.icon}
+                    alt={season.name}
+                    className="w-[24px] h-[24px] mr-2"
+                />
                 {season.name}
             </div>
 
@@ -128,18 +153,25 @@ const LeaderboardDropdown = () => {
                                     e.stopPropagation();
                                     setSeason({
                                         icon: option.icon,
-                                        name: option.name
+                                        name: option.name,
                                     });
                                 }}
                             >
-                                <img src={option.icon} alt={option.name} className="w-[24px] h-[24px] mr-2" />
-                                <span className="opacity-50"> {option.name} </span>
+                                <img
+                                    src={option.icon}
+                                    alt={option.name}
+                                    className="w-[24px] h-[24px] mr-2"
+                                />
+                                <span className="opacity-50">
+                                    {" "}
+                                    {option.name}{" "}
+                                </span>
                             </div>
                         ))}
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 export default LeaderboardDropdown;

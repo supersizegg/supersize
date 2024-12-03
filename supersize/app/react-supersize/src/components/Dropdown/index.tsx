@@ -4,11 +4,21 @@ import { pingEndpoint } from "@utils/helper";
 import { useSupersizeContext } from "@contexts/SupersizeContext";
 
 const Dropdown = () => {
-    const {selectedOption, isDropdownOpen, setIsDropdownOpen, handleOptionClick}  = useSupersizeContext();
+    const {
+        selectedOption,
+        isDropdownOpen,
+        setIsDropdownOpen,
+        handleOptionClick,
+    } = useSupersizeContext();
 
     return (
-        <div className="relative inline-block cursor-pointer font-['Terminus'] select-none mt-4 ml-2 w-[120px]" onClick={() => setIsDropdownOpen((prev) => !prev)}>
-            <div className={`px-2.5 py-2 w-[120px] bg-black text-white border border-gray-300 rounded-[10px] text-center ${isDropdownOpen ? "rounded-bl-none rounded-br-none" : ""}`}>
+        <div
+            className="relative inline-block cursor-pointer font-['Terminus'] select-none mt-4 ml-2 w-[120px]"
+            onClick={() => setIsDropdownOpen((prev) => !prev)}
+        >
+            <div
+                className={`px-2.5 py-2 w-[120px] bg-black text-white border border-gray-300 rounded-[10px] text-center ${isDropdownOpen ? "rounded-bl-none rounded-br-none" : ""}`}
+            >
                 <span className="inline-block w-[8px] h-[8px] rounded-full mr-2 opacity-100 bg-[#67F4B6]" />
                 {selectedOption}
             </div>
@@ -27,13 +37,16 @@ const Dropdown = () => {
                                 }}
                             >
                                 <span className="inline-block w-[8px] h-[8px] rounded-full mr-2 opacity-100 bg-[#FF8888]" />
-                                <span className="hover:opacity-50"> {option} </span>
+                                <span className="hover:opacity-50">
+                                    {" "}
+                                    {option}{" "}
+                                </span>
                             </div>
                         ))}
                 </div>
             )}
         </div>
-    )
+    );
 };
 
 export default Dropdown;

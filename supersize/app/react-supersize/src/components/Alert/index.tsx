@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 type AlertProps = {
-    type: 'success' | 'error';
+    type: "success" | "error";
     message: string;
     onClose: () => void;
 };
@@ -27,12 +27,13 @@ const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
     }, [onClose]);
 
     return (
-        <div className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 
+        <div
+            className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 
             p-5 mb-2.5 rounded-lg text-center text-sm 
             transition-opacity duration-1000 ease-in-out 
             flex justify-center items-center max-w-[90%] 
             break-words min-h-[50px] box-border z-[1000]
-            opacity-${opacity} ${type == 'success' ? 'bg-lightgreen text-green' : 'bg-pink text-red'}
+            opacity-${opacity} ${type == "success" ? "bg-lightgreen text-green" : "bg-pink text-red"}
             `}
         >
             {message}

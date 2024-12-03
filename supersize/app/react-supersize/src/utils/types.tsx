@@ -34,4 +34,4 @@ export type ActiveGame = {
     base_buyin: number;
     min_buyin: number;
     max_buyin: number;
-  };
+};
