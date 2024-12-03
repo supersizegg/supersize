@@ -176,6 +176,18 @@ const SupersizeContext = createContext<
     submitTransaction: (transaction: Transaction, commitmetLevel: Commitment, skipPre: boolean) => Promise<string | null>,
     retrySubmitTransaction: (transaction: Transaction, connection: anchor.web3.Connection, commitment: anchor.web3.Commitment, maxRetries?: number, delay?: number) => Promise<string | null>
     newGameTx: (game_size: number, max_buyin: number, min_buyin: number, game_owner_wallet_string: string, game_token_string: string, game_name: string) => Promise<void>,
+    leaderBoardOptions: React.MutableRefObject<{
+        icon: string;
+        name: string;
+    }[]>,
+    season: {
+        icon: string;
+        name: string;
+    },
+    setSeason: React.Dispatch<React.SetStateAction<{
+        icon: string;
+        name: string;
+    }>>
 }
 | undefined
 >(undefined);

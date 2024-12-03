@@ -108,6 +108,12 @@ const useSupersize = () => {
     const [selectedOption, setSelectedOption] = useState("Europe");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const lastUpdateRef = useRef<number | null>(null); // Track the last update time
+    const leaderBoardOptions = useRef([{ icon: `${process.env.PUBLIC_URL}/token.png`, name: "LOADING" }]);
+    const [season, setSeason] = useState({
+        icon: `${process.env.PUBLIC_URL}/token.png`,
+        name: "LOADING"
+    });
+
 
     let provider = new anchor.AnchorProvider(
         connection,
@@ -3354,7 +3360,10 @@ const useSupersize = () => {
         submitTransactionUser,
         submitTransaction,
         retrySubmitTransaction,
-        newGameTx
+        newGameTx,
+        leaderBoardOptions,
+        season,
+        setSeason
     }
 }
 
