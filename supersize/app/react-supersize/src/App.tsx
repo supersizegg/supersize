@@ -5,7 +5,7 @@ import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider, } from '@solana/wallet-adapter-react-ui';
 import { CONNECTION_STRING } from "@utils/constants";
-// import { SupersizeProvider } from '@contexts/SupersizeContext';
+import { SupersizeProvider } from '@contexts/SupersizeContext';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
 
@@ -20,9 +20,9 @@ function App() {
         <WalletProvider wallets={wallets} autoConnect>
             <WalletModalProvider>
                 <BrowserRouter>
-                    {/* <SupersizeProvider> */}
-                    <AppRoutes />
-                    {/* </SupersizeProvider> */}
+                    <SupersizeProvider>
+                        <AppRoutes />
+                    </SupersizeProvider>
                 </BrowserRouter>
             </WalletModalProvider>
         </WalletProvider>

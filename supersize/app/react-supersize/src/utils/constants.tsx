@@ -72,3 +72,4 @@ export const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: 
 export const options = ["Europe", "America", "Asia"];
 
 export const API_BASE_URL = "http://localhost:3000/api";
+export const scale = 1;
