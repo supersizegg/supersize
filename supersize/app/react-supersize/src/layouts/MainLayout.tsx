@@ -4,12 +4,12 @@ import WalletConnectButton from "@components/WalletConnectButton";
 import TopNavText from "@components/TopNavText";
 import SolNetStats from "@components/SolNetStats";
 import FooterLink from "@components/FooterLink";
-import Leaderboard from "@components/Leaderboard";
 import LeaderboardButton from "@components/LeaderboardButton";
 import { useNavigate } from "react-router-dom";
+import useSupersize from "@hooks/useSupersize";
 
 const MainLayout = ({ children }: PropsWithChildren) => {
-
+    const {currentTPS, price} = useSupersize()
     const [viewerIdx, setViewerIdx] = useState(0);
     const [footerVisible, setFooterVisible] = useState(false);
 
@@ -230,16 +230,14 @@ const MainLayout = ({ children }: PropsWithChildren) => {
             {
                 viewerIdx == 0 ?
                     <div className="flex justify-between items-center">
-                        <SolNetStats tps={238722} price={239} />
+                        <SolNetStats tps={currentTPS} price={price} />
                         <div className="h-10 absolute flex items-center justify-center p-2 mx-auto w-full text-white font-mono flex-col cursor-pointer"
-                            onClick={() => setViewerIdx(1)}
                         >
                             Learn More
                             <img
                                 src={`${process.env.PUBLIC_URL}/morearrow.png`}
                                 className="mt-0 w-5 h-auto animate-bounce cursor-pointer"
                                 alt="Image"
-                                onClick={() => setViewerIdx(1)}
                             />
                         </div>
                         <FooterLink />

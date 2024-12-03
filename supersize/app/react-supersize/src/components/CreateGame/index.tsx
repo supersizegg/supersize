@@ -1,14 +1,15 @@
+import useSupersize from '@hooks/useSupersize';
 import React,  { useState } from 'react';
 
 type gameProps = {
     game_size: number,
     userKey: string,
-    initFunction: (...args: any[]) => void;  
 };
 
 type FormData = [number, number, number, string, string, string];
 
-const CreateGame: React.FC<gameProps> = ({ game_size, userKey, initFunction }) => {
+const CreateGame: React.FC<gameProps> = ({ game_size, userKey }) => {
+    const { newGameTx } = useSupersize()
     const [formData, setFormData] = useState<FormData>([game_size, 10.0, 0.1, userKey, "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp", "ffa"]);
 
     const handleChange = (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +52,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, initFunction }) =
           <span className='mb-[5px] ml-[10px]'>Game Owner (wallet address)</span>
             <input className="no-arrows border border-[#272B30] rounded-[5px] w-full h-[30px] bg-black text-white pl-1 font-[Terminus]" type="text" name="game_owner" value={String(formData[3])} onChange={handleChange(3)} />
           </label>
-          <button onClick={() => {initFunction(formData)}} className='px-4 py-2 text-[20px] font-[Terminus] rounded-[10px] cursor-pointer bg-[#000] text-white border-[1px] border-[#C4B5FD] shadow-[rgb(109,88,135)_0px_0px_10px_0px] transition-all duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#000] hover:border-[#755E92] hover:shadow-none'>Create Game</button>
+          <button onClick={() => {newGameTx(...formData)}} className='px-4 py-2 text-[20px] font-[Terminus] rounded-[10px] cursor-pointer bg-[#000] text-white border-[1px] border-[#C4B5FD] shadow-[rgb(109,88,135)_0px_0px_10px_0px] transition-all duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#000] hover:border-[#755E92] hover:shadow-none'>Create Game</button>
         </form>
     );
   };

@@ -2540,6 +2540,7 @@ const useSupersize = () => {
     };
 
     const newGameTx = useCallback(async (game_size: number, max_buyin: number, min_buyin: number, game_owner_wallet_string: string, game_token_string: string, game_name: string) => {
+        console.log(game_size, max_buyin, min_buyin, game_owner_wallet_string, game_token_string, game_name);
         if (!publicKey) throw new WalletNotConnectedError();
         const base_buyin = Math.sqrt(max_buyin * min_buyin);
         const max_multiple = max_buyin / base_buyin;

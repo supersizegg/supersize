@@ -12,7 +12,6 @@ const LanchGame = () => {
 
     const [selectedOption, setSelectedOption] = useState(0);
     const { publicKey } = useWallet(); 
-    const { newGameTx } = useSupersizeContext();
 
     return (
         <div className="flex justify-center w-full h-full text-white">
@@ -44,7 +43,7 @@ const LanchGame = () => {
                 </p>
             </div>
             <div style={{ marginRight: "1.5vw", marginTop:"1vw" }}>
-                <CreateGame game_size={options[selectedOption].size} userKey={publicKey !== null ? publicKey.toString() : "Connect Wallet"} initFunction={newGameTx} />
+                <CreateGame game_size={options[selectedOption].size} userKey={publicKey !== null ? publicKey.toString() : "Connect Wallet"} />
             </div>
         </div>
     )
