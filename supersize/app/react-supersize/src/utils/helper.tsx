@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "@utils/constants";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import * as crypto from "crypto-js";
 import * as anchor from "@coral-xyz/anchor";
 
@@ -91,3 +91,58 @@ export const checkTransactionStatus = async (
         return false;
     }
 };
+
+export const waitSignatureConfirmation = async (
+    signature: string,
+    connection: anchor.web3.Connection,
+    commitment: anchor.web3.Commitment,
+): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        connection.onSignature(
+            signature,
+            (result) => {
+                if (result.err) {
+                    //console.error(`Error with signature ${signature}`, result.err);
+                    reject(result.err);
+                } else {
+                    setTimeout(() => resolve(), 1000);
+                }
+            },
+            commitment,
+        );
+    });
+};
+
+export async function getPriorityFeeEstimate(
+    priorityLevel: string,
+    publicKeys: string[],
+) {
+    const response = await fetch(
+        "https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676",
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: "helius-example",
+                method: "getPriorityFeeEstimate",
+                params: [
+                    {
+                        accountKeys: publicKeys,
+                        options: {
+                            recommended: true,
+                        },
+                    },
+                ],
+            }),
+        },
+    );
+    const data = await response.json();
+    console.log(
+        "Fee in function for",
+        priorityLevel,
+        " :",
+        data.result.priorityFeeEstimate,
+    );
+    return data.result;
+}

@@ -6,10 +6,14 @@ import { useSupersizeContext } from "@contexts/SupersizeContext";
 const Dropdown = () => {
     const {
         selectedOption,
-        isDropdownOpen,
-        setIsDropdownOpen,
         handleOptionClick,
     } = useSupersizeContext();
+
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const handleClick = (option: string) => {
+        setIsDropdownOpen(false);
+        handleOptionClick(option);
+    }
 
     return (
         <div
@@ -33,7 +37,7 @@ const Dropdown = () => {
                                 className="w-[120px] p-2.5 text-white text-left hover:opacity-50"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    handleOptionClick(option);
+                                    handleClick(option);
                                 }}
                             >
                                 <span className="inline-block w-[8px] h-[8px] rounded-full mr-2 opacity-100 bg-[#FF8888]" />

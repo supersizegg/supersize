@@ -13,9 +13,10 @@ import FooterLink from "@components/FooterLink";
 import LeaderboardButton from "@components/LeaderboardButton";
 import { useNavigate } from "react-router-dom";
 import useSupersize from "@hooks/useSupersize";
+import ReferrerModal from "@components/ReferrerModal";
 
 const MainLayout = ({ children }: PropsWithChildren) => {
-    const { currentTPS, price } = useSupersize();
+    const { currentTPS, price, isReferrerModalOpen } = useSupersize();
     const [viewerIdx, setViewerIdx] = useState(0);
     const [footerVisible, setFooterVisible] = useState(false);
 
@@ -129,7 +130,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
     }, []);
 
     return (
-        <section className="">
+        <section className={`${isReferrerModalOpen ? "bg-black bg-opacity-50" : ""}`}>
             {viewerIdx == 0 ? (
                 <div className="flex justify-between items-center">
                     <Dropdown />
@@ -307,6 +308,9 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                     </div>
                 </div>
             )}
+            {
+                viewerIdx == 0 && <ReferrerModal />
+            }
             {viewerIdx == 0 ? (
                 <div className="flex justify-between items-center">
                     <SolNetStats tps={currentTPS} price={price} />

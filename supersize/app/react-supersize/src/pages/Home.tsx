@@ -5,6 +5,8 @@ import { ActiveGame } from "@utils/types";
 import { Link } from "react-router-dom";
 import Alert from "@components/Alert";
 import { useSupersizeContext } from "@contexts/SupersizeContext";
+import { FindWorldPda } from "@magicblock-labs/bolt-sdk";
+import * as anchor from "@coral-xyz/anchor";
 
 const Home = () => {
     const {
@@ -16,10 +18,6 @@ const Home = () => {
         openGameInfo,
         setOpenGameInfo,
         inputValue,
-        handleKeyPress,
-        handleImageClick,
-        handleSliderChange,
-        handleInputChange,
         joinGameTx,
         isJoining,
         isSubmitting,
@@ -27,10 +25,71 @@ const Home = () => {
         transactionSuccess,
         setTransactionError,
         setTransactionSuccess,
-        handleNameChange,
-        handleClick,
+        setPlayerName,
+        setInputValue,
+        setNewGameCreated
     } = useSupersizeContext();
     const [expandlist, setExpandlist] = useState(false);
+
+    const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPlayerName(event.target.value);
+    };
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(event.target.value);
+    };
+    const handleSliderChange = (event: any) => {
+        let value = parseFloat(event.target.value);
+        value = value > 10 ? 10 : value;
+        value = value > 0.1 ? parseFloat(value.toFixed(1)) : value;
+        setBuyIn(value);
+    };
+
+    const handleClick = (index: number) => {
+        setOpenGameInfo((prevState) => {
+            const newState = [...prevState];
+            newState[index] = !newState[index];
+            return newState;
+        });
+    };
+
+    const handleImageClick = async () => {
+        if (inputValue.trim() !== "") {
+            try {
+                const worldId = { worldId: new anchor.BN(inputValue.trim()) };
+                const worldPda = await FindWorldPda(worldId);
+                const newGameInfo: ActiveGame = {
+                    worldId: worldId.worldId,
+                    worldPda: worldPda,
+                    name: "loading",
+                    active_players: 0,
+                    max_players: 0,
+                    size: 0,
+                    image: "",
+                    token: "",
+                    base_buyin: 0,
+                    min_buyin: 0,
+                    max_buyin: 0,
+                };
+                console.log(
+                    "new game info",
+                    newGameInfo.worldId,
+                    newGameInfo.worldPda.toString(),
+                );
+                setNewGameCreated(newGameInfo);
+                setActiveGames([newGameInfo, ...activeGames]);
+                setOpenGameInfo(new Array(activeGames.length).fill(false));
+            } catch (error) {
+                console.error("Invalid PublicKey:", error);
+            }
+        }
+    };
+
+    const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Enter") {
+            handleImageClick();
+        }
+    };
+    
 
     return (
         <div className="flex h-[84vh]">

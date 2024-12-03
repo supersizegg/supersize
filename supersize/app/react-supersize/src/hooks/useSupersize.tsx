@@ -43,9 +43,11 @@ import {
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Client, USDC_MINT } from "@ladderlabs/buddy-sdk";
 import {
+    checkTransactionStatus,
     deriveKeypairFromPublicKey,
     getTopLeftCorner,
     pingEndpoint,
+    waitSignatureConfirmation,
 } from "@utils/helper";
 import {
     ApplySystem,
@@ -144,16 +146,7 @@ const useSupersize = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
     const [panelContent, setPanelContent] = useState<JSX.Element | null>(null);
-    const [buildViewerNumber, setbuildViewerNumber] = useState(0);
     const [leaderBoardActive, setLeaderboardActive] = useState(false);
-    const [isHovered, setIsHovered] = useState([
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-    ]);
 
     const [gameEnded, setGameEnded] = useState(0);
     const playerCashout = useRef(0);
@@ -173,9 +166,8 @@ const useSupersize = () => {
     const [countdown, setCountdown] = useState(5);
     const [buyIn, setBuyIn] = useState(0.0);
 
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
-    const [selectedOption, setSelectedOption] = useState("Europe");
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [selectedOption, setSelectedOption] = useState(options[0]);
+
     const lastUpdateRef = useRef<number | null>(null); // Track the last update time
     const leaderBoardOptions = useRef([
         { icon: `${process.env.PUBLIC_URL}/token.png`, name: "LOADING" },
@@ -345,6 +337,48 @@ const useSupersize = () => {
         [connection, isSubmitting, sendTransaction],
     );
 
+    const retrySubmitTransaction = async (
+        transaction: Transaction,
+        connection: anchor.web3.Connection,
+        commitment: anchor.web3.Commitment,
+        maxRetries = 3,
+        delay = 2000,
+    ): Promise<string | null> => {
+        let attempts = 0;
+        let signature: string | null = null;
+
+        while (attempts < maxRetries) {
+            try {
+                // Submit the transaction
+                signature = await submitTransaction(
+                    transaction,
+                    commitment,
+                    true,
+                );
+                console.log("transaction attempt:", signature);
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                // Check transaction status
+                if (signature) {
+                    const success = await checkTransactionStatus(
+                        connection,
+                        signature,
+                    );
+                    if (success) {
+                        console.log("Transaction confirmed successfully");
+                        return signature;
+                    }
+                }
+            } catch (error) {
+                console.error(`Attempt ${attempts + 1} failed:`, error);
+            }
+            attempts++;
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+
+        console.error("Max retries reached. Transaction failed to confirm.");
+        return null; // Return null if all retries fail
+    };
+
     useEffect(() => {
         if (publicKey) {
             const newWallet = deriveKeypairFromPublicKey(publicKey);
@@ -383,7 +417,6 @@ const useSupersize = () => {
 
     const handleOptionClick = (option: any) => {
         setSelectedOption(option);
-        setIsDropdownOpen(false);
         const selectedIndex = options.indexOf(option);
         setFastestEndpoint(endpoints[selectedIndex]);
     };
@@ -459,29 +492,6 @@ const useSupersize = () => {
             console.log(fastestEndpoint);
         }
     }, [fastestEndpoint]);
-
-    const openDocs = useCallback(() => {
-        window.open("https://docs.supersize.gg/", "_blank");
-    }, []);
-    const openX = useCallback(() => {
-        window.open("https://x.com/SUPERSIZEgg", "_blank");
-    }, []);
-    const openTG = useCallback(() => {
-        window.open("https://t.me/supersizeplayers", "_blank");
-    }, []);
-
-    const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setPlayerName(event.target.value);
-    };
-    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(event.target.value);
-    };
-    const handleSliderChange = (event: any) => {
-        let value = parseFloat(event.target.value);
-        value = value > 10 ? 10 : value;
-        value = value > 0.1 ? parseFloat(value.toFixed(1)) : value;
-        setBuyIn(value);
-    };
 
     const getComponentsClientBasic = useCallback(
         async (component: PublicKey): Promise<Program> => {
@@ -946,7 +956,7 @@ const useSupersize = () => {
             (foodComponentClient.current?.account as any).section
                 .fetch(foodComponenti, "processed")
                 .then((fetchedData: any) => updateFoodList(fetchedData, i))
-                .catch((error: any) => {});
+                .catch((error: any) => { });
         }
 
         for (let i = 0; i < playerEntities.current.length; i++) {
@@ -993,136 +1003,6 @@ const useSupersize = () => {
         updateMap,
         updateMyPlayer,
     ]);
-
-    const handleGameIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = event.target.value;
-        try {
-            setGameId(new PublicKey(newValue));
-        } catch {}
-    };
-
-    const waitSignatureConfirmation = async (
-        signature: string,
-        connection: anchor.web3.Connection,
-        commitment: anchor.web3.Commitment,
-    ): Promise<void> => {
-        return new Promise((resolve, reject) => {
-            connection.onSignature(
-                signature,
-                (result) => {
-                    if (result.err) {
-                        //console.error(`Error with signature ${signature}`, result.err);
-                        reject(result.err);
-                    } else {
-                        setTimeout(() => resolve(), 1000);
-                    }
-                },
-                commitment,
-            );
-        });
-    };
-
-    const checkTransactionStatus = async (
-        connection: anchor.web3.Connection,
-        signature: string,
-    ): Promise<boolean> => {
-        try {
-            const status = await connection.getSignatureStatus(signature, {
-                searchTransactionHistory: true,
-            });
-            if (
-                status &&
-                status.value &&
-                status.value.confirmationStatus === "confirmed" &&
-                status.value.err === null
-            ) {
-                console.log("Transaction succeeded:", signature);
-                return true;
-            } else {
-                console.warn("Transaction still pending or failed:", signature);
-                return false;
-            }
-        } catch (error) {
-            console.error("Error checking transaction status:", error);
-            return false;
-        }
-    };
-
-    const retrySubmitTransaction = async (
-        transaction: Transaction,
-        connection: anchor.web3.Connection,
-        commitment: anchor.web3.Commitment,
-        maxRetries = 3,
-        delay = 2000,
-    ): Promise<string | null> => {
-        let attempts = 0;
-        let signature: string | null = null;
-
-        while (attempts < maxRetries) {
-            try {
-                // Submit the transaction
-                signature = await submitTransaction(
-                    transaction,
-                    commitment,
-                    true,
-                );
-                console.log("transaction attempt:", signature);
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-                // Check transaction status
-                if (signature) {
-                    const success = await checkTransactionStatus(
-                        connection,
-                        signature,
-                    );
-                    if (success) {
-                        console.log("Transaction confirmed successfully");
-                        return signature;
-                    }
-                }
-            } catch (error) {
-                console.error(`Attempt ${attempts + 1} failed:`, error);
-            }
-            attempts++;
-            await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-
-        console.error("Max retries reached. Transaction failed to confirm.");
-        return null; // Return null if all retries fail
-    };
-
-    async function getPriorityFeeEstimate(
-        priorityLevel: string,
-        publicKeys: string[],
-    ) {
-        const response = await fetch(
-            "https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    jsonrpc: "2.0",
-                    id: "helius-example",
-                    method: "getPriorityFeeEstimate",
-                    params: [
-                        {
-                            accountKeys: publicKeys,
-                            options: {
-                                recommended: true,
-                            },
-                        },
-                    ],
-                }),
-            },
-        );
-        const data = await response.json();
-        console.log(
-            "Fee in function for",
-            priorityLevel,
-            " :",
-            data.result.priorityFeeEstimate,
-        );
-        return data.result;
-    }
 
     /**
      * Create a new join game transaction
@@ -2070,104 +1950,104 @@ const useSupersize = () => {
                         }
                         const extraAccounts = referrer_token_account
                             ? [
-                                  {
-                                      pubkey: vault_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: sender_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: owner_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: supersize_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: tokenAccountOwnerPda,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: referrer_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: savedPublicKey,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: SystemProgram.programId,
-                                      isWritable: false,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: TOKEN_PROGRAM_ID,
-                                      isWritable: false,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: SYSVAR_RENT_PUBKEY,
-                                      isWritable: false,
-                                      isSigner: false,
-                                  },
-                              ]
+                                {
+                                    pubkey: vault_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: sender_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: owner_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: supersize_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: tokenAccountOwnerPda,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: referrer_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: savedPublicKey,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: SystemProgram.programId,
+                                    isWritable: false,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: TOKEN_PROGRAM_ID,
+                                    isWritable: false,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: SYSVAR_RENT_PUBKEY,
+                                    isWritable: false,
+                                    isSigner: false,
+                                },
+                            ]
                             : [
-                                  {
-                                      pubkey: vault_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: sender_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: owner_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: supersize_token_account,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: tokenAccountOwnerPda,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: savedPublicKey,
-                                      isWritable: true,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: SystemProgram.programId,
-                                      isWritable: false,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: TOKEN_PROGRAM_ID,
-                                      isWritable: false,
-                                      isSigner: false,
-                                  },
-                                  {
-                                      pubkey: SYSVAR_RENT_PUBKEY,
-                                      isWritable: false,
-                                      isSigner: false,
-                                  },
-                              ];
+                                {
+                                    pubkey: vault_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: sender_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: owner_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: supersize_token_account,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: tokenAccountOwnerPda,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: savedPublicKey,
+                                    isWritable: true,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: SystemProgram.programId,
+                                    isWritable: false,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: TOKEN_PROGRAM_ID,
+                                    isWritable: false,
+                                    isSigner: false,
+                                },
+                                {
+                                    pubkey: SYSVAR_RENT_PUBKEY,
+                                    isWritable: false,
+                                    isSigner: false,
+                                },
+                            ];
 
                         const applyCashOutSystem = await ApplySystem({
                             authority: savedPublicKey,
@@ -2639,7 +2519,7 @@ const useSupersize = () => {
             for (const player of visiblePlayers) {
                 const distance = Math.sqrt(
                     (player.x - currentPlayer.x) ** 2 +
-                        (player.y - currentPlayer.y) ** 2,
+                    (player.y - currentPlayer.y) ** 2,
                 );
                 if (distance < currentPlayer.radius) {
                     return player.authority;
@@ -2954,51 +2834,6 @@ const useSupersize = () => {
         parsePoolInfo();
     }, []);
 
-    const handleClick = (index: number) => {
-        setOpenGameInfo((prevState) => {
-            const newState = [...prevState];
-            newState[index] = !newState[index];
-            return newState;
-        });
-    };
-
-    const handleImageClick = async () => {
-        if (inputValue.trim() !== "") {
-            try {
-                const worldId = { worldId: new anchor.BN(inputValue.trim()) };
-                const worldPda = await FindWorldPda(worldId);
-                const newGameInfo: ActiveGame = {
-                    worldId: worldId.worldId,
-                    worldPda: worldPda,
-                    name: "loading",
-                    active_players: 0,
-                    max_players: 0,
-                    size: 0,
-                    image: "",
-                    token: "",
-                    base_buyin: 0,
-                    min_buyin: 0,
-                    max_buyin: 0,
-                };
-                console.log(
-                    "new game info",
-                    newGameInfo.worldId,
-                    newGameInfo.worldPda.toString(),
-                );
-                setNewGameCreated(newGameInfo);
-                setActiveGames([newGameInfo, ...activeGames]);
-                setOpenGameInfo(new Array(activeGames.length).fill(false));
-            } catch (error) {
-                console.error("Invalid PublicKey:", error);
-            }
-        }
-    };
-    const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === "Enter") {
-            handleImageClick();
-        }
-    };
-
     const fetchTokenMetadata = async (
         tokenAddress: string,
     ): Promise<{ name: string; image: string }> => {
@@ -3202,20 +3037,20 @@ const useSupersize = () => {
                     setActiveGames((prevActiveGames) => {
                         const updatedGames = prevActiveGames.map((game) =>
                             game.worldId === activeGames[i].worldId &&
-                            game.worldPda.toString() ===
+                                game.worldPda.toString() ===
                                 activeGames[i].worldPda.toString()
                                 ? {
-                                      ...game,
-                                      name: mapParsedData.name,
-                                      active_players: activeplayers,
-                                      max_players: mapParsedData.maxPlayers,
-                                      size: mapParsedData.width,
-                                      image: token_image,
-                                      token: token_name,
-                                      base_buyin: base_buyin,
-                                      min_buyin: min_buyin,
-                                      max_buyin: max_buyin,
-                                  }
+                                    ...game,
+                                    name: mapParsedData.name,
+                                    active_players: activeplayers,
+                                    max_players: mapParsedData.maxPlayers,
+                                    size: mapParsedData.width,
+                                    image: token_image,
+                                    token: token_name,
+                                    base_buyin: base_buyin,
+                                    min_buyin: min_buyin,
+                                    max_buyin: max_buyin,
+                                }
                                 : game,
                         );
                         return updatedGames;
@@ -3982,278 +3817,49 @@ const useSupersize = () => {
         fetchAndLogMapData();
     }, [openGameInfo, enpointDone, selectedOption]);
 
-    useEffect(() => {
-        const scrollableElement = document.querySelector(
-            ".info-text-container",
-        );
-        if (!scrollableElement) return;
-
-        const handleScroll = () => {
-            const scrollPosition = scrollableElement.scrollTop / 20;
-            const image = document.querySelector(
-                ".info-spinning-image",
-            ) as HTMLImageElement;
-
-            if (image) {
-                console.log("Image found:", image);
-                image.style.transform = `rotate(${scrollPosition}deg)`;
-            } else {
-                console.log("Image not found");
-            }
-        };
-
-        scrollableElement.addEventListener("scroll", handleScroll);
-
-        return () => {
-            scrollableElement.removeEventListener("scroll", handleScroll);
-        };
-    }, [buildViewerNumber]);
-
-    useEffect(() => {
-        let scrollY = 0;
-        if (buildViewerNumber == 0 || buildViewerNumber == 1) {
-            const handleWheel = (event: WheelEvent) => {
-                scrollY += event.deltaY;
-
-                const element = document.querySelector(".info-text-container");
-                let scrollTop = 0;
-                if (element) {
-                    scrollTop = element.scrollTop;
-                }
-                scrollY += event.deltaY;
-
-                if (scrollY > 20 && !element) {
-                    console.log("User has scrolled more than 50 pixels down.");
-                    setbuildViewerNumber(1);
-                } else if (scrollY < -20 && scrollTop === 0 && element) {
-                    console.log("User has scrolled more than 50 pixels up.");
-                    setbuildViewerNumber(0);
-                }
-            };
-
-            window.addEventListener("wheel", handleWheel);
-
-            return () => {
-                window.removeEventListener("wheel", handleWheel);
-            };
-        }
-    }, [buildViewerNumber]);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const element = document.querySelector(".info-text-container");
-            if (element) {
-                const scrollTop = element.scrollTop;
-                const scrollHeight = element.scrollHeight;
-                const clientHeight = element.clientHeight;
-                if (scrollTop + clientHeight >= scrollHeight) {
-                    setFooterVisible(true);
-                } else {
-                    setFooterVisible(false);
-                }
-            }
-        };
-
-        const handleTouchMove = () => {
-            handleScroll();
-        };
-
-        const element = document.querySelector(".info-text-container");
-        if (element) {
-            element.addEventListener("scroll", handleScroll);
-            window.addEventListener("touchmove", handleTouchMove);
-        }
-
-        return () => {
-            if (element) {
-                element.removeEventListener("scroll", handleScroll);
-                window.removeEventListener("touchmove", handleTouchMove);
-            }
-        };
-    }, [buildViewerNumber]);
-
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 1000);
-        };
-
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
-    }, []);
-
-    useEffect(() => {
-        const logoElement = document.querySelector(
-            ".logo-image",
-        ) as HTMLElement | null;
-        if (logoElement) {
-            logoElement.style.transform = "none";
-        } else {
-            console.warn('Element with class name "logo-image" not found.');
-        }
-    }, [buildViewerNumber]);
-
     return {
-        savedPublicKey,
-        setSavedPublicKey,
-        exitTxn,
-        setExitTxn,
+        newGameTx,
+        selectedOption,
+        handleOptionClick,
+        leaderBoardOptions,
+        setSeason,
+        season,
+        referrerInput, 
+        setReferrerInput, 
+        setIsReferrerModalOpen, 
+        getRefferal, 
         isReferrerModalOpen,
-        setIsReferrerModalOpen,
-        referrerInput,
-        setReferrerInput,
-        myReferralAccount,
-        myReferrer,
-        fastestEndpoint,
-        setFastestEndpoint,
-        enpointDone,
-        setEndpointDone,
-        wallet,
-        setWallet,
-        playerKey,
-        setPlayerKey,
-        walletRef,
-        foodwallet,
-        foodKey,
-        setFoodKey,
-        foodwalletRef,
-        players,
-        setPlayers,
-        playersLists,
-        setPlayersLists,
-        playersListsLen,
-        setPlayersListsLen,
-        allplayers,
-        setAllPlayers,
-        leaderboard,
-        setLeaderboard,
-        foodListLen,
-        setFoodListLen,
-        allFood,
-        setAllFood,
-        visibleFood,
-        setVisibleFood,
-        currentPlayer,
-        setCurrentPlayer,
-        playerName,
-        setPlayerName,
-        expandlist,
-        setexpandlist,
-        subscribedToGame,
-        setSubscribedToGame,
-        newGameCreated,
-        setNewGameCreated,
-        currentTPS,
-        setCurrentTPS,
+        currentTPS, 
         price,
-        setPrice,
-        screenSize,
-        setScreenSize,
-        mapSize,
-        setMapSize,
-        isSubmitting,
-        setIsSubmitting,
-        isJoining,
-        setIsJoining,
-        moveSignature,
-        setMoveSignature,
-        transactionError,
-        setTransactionError,
-        transactionSuccess,
-        setTransactionSuccess,
-        activeGames,
-        setActiveGames,
-        gamewallet,
-        setGameWallet,
-        openGameInfo,
-        setOpenGameInfo,
-        entityMatch,
-        playerEntities,
-        foodEntities,
-        currentPlayerEntity,
-        currentWorldId,
-        anteroomEntity,
         gameId,
-        setGameId,
-        exitHovered,
-        setExitHovered,
-        playersComponentSubscriptionId,
-        foodComponentSubscriptionId,
-        myplayerComponentSubscriptionId,
-        mapComponentSubscriptionId,
-        playersComponentClient,
-        mapComponentClient,
-        foodComponentClient,
-        isMouseDown,
-        setIsMouseDown,
-        mousePosition,
-        setMousePosition,
-        panelContent,
-        setPanelContent,
-        buildViewerNumber,
-        setbuildViewerNumber,
-        leaderBoardActive,
-        setLeaderboardActive,
-        isHovered,
-        setIsHovered,
         gameEnded,
-        setGameEnded,
-        playerCashout,
-        playerBuyIn,
-        playerTax,
-        setPlayerTax,
-        playerRemovalTimeRef,
-        cashoutTx,
-        setCashoutTx,
-        reclaimTx,
-        setReclaimTx,
-        cashingOut,
-        setCashingOut,
-        playerCashoutAddy,
-        setPlayerCashoutAddy,
-        nextFood,
-        inputValue,
-        setInputValue,
-        footerVisible,
-        setFooterVisible,
         playerExiting,
-        setPlayerExiting,
         countdown,
-        setCountdown,
+        screenSize,
+        reclaimTx,
+        cashoutTx,
+        handleExitClick,
+        players,
+        visibleFood,
+        currentPlayer,
         buyIn,
         setBuyIn,
-        isMobile,
-        setIsMobile,
-        selectedOption,
-        setSelectedOption,
-        isDropdownOpen,
-        setIsDropdownOpen,
-        lastUpdateRef,
-        provider,
-        providerEphemeralRollup,
-        handleNameChange,
-        handleOptionClick,
-        handleSliderChange,
-        handleInputChange,
-        handleKeyPress,
+        playerName,
+        activeGames,
+        setActiveGames,
+        openGameInfo,
+        setOpenGameInfo,
+        inputValue,
         joinGameTx,
-        openDocs,
-        openX,
-        openTG,
-        handleExitClick,
-        cleanUp,
-        getRefferal,
-        handleClick,
-        handleImageClick,
-        submitTransactionUser,
-        submitTransaction,
-        retrySubmitTransaction,
-        newGameTx,
-        leaderBoardOptions,
-        season,
-        setSeason,
+        isJoining,
+        isSubmitting,
+        transactionError,
+        transactionSuccess,
+        setTransactionError,
+        setTransactionSuccess,
+        setPlayerName,
+        setInputValue,
+        setNewGameCreated,
     };
 };
 
