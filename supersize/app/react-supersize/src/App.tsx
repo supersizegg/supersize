@@ -6,6 +6,9 @@ import GameComponent from "./components/GameComponent";
 import CreateGameComponent from "./components/CreateGameComponent";
 import Alert from "./components/Alert";
 import Leaderboard from "./components/Leaderboard";
+import CopyLink from "./components/buddyReferral";
+import Invite from "./components/buddyInvite";
+import TweetLink from "./components/buddyTweet";
 
 import {
     AddEntity,
@@ -63,7 +66,8 @@ import { set } from "@metaplex-foundation/beet";
 import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { Client, USDC_MINT } from "@ladderlabs/buddy-sdk";
 import { initBuddyState, initialBuddyLink, useInitBuddyLink,
-    useBuddyState, useBuddyLink, BUDDY_STATUS 
+    useBuddyState, useBuddyLink, BUDDY_STATUS, getTreasuryPDA, getBuddyPDA,
+    BUDDY_MINTS, getMemberPDA
  } from "buddy.link";
 
 import * as crypto from 'crypto-js';
@@ -91,7 +95,7 @@ const CASH_OUT = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
 interface Food {
     x: number;
     y: number;
-    color: string;
+    size: number;
 }
 interface Blob {
     name: string;
@@ -123,36 +127,46 @@ type ActiveGame = {
     max_buyin: number;
   };
 
-initBuddyState({
-	...initialBuddyLink,
-	...{
-		ORGANIZATION_NAME: "",
-		MEMBER_NAME: "",
-		PROFILE_NAME: "",
-		ORG_MEMBER_NAME: "",
-	},
-});
+const CURRENT_NETWORK = "Mainnet";
+
+const initialState = {
+    [BUDDY_MINTS]: [
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",  // USDC on mainnet
+      "11111111111111111111111111111111"               // SOL on mainnet
+    ],
+  }
+
+initBuddyState({ ...initialBuddyLink, 
+    ...initialState, 
+}); 
+
+const InitBuddyLinkWrapper = () => {
+    //const { connection } = useConnection()
+    const  connection =  new Connection("https://floral-convincing-dawn.solana-mainnet.quiknode.pro/73d5d52678fd227b48dd0aec6a8e94ac9dd61f59"); 
+
+    const wallet = useWallet()
+
+    // Note: Devnet SDK has an error that Wagg is fixing, contact him to find out when this can be removed
+    const organization = CURRENT_NETWORK === 'Mainnet' ? 'supersize' : undefined
+
+    useInitBuddyLink(connection, wallet, organization, { debug: true }) // TODO: turn off debug
+
+    return null
+}
 
 const App: React.FC = () => {
     //let { connection } =  useConnection();
     const  connection =  new Connection("https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d"); 
     //const  connection =  new Connection("https://floral-convincing-dawn.solana-mainnet.quiknode.pro/73d5d52678fd227b48dd0aec6a8e94ac9dd61f59"); 
+    //const  connection =  new Connection("https://staked.helius-rpc.com?api-key=cba33294-aa96-414c-9a26-03d5563aa676"); 
 
     const { publicKey, sendTransaction } = useWallet();
-    
-    /* const buddyPublicKey = useWallet();
-    initBuddyState({ ...initialBuddyLink }); 
-    const [organizationName] = useBuddyState("Supersize");
-    useInitBuddyLink(connection, buddyPublicKey, organizationName || "xyz", {
-        debug: false,
-    });
-    const [status,] = useBuddyState(BUDDY_STATUS);
-    const { init } = useBuddyLink(); */
 
     let userKey = publicKey;
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(null);
     const [exitTxn, setExitTxn] = useState<string>('');
 
+    
     const endpoints = [
         "https://supersize-fra.magicblock.app",
         "https://supersize.magicblock.app",
@@ -169,8 +183,10 @@ const App: React.FC = () => {
 
     const [isReferrerModalOpen, setIsReferrerModalOpen] = useState(false);
     const [referrerInput, setReferrerInput] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
     const myReferralAccount = useRef<string>("");
     const myReferrer = useRef<string>("");
+    const { referrer, member, profile } = useBuddyLink();
 
     const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
     const [enpointDone, setEndpointDone] = useState<boolean>(false);
@@ -204,38 +220,38 @@ const App: React.FC = () => {
     const [moveSignature, setMoveSignature] = useState<string | null>(null);
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
-      /*
+       /*
       const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-mainnet-sin.magicblock.app": {
-          worldId: new anchor.BN(1),
-          worldPda: new PublicKey('9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma'),
-        },
+          worldId: new anchor.BN(8),
+          worldPda: new PublicKey('B8nxHq1NadQKbuaAwow9vHaCty9LcWrYBtD5db216boR'),
+        }, //1, 9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma 
         "https://supersize-mainnet-bos.magicblock.app": {
-          worldId: new anchor.BN(2),
-          worldPda: new PublicKey('5Fj5HJud66muuDyateWdP2HAPkED7CnyApDQBMreVQQH'),
-        },
+          worldId: new anchor.BN(7),
+          worldPda: new PublicKey('9S7BFk4apJ3ZKVYbt7PSWeJY5n3qnsB4AVJWh1ogyo8r'),
+        }, //2, 5Fj5HJud66muuDyateWdP2HAPkED7CnyApDQBMreVQQH
         "https://supersize-mainnet.magicblock.app": {
-          worldId: new anchor.BN(3),
-          worldPda: new PublicKey('8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt'),
-        },
-      }; */
-      
-      
+          worldId: new anchor.BN(4),
+          worldPda: new PublicKey('AGUNzsmCpRp53DPYXY9Yw6Lwg5b5heSkTRyafTkfNYJv'),
+        }, //3, 8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt
+      }; 
+       */
+   
       const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
         "https://supersize-sin.magicblock.app": {
           worldId: new anchor.BN(1666),
           worldPda: new PublicKey('BQ4vkTpteu5EcM5dYTSCGAQKbW5JumeyLm3o6yvyzqHw'),
         },
         "https://supersize.magicblock.app": {
-          worldId: new anchor.BN(1679),
-          worldPda: new PublicKey('7XR47TXSsQNHBeF4jp3yNtdWJUPpeBfTz7V83wprxXqK'),
+          worldId: new anchor.BN(1683),
+          worldPda: new PublicKey('3f6AomGdReXwbJ1cK54LdNULeMrUmw6kYS2Sfu9CPHoa'),
         },
         "https://supersize-fra.magicblock.app": {
-          worldId: new anchor.BN(1676),
-          worldPda: new PublicKey('7scyVWfSS3sQhiNA7smqmgMUi4HptWZGMvJczvGCzrKv'),
-        },
+          worldId: new anchor.BN(1727),
+          worldPda: new PublicKey('A5F8bV8wyMNS4dLpfckfxpfHFBTdgd8FW34K7UwxCNvX'),
+        }, //3o6derAZFQi5v7CZmkZX65eare4xpeVy1ZBpBbiaCA1L, 1715
       }; 
-      
+     
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [gamewallet, setGameWallet] = useState("");
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
@@ -270,6 +286,7 @@ const App: React.FC = () => {
    const playerCashout = useRef(0);
    const playerBuyIn = useRef(0);
    const [playerTax, setPlayerTax] = useState(0);
+   const [playerMouseLocation, setPlayerMouseLocation] = useState({x: 0, y: 0});
    const playerRemovalTimeRef = useRef<BN | null>(null);
    const [cashoutTx, setCashoutTx] = useState<string| null>(null);
    const [reclaimTx, setReclaimTx] = useState<string| null>(null);
@@ -280,17 +297,22 @@ const App: React.FC = () => {
    const [inputValue, setInputValue] = useState<string>('');  
    const [footerVisible, setFooterVisible] = useState(false);
    const [playerExiting, setPlayerExiting] = useState(false);
-   const [countdown, setCountdown] = useState(5);
+   const countdown = useRef(5);
    const [buyIn, setBuyIn] = useState(0.0); 
+   const swapAmount = useRef(""); 
+   const [tokenMint, setTokenMint] = useState("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"); 
 
    const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
    const [selectedOption, setSelectedOption] = useState("Europe");
    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
    const lastUpdateRef = useRef<number | null>(null); // Track the last update time
+   const [isCreating, setIsCreating] = useState(false);
+   const [joinedOrg, setJoinedOrg] = useState(false);
 
    const options = ["Europe", "America", "Asia"];
 
    const SOL_USDC_POOL_ID = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2"; 
+   const SOL_AGLD_POOL_ID = "ExjREqkJQYEd5yJZoCsncAjbHe2SkCUBofztCdTqnPbd";
 
    let provider = new anchor.AnchorProvider(
     connection,
@@ -300,66 +322,24 @@ const App: React.FC = () => {
         commitment: 'processed',
     }
     );  
+    
     /*
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-mainnet-sin.magicblock.app", {
         wsEndpoint: "wss://supersize-mainnet-sin.magicblock.app",
         }),
         new NodeWallet(wallet) 
-    )); */
-    
-    
+    )); 
+    */ 
     
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-fra.magicblock.app", {
         wsEndpoint: "wss://supersize-fra.magicblock.app",
         }),
         new NodeWallet(wallet) 
-    ));  
+    )); 
     
     anchor.setProvider(provider); 
-
-    const getRefferal = async (inputKey: any) => {
-            
-            /*
-            try {
-            const results = await init();
-            console.log(`buddy.init results`, results);
-            return true;
-            } catch (e) {
-            console.log(`buddy.init error`, e)
-            }
-            */
-           
-            //const buddyLinkClient = new Client(connection as any, publicKey);
-            const buddyLinkClient = new Client(connection as any, inputKey, "2iF3HaLpk6vuUXxGK3uDsxWoP5htC7NWZNctAevxZewY");
-            const transaction = new Transaction();
-            const organizationName = "Supersize";
-            // check if user has buddy link profile and treasury
-            const playerBuddyProfile = await buddyLinkClient.buddy.getProfile(inputKey);
-            if (!playerBuddyProfile) {
-                const playerProfileCreateIx = await buddyLinkClient.initialize.createProfile(playerName);
-                const playerSolTreasuryCreateIx = await buddyLinkClient.initialize.createTreasuryByName(playerName);
-                const playerUsdcTreasuryCreateIx = await buddyLinkClient.initialize.createTreasuryByName(playerName, USDC_MINT);
-                transaction.add(...playerProfileCreateIx, ...playerSolTreasuryCreateIx, ...playerUsdcTreasuryCreateIx);
-            }
-            // check if user has member
-            const playerBuddyMember = await buddyLinkClient.member.getByName(organizationName, playerName);
-            if (!playerBuddyMember) {
-                const playerMemberCreateIx = await buddyLinkClient.initialize.createMember(organizationName, playerName);
-                transaction.add(...playerMemberCreateIx);
-            }
-
-            if (transaction.instructions.length > 0) {
-                const buddyTxSig = await submitTransactionUser(transaction);
-            }
-            //myReferralAccount.current = "";
-            //setIsReferrerModalOpen(true);
-            do {
-                await new Promise(resolve => setTimeout(resolve, 500)); 
-            } while(!isReferrerModalOpen)
-            setIsReferrerModalOpen(false);
-    };
 
     useEffect(() => {
         if (publicKey) {
@@ -389,11 +369,57 @@ const App: React.FC = () => {
         }
     }, [publicKey, savedPublicKey]);
 
+    const setInputUsername = (inputUsername: any) => {
+        const user = { name: inputUsername, referrer: referrer, referral_done: false};
+        localStorage.setItem('user', JSON.stringify(user));
+        setPlayerName(inputUsername);
+    };
+
+    useEffect(() => {
+        const retrievedUser = localStorage.getItem('user');
+        if(retrievedUser){
+            let myusername = JSON.parse(retrievedUser).name;
+            setPlayerName(myusername);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (publicKey) {
+            const retrievedUser = localStorage.getItem('user');
+            const retrievedRefferal = localStorage.getItem('referrer');
+            //console.log('retrieved', member[0], retrievedRefferal, retrievedUser);
+            if(member){
+                if(member[0]){
+                    const user = { name: member[0].account.name, referrer: referrer, referral_done: true};
+                    localStorage.setItem('user', JSON.stringify(user));
+                    setPlayerName(member[0].account.name);
+                    setJoinedOrg(true);
+                }
+                else{ 
+                    if(!retrievedUser || retrievedRefferal !== null){
+                        const user = { name: publicKey.toString().slice(0,12), referrer: referrer, referral_done: false};
+                        localStorage.setItem('user', JSON.stringify(user));
+                        setUsername(publicKey.toString().slice(0,12));
+                        setIsReferrerModalOpen(true);
+                        setJoinedOrg(false);
+                    }
+                }
+            }
+            else{ 
+                if(!retrievedUser || retrievedRefferal !== null){
+                    const user = { name: publicKey.toString().slice(0,12), referrer: referrer, referral_done: false};
+                    localStorage.setItem('user', JSON.stringify(user));
+                    setUsername(publicKey.toString().slice(0,12));
+                    setIsReferrerModalOpen(true);
+                    setJoinedOrg(false);
+                }
+            }
+        }
+    }, [member]);
+
     useEffect(() => {
         if (publicKey) {
             setSavedPublicKey(publicKey); 
-            setIsReferrerModalOpen(true);
-            //getRefferal(publicKey);
         }
     }, [publicKey]);
 
@@ -460,6 +486,18 @@ const App: React.FC = () => {
         }
     }, [buyIn, activeGames]);
 
+    
+    useEffect(() => {
+        if(activeGames[0]){
+            if(activeGames[0].name == "AGLD"){
+                swapAmount.current = "https://raydium.io/swap/?inputMint=sol&outputMint=7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
+            }else{
+                swapAmount.current = `https://jup.ag/swap/SOL-${tokenMint}`
+            }
+        }
+    }, [activeGames]); 
+
+
     useEffect(() => {
         if (fastestEndpoint) {
         const wsUrl = fastestEndpoint.replace("https", "wss");
@@ -518,26 +556,41 @@ const App: React.FC = () => {
         return new Program(idl, providerEphemeralRollup.current);
     }, [providerEphemeralRollup.current]);
 
+    const decodeFood = (data: Uint8Array) => {
+        if (!(data instanceof Uint8Array) || data.length !== 4) {
+            throw new Error('Invalid food data format. Expected a Uint8Array of length 4.');
+        }
+        const buffer = data.buffer; // Get the ArrayBuffer from Uint8Array
+        const packed = new DataView(buffer).getUint32(data.byteOffset, true); // Little-endian
+        const x = packed & 0x3FFF;
+        const y = (packed >> 14) & 0x3FFF;
+        const size = (packed >> 28) & 0x0F;
+        return { x, y, size };
+    };
+
     const updateFoodList = useCallback((section: any, food_index: number) => {
         const foodArray = section.food as any[];  
         const visibleFood: Food[] = [];
         const foodData: Food[] = [];
         foodArray.forEach((foodItem, index) => {
-            /*const colors = [
-                '#da375c', '#d7f5e2', '#fae661', '#e9392d', '#91cf97', '#4d6bad', '#5fb1f2', 
-              ];
-            const randomColor = colors[index % colors.length];
-            console.log(randomColor)*/
-            foodData.push({ x: foodItem.x, y: foodItem.y, color: 'None'});
+            const foodDataArray = new Uint8Array(foodItem.data);
+            const decodedFood = decodeFood(foodDataArray); 
+            foodData.push({ 
+                x: decodedFood.x, 
+                y: decodedFood.y, 
+                size: decodedFood.size
+            });
+            foodData.push({ x: decodedFood.x, y: decodedFood.y, size: decodedFood.size});
             if (currentPlayer) {
                 const halfWidth = screenSize.width / 2;
                 const halfHeight = screenSize.height / 2;
-                const diffX = (foodItem.x - currentPlayer.x);
-                const diffY = (foodItem.y - currentPlayer.y);
+                const diffX = (decodedFood.x - currentPlayer.x);
+                const diffY = (decodedFood.y - currentPlayer.y);
                 if (Math.abs(diffX) <= halfWidth && Math.abs(diffY) <= halfHeight) {
                     visibleFood.push({
                         x: diffX + screenSize.width / 2,
-                        y: diffY + screenSize.height / 2
+                        y: diffY + screenSize.height / 2,
+                        size: decodedFood.size,
                     } as Food);
                 }
             }
@@ -711,9 +764,11 @@ const App: React.FC = () => {
         const playerArray = map.players as any[];
         //console.log(map); 
         if(map.nextFood){
-            if(map.nextFood.x !== nextFood.current.x || map.nextFood.y !== nextFood.current.y){
+            const foodDataArray = new Uint8Array(map.nextFood.data);
+            const decodedFood = decodeFood(foodDataArray); 
+            if(decodedFood.x !== nextFood.current.x || decodedFood.y !== nextFood.current.y){
             //console.log('new food', map.nextFood, nextFood.current);
-            nextFood.current = {x: map.nextFood.x, y: map.nextFood.y};
+            nextFood.current = {x: decodedFood.x, y: decodedFood.y};
             //processNewFoodTransaction(map.nextFood.x, map.nextFood.y);
             }
         }else if(map.foodQueue > 0){
@@ -927,7 +982,7 @@ const App: React.FC = () => {
               skipPreflight: skipPre,
               preflightCommitment: commitmetLevel,
             });
-            console.log(signature);
+            //console.log(signature);
             await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature }, commitmetLevel);
             //const signature = await sendAndConfirmTransaction(connection, transaction, [
             //    walletRef.current,
@@ -1268,6 +1323,7 @@ const App: React.FC = () => {
             let sender_token_account = new PublicKey(0);
             let payout_token_account = new PublicKey(0);
             let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
+            let referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
             const combinedTx = new Transaction();
 
             if(anteacc){
@@ -1320,7 +1376,40 @@ const App: React.FC = () => {
                 }
 
                 if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session"){
-                let applyBuyInSystem = await ApplySystem({
+                    let [referralTokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+                        [Buffer.from("token_account_owner_pda"), mint_of_token_being_sent.toBuffer()],
+                        referral_vault_program_id
+                        );
+                    const referraltokenVault = await getAssociatedTokenAddress(mint_of_token_being_sent, referralTokenAccountOwnerPda, true);
+                    
+                    const BUDDY_LINK_PROGRAM_ID = new PublicKey("BUDDYtQp7Di1xfojiCSVDksiYLQx511DPdj2nbtG9Yu5");
+
+                    let buddyMemberPdaAccount : PublicKey;
+                    let memberName = "notmembersalt";
+                    if(joinedOrg){
+                        /* const [memberPDA] = PublicKey.findProgramAddressSync(
+                            [
+                              Buffer.from("member_"),
+                              Buffer.from("test"),
+                              Buffer.from("_"),
+                              Buffer.from(member[0].account.name),
+                            ],
+                            BUDDY_LINK_PROGRAM_ID
+                          );     */ 
+                        //console.log(memberPDA.toString());   
+                        memberName = member[0].account.name;        
+                        buddyMemberPdaAccount = getMemberPDA(BUDDY_LINK_PROGRAM_ID, "supersize", member[0].account.name);
+                    }else{
+                        buddyMemberPdaAccount = getMemberPDA(BUDDY_LINK_PROGRAM_ID, "supersize", memberName);
+                    }
+                    //console.log(buddyMemberPdaAccount.toString());
+
+                    let [refferalPdaAccount] = PublicKey.findProgramAddressSync(
+                        [Buffer.from("subsidize"), buddyMemberPdaAccount.toBuffer(), mint_of_token_being_sent.toBuffer()],
+                        referral_vault_program_id
+                        );
+                    console.log(referralTokenAccountOwnerPda.toString(), referraltokenVault.toString())
+                    let applyBuyInSystem = await ApplySystem({
                     authority: publicKey,
                     world: gameInfo.worldPda,
                     entities: [
@@ -1336,6 +1425,7 @@ const App: React.FC = () => {
                     systemId: BUY_IN,
                     args: {
                         buyin: buyIn,
+                        member_name: memberName,
                     },
                     extraAccounts: [
                         {
@@ -1352,12 +1442,32 @@ const App: React.FC = () => {
                             pubkey: payout_token_account, 
                             isWritable: true,
                             isSigner: false,
-                          },
+                          }, 
                         {
-                          pubkey: publicKey,
-                          isWritable: true,
-                          isSigner: false,
-                        },
+                            pubkey: referraltokenVault, 
+                            isWritable: true,
+                            isSigner: false,
+                            },
+                        {
+                            pubkey: referralTokenAccountOwnerPda, 
+                            isWritable: true,
+                            isSigner: false,
+                            },
+                        {
+                                pubkey: refferalPdaAccount, 
+                                isWritable: true,
+                                isSigner: false,
+                            }, 
+                        {
+                                pubkey: buddyMemberPdaAccount, 
+                                isWritable: true,
+                                isSigner: false,
+                            }, 
+                        {
+                            pubkey: publicKey,
+                            isWritable: true,
+                            isSigner: false,
+                            },
                         {
                           pubkey: SystemProgram.programId,
                           isWritable: false,
@@ -1375,137 +1485,6 @@ const App: React.FC = () => {
                         },
                       ],
                   });
-
-                  const buddyLinkClient = new Client(connection as any, publicKey, "2iF3HaLpk6vuUXxGK3uDsxWoP5htC7NWZNctAevxZewY");
-                  if (myReferralAccount.current) {
-                    const referrerRes = ""; //await getUser(referrerInput);
-                    if (myReferralAccount.current !== "") { //referrerRes.success
-                        const referrerBuddyLinkProfile = await buddyLinkClient.buddy.getProfile(new PublicKey(myReferralAccount.current)); //.data.wallet
-                        if (referrerBuddyLinkProfile) {
-                            const treasury = await buddyLinkClient.pda.getTreasuryPDA(
-                                [referrerBuddyLinkProfile?.account.pda],
-                                [10_000],
-                                mint_of_token_being_sent
-                            );
-                            const member = (await buddyLinkClient.member.getByTreasuryOwner(treasury))[0] || null;
-                            const remainingAccounts =
-                                await buddyLinkClient.accounts.validateReferrerAccounts(
-                                    mint_of_token_being_sent,
-                                    member.account.pda
-                            );
-
-                            if (!remainingAccounts.memberPDA.equals(PublicKey.default)) {
-                                // submit with referrer
-                                applyBuyInSystem = await ApplySystem({
-                                    authority: publicKey,
-                                    world: gameInfo.worldPda,
-                                    entities: [
-                                        {
-                                        entity: newplayerEntityPda,
-                                        components: [{ componentId:PLAYER_COMPONENT}],
-                                        },
-                                        {
-                                        entity: anteEntityPda,
-                                        components: [{ componentId:ANTEROOM_COMPONENT }],
-                                        },
-                                    ], 
-                                    systemId: BUY_IN,
-                                    args: {
-                                        buyin: buyIn,
-                                        referrer: null,
-                                    },
-                                    extraAccounts: [
-                                        {
-                                            pubkey: vault_token_account,
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: playerKey, 
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: payout_token_account, 
-                                            isWritable: true,
-                                            isSigner: false,
-                                            },
-                                        {
-                                            pubkey: publicKey,
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: SystemProgram.programId,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: TOKEN_PROGRAM_ID,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: SYSVAR_RENT_PUBKEY,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.programId,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.buddyProfile,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.buddy,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.buddyTreasury,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.memberPDA,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerMember,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerTreasury,
-                                            isWritable: true,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerTreasuryReward,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.mint,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerATA,
-                                            isWritable: false,
-                                            isSigner: false
-                                        },
-                                        ],
-                                    });
-                            }
-                        }
-                    }
-                }
                 combinedTx.add(applyBuyInSystem.transaction);                  
             }
 
@@ -1584,7 +1563,7 @@ const App: React.FC = () => {
             jointransaction.recentBlockhash = blockhash;
             jointransaction.feePayer = walletRef.current.publicKey;
             jointransaction.sign(walletRef.current);
-            const signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
+            let signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
                 jointransaction.serialize(), 
                 { skipPreflight: true } 
             ).catch((error) => {
@@ -1592,6 +1571,24 @@ const App: React.FC = () => {
             });
             console.log('joined game', signature);
             
+            const startTime = Date.now();
+            while (Date.now() - startTime < 5000) {
+              const playersacc = await providerEphemeralRollup.current.connection.getAccountInfo(playerComponentPda, "processed");
+              if (playersacc) {
+                const playersParsedData = playerClientER.coder.accounts.decode("player", playersacc.data);
+                if (playersParsedData.authority !== null && playersParsedData.mass !== 0) {
+                    break; 
+                }
+              }
+              signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
+                jointransaction.serialize(), 
+                { skipPreflight: true } 
+              ).catch((error) => {
+                    console.log(error)
+              });
+              await new Promise(resolve => setTimeout(resolve, 1000)); 
+            }
+
             if (signature) {
                 setGameId(mapEntityPda); 
                 setMapSize(selectGameId.size);
@@ -1833,6 +1830,7 @@ const App: React.FC = () => {
                         sender_token_account = playerCashoutAddy;
                     }
                    if(cashingOut && gameEnded==2){
+                    setCashoutTx(null);
                     let referrer_token_account = null;
                     if(myReferrer.current){
                         referrer_token_account = new PublicKey(myReferrer.current);
@@ -1860,11 +1858,6 @@ const App: React.FC = () => {
                           },
                           {
                             pubkey: tokenAccountOwnerPda,
-                            isWritable: true,
-                            isSigner: false,
-                          },
-                          {
-                            pubkey: referrer_token_account,
                             isWritable: true,
                             isSigner: false,
                           },
@@ -1950,6 +1943,9 @@ const App: React.FC = () => {
                           },
                         ], 
                         systemId: CASH_OUT,
+                        args: {
+                            referred: false,
+                        },
                         extraAccounts: extraAccounts
                         /*[
                             {
@@ -2092,12 +2088,13 @@ const App: React.FC = () => {
                     innerAcc.push({
                         x: foodItem.x, // - currentPlayer.x + screenSize.width / 2,
                         y: foodItem.y, //- currentPlayer.y + screenSize.height / 2
-                        color: foodItem.color
+                        size: foodItem.size
                     });
                 }
                 return innerAcc;
             }, []);
-        });        
+        });     
+        //console.log(visibleFood);   
         setVisibleFood(visibleFood);
         }
     }, [currentPlayer]);
@@ -2119,6 +2116,7 @@ const App: React.FC = () => {
                 let mouseY = mousePosition.y;
                 const newX = Math.max(0, Math.min(screenSize.width, Math.floor(currentPlayer.x + mouseX - window.innerWidth / 2)));
                 const newY = Math.max(0, Math.min(screenSize.height, Math.floor(currentPlayer.y + mouseY - window.innerHeight / 2)));
+                //setPlayerMouseLocation({x: newX, y: newY});
 
                 const myplayerComponent = FindComponentPda({
                     componentId: PLAYER_COMPONENT,
@@ -2231,7 +2229,8 @@ const App: React.FC = () => {
                     console.log(error)
                 });
                 lastUpdateRef.current = performance.now();
-                //console.log(currentPlayer);
+                //console.log(currentPlayer.target_x, newX);
+                //console.log(currentPlayer.target_y, newY);
                 setIsSubmitting(false);
                 setTransactionError(null);
                 setTransactionSuccess(null);
@@ -2438,12 +2437,13 @@ const App: React.FC = () => {
             const elapsedTime = currentTime - playerRemovalTimeRef.current.toNumber() * 1000;
             if (elapsedTime > 10000 || elapsedTime < 5000) {
                 preExitGameTx();
-                setCountdown(5);
             }
             else{
                 return;
             }
         }
+
+        countdown.current = 5;
         setPlayerExiting(true);
         preExitGameTx().then(() => {
             if(currentPlayerEntity.current){
@@ -2458,7 +2458,7 @@ const App: React.FC = () => {
         });
 
         const interval = setInterval(() => {
-          setCountdown((prev) => prev - 1);
+            countdown.current -= 1;
         }, 1000);
         
         let startTime = Date.now();
@@ -2487,17 +2487,16 @@ const App: React.FC = () => {
             }
           }, 100); 
       };
-    
-      useEffect(() => {
-        if (!playerExiting) {
-          setCountdown(5);
-        }
-      }, [playerExiting]);
 
     useEffect(() => {
         if(entityMatch || gameId){ 
             const handleMouseMove = (event: MouseEvent) => {
                 setMousePosition({x:event.clientX, y: event.clientY}); 
+                if(currentPlayer){
+                    const newX = Math.max(0, Math.min(screenSize.width, Math.floor(currentPlayer.x + event.clientX - window.innerWidth / 2)));
+                    const newY = Math.max(0, Math.min(screenSize.height, Math.floor(currentPlayer.y + event.clientY - window.innerHeight / 2)));
+                    setPlayerMouseLocation({x: newX - currentPlayer.x, y: newY - currentPlayer.y});
+                }
             }; 
 
             const handleMouseDown = (event: MouseEvent) => { 
@@ -2543,7 +2542,8 @@ const App: React.FC = () => {
       
       useEffect(() => {
         const getTPS = async () => {
-                const recentSamples = await connection.getRecentPerformanceSamples(4);
+                const  devnet_connection =  new Connection("https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d"); 
+                const recentSamples = await devnet_connection.getRecentPerformanceSamples(4);
                 const totalTransactions = recentSamples.reduce((total, sample) => total + sample.numTransactions, 0);
                 const averageTransactions = totalTransactions / recentSamples.length;
                 setCurrentTPS(Math.round(averageTransactions));
@@ -2555,9 +2555,9 @@ const App: React.FC = () => {
         const balance = await connection.getTokenAccountBalance(vault);
         return parseFloat(balance.value.amount) / Math.pow(10, decimals); 
         }
-        async function parsePoolInfo() {
+        async function parsePoolInfo(poolId: string) {
         const  mainnet_connection =  new Connection("https://floral-convincing-dawn.solana-mainnet.quiknode.pro/73d5d52678fd227b48dd0aec6a8e94ac9dd61f59"); 
-        const info = await mainnet_connection.getAccountInfo(new PublicKey(SOL_USDC_POOL_ID));
+        const info = await mainnet_connection.getAccountInfo(new PublicKey(poolId));
         if (!info) return;
         const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(info.data);        
         const baseTokenDecimals = 9; 
@@ -2565,11 +2565,21 @@ const App: React.FC = () => {
         const baseTokenBalance = await getTokenBalance(mainnet_connection, poolState.baseVault, baseTokenDecimals);
         const quoteTokenBalance = await getTokenBalance(mainnet_connection, poolState.quoteVault, quoteTokenDecimals);        
         const priceOfBaseInQuote = quoteTokenBalance / baseTokenBalance;
-        setPrice(priceOfBaseInQuote);
+        return priceOfBaseInQuote;
         }
 
         useEffect(() => {
-        parsePoolInfo();
+            const fetchPrice = async () => {
+                try {
+                    let priceOfBaseInQuote = await parsePoolInfo(SOL_USDC_POOL_ID);
+                    if (priceOfBaseInQuote) {
+                        setPrice(priceOfBaseInQuote);
+                    }
+                } catch (error) {
+                    console.error("Error fetching price:", error);
+                }
+            };
+            fetchPrice(); // Call the async function
         }, []);
 
         const handleClick = (index: number) => {
@@ -2578,6 +2588,10 @@ const App: React.FC = () => {
             newState[index] = !newState[index];
             return newState;
         });
+        };
+
+        const handleBuyClick = () => {
+            window.open(swapAmount.current, "_blank", "noopener,noreferrer");
         };
 
         const handleImageClick = async () => {
@@ -2603,7 +2617,7 @@ const App: React.FC = () => {
 
         const fetchTokenMetadata = async (tokenAddress: string): Promise<{ name: string; image: string }> => {
             try {
-              const response = await fetch("https://devnet.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937", {
+              const response = await fetch(`https://devnet.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -2652,10 +2666,6 @@ const App: React.FC = () => {
               // Fallback to metadata from content if json_uri is empty
               const name = content.metadata?.symbol || "Unknown";
               const image = content.links?.image || content.files?.[0]?.uri || "";
-          
-              if (!image) {
-                throw new Error("Image URI not found");
-              }
           
               return { name, image };
             } catch (error) {
@@ -2706,6 +2716,7 @@ const App: React.FC = () => {
                         base_buyin = anteParsedData.baseBuyin;
                         max_buyin = anteParsedData.maxBuyin;
                         min_buyin = anteParsedData.minBuyin;
+                        setTokenMint(mint_of_token_being_sent.toString());
                         if(mint_of_token_being_sent.toString() === "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"){
                             token_image = `${process.env.PUBLIC_URL}/agld.jpg`;
                             token_name = "AGLD";
@@ -2818,10 +2829,8 @@ const App: React.FC = () => {
           scrollY += event.deltaY;
 
           if (scrollY > 20 && !element) {
-            console.log('User has scrolled more than 50 pixels down.');
             setbuildViewerNumber(1);
           } else if (scrollY < -20 && scrollTop === 0 && element) {
-            console.log('User has scrolled more than 50 pixels up.');
             setbuildViewerNumber(0);
           }
         };
@@ -2984,14 +2993,16 @@ const App: React.FC = () => {
             <div className="left-side" style={{alignItems : "center", justifyContent:"center", display: 'flex', zIndex: 9999999 }}>
             <>
             {
-                <span style={{color: "white", fontFamily: "terminus", height: "6vh", marginTop: "19vh", cursor: "pointer", right: "2.5vw", position: "absolute", display: buildViewerNumber == 1 ? "none" : "block"}} onMouseLeave={() => {}} onClick={() => { }} > share referral</span>
+                <span style={{color: "white", fontFamily: "terminus", height: "6vh", marginTop: "19vh", cursor: "pointer", right: "2.5vw", position: "absolute", display: buildViewerNumber !== 0 ? "none" : "block"}} onMouseLeave={() => {}} onClick={() => { }} > 
+                { joinedOrg ? <> <CopyLink/> <TweetLink/> </> : <span onClick={() => {if(publicKey){setUsername(publicKey.toString().slice(0,12)); setIsReferrerModalOpen(true);}}}>{publicKey ? "Create Referral" : ""}</span>}
+                </span> 
             }
             {
                   
                 leaderBoardActive ?
-                <img src="/leaderboardhighlight.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem", display: buildViewerNumber == 1 ? "none" : "block"}} onMouseLeave={() => setLeaderboardActive(false)} onClick={() => { setbuildViewerNumber(9); }} />
+                <img src="/leaderboardhighlight.png" alt="leaderboard" style={{width: "5vh", height: "5vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem", display: buildViewerNumber !== 0 ? "none" : "block"}} onMouseLeave={() => setLeaderboardActive(false)} onClick={() => { setbuildViewerNumber(9); }} />
                 :
-                <img src="/leaderboard.png" alt="leaderboard" style={{width: "6vh", height: "6vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem", display: buildViewerNumber == 1 ? "none" : "block"}} onMouseEnter={() => setLeaderboardActive(true)} onClick={() => { setbuildViewerNumber(9); }} />
+                <img src="/leaderboard.png" alt="leaderboard" style={{width: "5vh", height: "5vh", marginTop: "4vh", cursor: "pointer", marginRight: "1rem", display: buildViewerNumber !== 0 ? "none" : "block"}} onMouseEnter={() => setLeaderboardActive(true)} onClick={() => { setbuildViewerNumber(9); }} />
                 
             }
             {buildViewerNumber != 1 ? (
@@ -3174,11 +3185,14 @@ const App: React.FC = () => {
                             </> ) : null}
                         </div>
                     </div>
+                     {/* <div className="play">
+                        <Button buttonClass="createGameButton" title={"Create Game"} onClickFunction={() => setbuildViewerNumber(5)}/>
+                    </div> */}
                     <div className="play">
-                        <Button buttonClass="playButton" title={"Play"} onClickFunction={joinGameTx} args={[activeGames[0]]}/>
+                        <Button buttonClass="playButton" title={`Buy ${activeGames[0] ? activeGames[0].token.toString().slice(0,7) : "LOADING"}`} onClickFunction={handleBuyClick} args={[activeGames[0]]}/>
                     </div>
                     <div className="play">
-                        <Button buttonClass="createGameButton" title={"Create Game"} onClickFunction={() => setbuildViewerNumber(5)}/>
+                        <Button buttonClass="playButton" title={"Play"} onClickFunction={joinGameTx} args={[activeGames[0]]}/>
                     </div>
                 </div>
             </div>
@@ -3218,6 +3232,46 @@ const App: React.FC = () => {
                 <span className="footer-name"><div className="csupersize">© Supersize Inc. 2024</div></span>
                 </div>
                 <div className="footer-right">
+                <div
+                    style={{
+                        width: '35px',
+                        height: '40px',
+                        display: 'flex',
+                        cursor: "pointer",
+                        alignItems : "center", 
+                        justifyContent:"center",
+                        paddingLeft: "3px",
+                        paddingRight:"0px",
+                    }}
+                    onMouseEnter={() => setIsHovered([false,true,false,false,false])}
+                    onMouseLeave={() => setIsHovered([false,false,false,false,false])}
+                    onClick={() => setbuildViewerNumber(5)}
+                    >
+                    <img
+                        src={`${process.env.PUBLIC_URL}/build2.png`}
+                        width="30px"
+                        height="auto"
+                        alt="Image"
+                        style={{
+                            position: "absolute",
+                            opacity: isHovered[1] ? 0.2 : 0.8,
+                            transition: 'opacity 0.0s ease background 0.3s ease 0s, color 0.3s ease 0s',
+                        }}
+                    />
+                    {isHovered[1] && (
+                        <img
+                        src={`${process.env.PUBLIC_URL}/buildhighlight2.png`}
+                        width="30px"
+                        height="auto"
+                        alt="Highlighted Image"
+                        style={{
+                            position: 'absolute',
+                            opacity: isHovered[1] ? 0.8 : 0.2,
+                            transition: 'opacity 0.3s ease',
+                        }}
+                        />
+                    )}
+                </div>
                 <div
                     style={{
                         width: '35px',
@@ -3416,6 +3470,47 @@ const App: React.FC = () => {
             />
             </div>
             <div className="solstats" style={{display: !isMobile ? 'flex' : 'none'}}>
+            <div
+                    style={{
+                        width: '35px',
+                        height: '40px',
+                        display: 'flex',
+                        cursor: "pointer",
+                        alignItems : "center", 
+                        justifyContent:"center",
+                        borderRight: "1px solid #FFFFFF4D",
+                        paddingLeft: "3px",
+                        paddingRight:"3px",
+                    }}
+                    onMouseEnter={() => setIsHovered([false,true,false,false,false])}
+                    onMouseLeave={() => setIsHovered([false,false,false,false,false])}
+                    onClick={() => setbuildViewerNumber(5)}
+                    >
+                    <img
+                        src={`${process.env.PUBLIC_URL}/build2.png`}
+                        width="20px"
+                        height="auto"
+                        alt="Image"
+                        style={{
+                            position: "absolute",
+                            opacity: isHovered[1] ? 0.2 : 0.8,
+                            transition: 'opacity 0.0s ease background 0.3s ease 0s, color 0.3s ease 0s',
+                        }}
+                    />
+                    {isHovered[1] && (
+                        <img
+                        src={`${process.env.PUBLIC_URL}/buildhighlight2.png`}
+                        width="20px"
+                        height="auto"
+                        alt="Highlighted Image"
+                        style={{
+                            position: 'absolute',
+                            opacity: isHovered[1] ? 0.8 : 0.2,
+                            transition: 'opacity 0.3s ease',
+                        }}
+                        />
+                    )}
+                </div>
                 <div
                     style={{
                         width: '35px',
@@ -3551,9 +3646,9 @@ const App: React.FC = () => {
               onMouseEnter={() => {setExitHovered(true)}}
               onMouseLeave={() => {setExitHovered(false)}}>
             <Button buttonClass="exitButton" title={"X"} onClickFunction={handleExitClick} args={[]}/> 
-            {playerExiting && countdown > 0 && (
+            {playerExiting && countdown.current > 0 && (
                 <div style={{ display: 'block', color: '#f07171', fontFamily: 'Terminus', fontSize: '20px', textAlign: 'right', marginLeft: '10px' }}>
-                Disconnecting in {countdown} seconds
+                Disconnecting in {countdown.current} seconds
                 </div>
             )}
         </div>
@@ -3772,23 +3867,25 @@ const App: React.FC = () => {
         {isReferrerModalOpen && buildViewerNumber==0 && (
             <div className="referrer-modal">
                 <div className="referrer-modal-content">
-                    <h1 className="referrer-modal-title">Join early access, use a referral to get $1 free</h1>
+                    <h1 className="referrer-modal-title">Sign up for referral <br/> Get $1 free play</h1>
                     <div  style={{marginBottom: "10px"}}>
                         <span style={{fontFamily: "terminus", marginLeft: "10px", marginBottom: "10px"}}>Username:</span>
-                        <input type="text" className="referrer-input" placeholder="Username" value={referrerInput} onChange={(e) => {setReferrerInput(e.currentTarget.value)}}/>
+                        <input type="text" className="referrer-input" placeholder="Username" value={username} onChange={(e) => {setUsername(e.currentTarget.value);  setInputUsername(e.currentTarget.value);}}/>
                     </div>
                     <div>
                         <span style={{fontFamily: "terminus", marginLeft: "10px", marginBottom: "10px"}}>Referrer:</span>
-                        <input type="text" className="referrer-input" placeholder="Username or Wallet address" value={referrerInput} onChange={(e) => {setReferrerInput(e.currentTarget.value)}}/>
+                        <span style={{fontFamily: "terminus"}}> {referrer ? referrer : "none, better get one!"} </span>
                     </div>
                     <div style={{display: "flex", justifyContent: "space-between", margin: "20px 20px"}}>
-                        <button className="referrer-modal-btn" onClick={() => {setReferrerInput(""); setIsReferrerModalOpen(false)}}>Cancel</button>
-                        <button className="referrer-modal-btn" onClick={() => getRefferal(publicKey)}>Ok</button>
+                        <button className="referrer-modal-btn" onClick={() => {setUsername(""); setIsReferrerModalOpen(false)}}>Cancel</button>
+                        <button className="referrer-modal-btn" onClick={() => {}}><Invite/></button>
                     </div>
                 </div>
             </div>
         )}
         </div>
+
+        <InitBuddyLinkWrapper />
         </>
     );
 };

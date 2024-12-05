@@ -3,9 +3,83 @@ import {PublicKey} from "@solana/web3.js";
 import BN from 'bn.js';
 
 const foodImage = new Image();
+const foodImage2 = new Image();
+const foodImage3 = new Image();
+const foodImage4 = new Image();
+const foodImage5 = new Image();
+const foodImage6 = new Image();
+const foodImage7 = new Image();
+const foodImage8 = new Image();
+const foodImage9 = new Image();
+const foodImage10 = new Image();
+const foodImage11 = new Image();
+const foodImage12 = new Image();
+const foodImage13 = new Image();
+const foodImage14 = new Image();
+const foodImage15 = new Image();
+
 foodImage.src = `${process.env.PUBLIC_URL}/coin.png`; 
+foodImage2.src = `${process.env.PUBLIC_URL}/coin2o.png`; 
+foodImage3.src = `${process.env.PUBLIC_URL}/coin3o.png`; 
+foodImage4.src = `${process.env.PUBLIC_URL}/coin4o.png`; 
+foodImage5.src = `${process.env.PUBLIC_URL}/coin5o.png`; 
+foodImage6.src = `${process.env.PUBLIC_URL}/coin6o.png`; 
+foodImage7.src = `${process.env.PUBLIC_URL}/coin7o.png`; 
+foodImage8.src = `${process.env.PUBLIC_URL}/coin8o.png`; 
+foodImage9.src = `${process.env.PUBLIC_URL}/coin9o.png`; 
+foodImage10.src = `${process.env.PUBLIC_URL}/coin10o.png`; 
+foodImage11.src = `${process.env.PUBLIC_URL}/coin11o.png`; 
+foodImage12.src = `${process.env.PUBLIC_URL}/coin12o.png`; 
+foodImage13.src = `${process.env.PUBLIC_URL}/coin13o.png`; 
+foodImage14.src = `${process.env.PUBLIC_URL}/coin14o.png`; 
+foodImage15.src = `${process.env.PUBLIC_URL}/coin15o.png`; 
+
+const foodImages = [
+  foodImage,  // Size 1
+  foodImage2, // Size 2
+  foodImage3, // Size 3
+  foodImage4, // Size 4
+  foodImage5, // Size 5
+  foodImage6, // Size 6
+  foodImage7, // Size 7
+  foodImage8, // Size 8
+  foodImage9, // Size 9
+  foodImage10, // Size 10
+  foodImage11, // Size 11
+  foodImage12, // Size 12
+  foodImage13, // Size 13
+  foodImage14, // Size 14
+  foodImage15, // Size 15
+];
+
 const playerImage = new Image();
-playerImage.src = `${process.env.PUBLIC_URL}/blob.png`; 
+const playerImage2 = new Image();
+const playerImage3 = new Image();
+const playerImage4 = new Image();
+const playerImage5 = new Image();
+const playerImage6 = new Image();
+const playerImage7 = new Image();
+const playerImage8 = new Image();
+
+playerImage.src = `${process.env.PUBLIC_URL}/up.png`; 
+playerImage2.src = `${process.env.PUBLIC_URL}/down.png`; 
+playerImage3.src = `${process.env.PUBLIC_URL}/up-right.png`; 
+playerImage4.src = `${process.env.PUBLIC_URL}/up-left.png`; 
+playerImage5.src = `${process.env.PUBLIC_URL}/down-right.png`; 
+playerImage6.src = `${process.env.PUBLIC_URL}/down-left.png`; 
+playerImage7.src = `${process.env.PUBLIC_URL}/side-right3.png`; 
+playerImage8.src = `${process.env.PUBLIC_URL}/side-left3.png`; 
+
+const playerImages = [
+  playerImage,  
+  playerImage2, 
+  playerImage3, 
+  playerImage4, 
+  playerImage5, 
+  playerImage6, 
+  playerImage7, 
+  playerImage8, 
+];
 
 interface Blob {
     name: string;
@@ -24,7 +98,7 @@ interface Blob {
 interface Food {
   x: number;
   y: number;
-  color: string;
+  size: number;
 }
 
 interface GameComponentProps {
@@ -73,6 +147,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     currentPlayerRef.current = currentPlayer;
     playersRef.current = players;
     foodRef.current = visibleFood;
+    //console.log(currentPlayerRef.current?.target_x);
   }, [currentPlayer]);
 
   const loop = (time: number) => {
@@ -133,12 +208,13 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
               interpolatedBlobX - interpolatedX + screenSize.width / 2;
             const adjustedY =
               interpolatedBlobY - interpolatedY + screenSize.height / 2;
-  
-            drawPlayer(ctx, { ...blob, x: adjustedX, y: adjustedY }, scale);
+            if(currentPlayerRef.current){
+              drawPlayer3(ctx, { ...blob, x: adjustedX, y: adjustedY }, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY }, scale);
+            }
           });
           
           foodRef.current.forEach((food) => {
-            drawFood2(ctx, {...food, 
+            drawFood3(ctx, {...food, 
                x: food.x - interpolatedX + screenSize.width / 2,
                y: food.y - interpolatedY + screenSize.height / 2,}, scale);
           });
@@ -149,7 +225,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
             y: screenSize.height / 2,
           };
 
-          drawPlayer(ctx, { ...centeredPlayer, x: centeredPlayer.x, y: centeredPlayer.y }, scale);
+          drawPlayer2(ctx, { ...centeredPlayer, x: centeredPlayer.x, y: centeredPlayer.y }, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY }, scale);
           drawBorder(ctx, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY }, screenSize, scale);
         }
       }
@@ -239,40 +315,128 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     }
   }, [gameId, players, visibleFood, currentPlayer, screenSize, scale]);*/
 
-  const drawPlayer2 = (ctx: CanvasRenderingContext2D, blob: Blob, scale: number) => {
-    const diameter = blob.radius * scale * 2; 
-    if (playerImage.complete) {
+  const drawPlayer3 = (ctx: CanvasRenderingContext2D, blob: Blob, myblob: Blob, scale: number) => {
+    let glowSize = 0;
+    let glowIntensity = 'rgba(19, 241, 149, 0)'; 
+
+    if(blob.mass > myblob.mass * 1.05){
+      glowSize = 50 * scale;
+      glowIntensity = 'rgba(240, 113, 113, 0.5)'
+
+    }
+    else if(myblob.mass > blob.mass * 1.05){
+      glowSize = 50 * scale;
+      glowIntensity = 'rgba(19, 241, 149, 0.5)'; 
+    }
+    else{
+      glowSize = 50 * scale;
+      glowIntensity = 'rgba(255, 239, 138, 0.5)';
+    }
+
+    const diameter = blob.radius * scale * 2;
+    // Calculate angle between current position and target position
+    const dx = blob.target_x - blob.x; //playerMouseLocation.x; //- blob.x;
+    const dy = blob.target_y - blob.y; //playerMouseLocation.y; // - blob.y;
+    const angle = Math.atan2(dy, dx); // Returns angle in radians (-π to π)
+
+    // Determine the quadrant based on the angle
+    let imageIndex = 0;
+    if (angle >= -Math.PI / 8 && angle < Math.PI / 8) {
+      imageIndex = 6; // Side-right
+    } else if (angle >= Math.PI / 8 && angle < 3 * Math.PI / 8) {
+      imageIndex = 4; // Down-right
+    } else if (angle >= 3 * Math.PI / 8 && angle < 5 * Math.PI / 8) {
+      imageIndex = 1; // Down
+    } else if (angle >= 5 * Math.PI / 8 && angle < 7 * Math.PI / 8) {
+      imageIndex = 5; // Down-left
+    } else if (angle >= 7 * Math.PI / 8 || angle < -7 * Math.PI / 8) {
+      imageIndex = 7; // Side-left
+    } else if (angle >= -7 * Math.PI / 8 && angle < -5 * Math.PI / 8) {
+      imageIndex = 3; // Up-left
+    } else if (angle >= -5 * Math.PI / 8 && angle < -3 * Math.PI / 8) {
+      imageIndex = 0; // Up
+    } else if (angle >= -3 * Math.PI / 8 && angle < -Math.PI / 8) {
+      imageIndex = 2; // Up-right
+    }
+  
+    // Select the appropriate image
+    const selectedImage = playerImages[imageIndex];
+    
+    // Render the selected image if it is loaded
+    if (selectedImage && selectedImage.complete) {
+      ctx.save();
+      ctx.shadowBlur = glowSize;
+      ctx.shadowColor = glowIntensity;
       ctx.drawImage(
-        playerImage, 
+        selectedImage, 
         blob.x * scale - diameter / 2,  
         blob.y * scale - diameter / 2,  
         diameter,                       
         diameter                       
       );
+      ctx.restore();
+    } else {
+      // Fallback: draw a simple circle if the image isn't loaded
+      ctx.beginPath();
+      ctx.arc(blob.x * scale, blob.y * scale, blob.radius * scale, 0, 2 * Math.PI);
+      ctx.fillStyle = '#13F195';
+      ctx.fill();
+      ctx.stroke();
     }
-};
+  };
+
+  const drawPlayer2 = (ctx: CanvasRenderingContext2D, blob: Blob, currentblob: Blob, scale: number) => {
+    const diameter = blob.radius * scale * 2;
+    // Calculate angle between current position and target position
+    const dx = currentblob.target_x - currentblob.x; //playerMouseLocation.x; //- blob.x;
+    const dy = currentblob.target_y - currentblob.y; //playerMouseLocation.y; // - blob.y;
+    const angle = Math.atan2(dy, dx); // Returns angle in radians (-π to π)
+
+    // Determine the quadrant based on the angle
+    let imageIndex = 0;
+    if (angle >= -Math.PI / 8 && angle < Math.PI / 8) {
+      imageIndex = 6; // Side-right
+    } else if (angle >= Math.PI / 8 && angle < 3 * Math.PI / 8) {
+      imageIndex = 4; // Down-right
+    } else if (angle >= 3 * Math.PI / 8 && angle < 5 * Math.PI / 8) {
+      imageIndex = 1; // Down
+    } else if (angle >= 5 * Math.PI / 8 && angle < 7 * Math.PI / 8) {
+      imageIndex = 5; // Down-left
+    } else if (angle >= 7 * Math.PI / 8 || angle < -7 * Math.PI / 8) {
+      imageIndex = 7; // Side-left
+    } else if (angle >= -7 * Math.PI / 8 && angle < -5 * Math.PI / 8) {
+      imageIndex = 3; // Up-left
+    } else if (angle >= -5 * Math.PI / 8 && angle < -3 * Math.PI / 8) {
+      imageIndex = 0; // Up
+    } else if (angle >= -3 * Math.PI / 8 && angle < -Math.PI / 8) {
+      imageIndex = 2; // Up-right
+    }
+  
+    // Select the appropriate image
+    const selectedImage = playerImages[imageIndex];
+  
+    // Render the selected image if it is loaded
+    if (selectedImage && selectedImage.complete) {
+      ctx.drawImage(
+        selectedImage, 
+        blob.x * scale - diameter / 2,  
+        blob.y * scale - diameter / 2,  
+        diameter,                       
+        diameter                       
+      );
+    } else {
+      // Fallback: draw a simple circle if the image isn't loaded
+      ctx.beginPath();
+      ctx.arc(blob.x * scale, blob.y * scale, blob.radius * scale, 0, 2 * Math.PI);
+      ctx.fillStyle = '#13F195';
+      ctx.fill();
+      ctx.stroke();
+    }
+  };
 
   const drawPlayer = (ctx: CanvasRenderingContext2D, blob: Blob, scale: number) => {
     let glowSize = 0;
     let glowIntensity = 'rgba(19, 241, 149, 0)'; 
-   /*
-    if (blob.speed > 10 || (Date.now()/1000 - blob.charging > 1 && blob.charging !=0)) {
-        glowSize = 40 * scale; // Significant glow at speed 10
-        glowIntensity = 'rgba(19, 241, 149, 0.5)';
-    }
-    if (blob.speed > 15 || (Date.now()/1000 - blob.charging > 2.3 && blob.charging !=0)) {
-        glowSize = 70 * scale; // Brighter and bigger glow at speed 15
-        glowIntensity = 'rgba(19, 241, 149, 0.7)';
-    }
-    if (blob.speed > 20 || (Date.now()/1000 - blob.charging > 3.6 && blob.charging !=0)) {
-        glowSize = 85 * scale; // Even brighter and bigger glow at speed 20
-        glowIntensity = 'rgba(19, 241, 149, 0.9)';
-    }
-    if (blob.speed > 25 || (Date.now()/1000 - blob.charging > 5 && blob.charging !=0)) {
-        glowSize = 100 * scale; // Maximum glow at speed 25+
-        glowIntensity = 'rgba(19, 241, 149, 1.0)';
-    }
-    */
 
     ctx.shadowBlur = glowSize;
     ctx.shadowColor = glowIntensity;
@@ -291,7 +455,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(blob.name, blob.x * scale, blob.y * scale);
-};
+  };
 
   const drawFood = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
     ctx.beginPath();
@@ -300,6 +464,31 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
     ctx.fill();
     ctx.stroke();
   };
+
+  const drawFood3 = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
+    const diameter = 20 * scale; // Adjust size dynamically
+    const sizeIndex = food.size - 1; // Adjust size to match zero-based index
+    const selectedImage = foodImages[sizeIndex]; // Get the image corresponding to food size
+  
+    if (selectedImage && selectedImage.complete) {
+      // Draw the selected food image
+      ctx.drawImage(
+        selectedImage, 
+        food.x * scale - diameter / 2,  
+        food.y * scale - diameter / 2,  
+        diameter,                       
+        diameter                       
+      );
+    } else {
+      // Fallback: draw a white circle if the image isn't loaded
+      ctx.beginPath();
+      ctx.arc(food.x * scale, food.y * scale, diameter / 2, 0, 2 * Math.PI);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.stroke();
+    }
+  };
+
   const drawFood2 = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
     const diameter = 20 * scale; 
     if (foodImage.complete) {
@@ -317,14 +506,6 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
       ctx.fill();
       ctx.stroke();
     }
-  };
-
-  const drawFood3 = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
-    ctx.beginPath();
-    ctx.arc(food.x * scale, food.y * scale, 10 * scale, 0, 2 * Math.PI);
-    ctx.fillStyle = food.color; // Use the random color
-    ctx.fill();
-    ctx.stroke();
   };
 
   const drawBorder = (ctx: CanvasRenderingContext2D, currentPlayer: Blob, screenSize: { width: number; height: number }, scale: number) => {

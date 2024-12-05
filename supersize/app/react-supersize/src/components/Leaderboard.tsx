@@ -145,23 +145,40 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
             return;
         }
         (async () => {
-            const res = await axios.get(`https://supersize.lewisarnsten.workers.dev/get-user-position?walletAddress=${publicKey.toString()}&contestName=${season.name}`)
-            console.log(res.data)
-
-            setUserInfo({
-                position: res.data.position,
-                points: res.data.points
-            })
-            console.log("topParticipants:::::",res.data.topParticipants)
-            const participants = res.data.topParticipants.map((participant: any) => (
-                { 
-                    name: participant.name, 
-                    total: participant.winAmount
+            try {
+                let res = await axios.get(`https://supersize.lewisarnsten.workers.dev/get-user-position?walletAddress=${publicKey.toString()}&contestName=${season.name}`);
+                let contestantFound = true;
+                // Check if the response indicates an error
+                if (res.data?.error === 'User not found in contest') {
+                    console.log("User not found, retrying with fallback walletAddress...");
+                    res = await axios.get(`https://supersize.lewisarnsten.workers.dev/get-user-position?walletAddress=DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB&contestName=${season.name}`);
+                    contestantFound = false;
                 }
-            ))
-            setUsers(participants)
-
-        })()
+                
+                if(contestantFound){
+                    setUserInfo({
+                        position: res.data.position,
+                        points: res.data.points
+                    });
+                }else{
+                    setUserInfo({
+                        position: 0,
+                        points: 0
+                    });
+                }
+                console.log("topParticipants:::::", res.data.topParticipants);
+        
+                const participants = res.data.topParticipants.map((participant: any) => (
+                    { 
+                        name: participant.name, 
+                        total: participant.winAmount
+                    }
+                ));
+                setUsers(participants);
+            } catch (error) {
+                console.error("An error occurred during the request:", error);
+            }
+        })();
     }, [publicKey, season.name]);
 
     return (
@@ -286,7 +303,7 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "50%" }}>
                             <div style={{ textAlign: "center", marginBottom: "16px" }}>
                                 <div style={{ fontSize: "25px", opacity: 0.8, marginBottom: "4px", color: "gray" }}>Total Winnings</div>
-                                <div style={{ fontSize: "40px", color: "rgb(103, 244, 182)" }}>{userInfo.points}</div>
+                                <div style={{ fontSize: "40px", color: "rgb(103, 244, 182)" }}>{userInfo.points.toFixed(3)}</div>
                             </div>
                         </div>
                     </div>

@@ -23,6 +23,7 @@ import {
     InitializeNewWorld,
     InitializeComponent,
     createDelegateInstruction,
+    FindWorldPda,
 } from "@magicblock-labs/bolt-sdk";
 import {
     getAccount,
@@ -249,6 +250,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
      */
     const newGameTx = useCallback(async (game_size: number, max_buyin: number, min_buyin: number, game_owner_wallet_string: string, game_token_string: string, game_name: string) => {
         if (!publicKey) throw new WalletNotConnectedError();
+        
         const base_buyin = Math.sqrt(max_buyin * min_buyin);
         const max_multiple = max_buyin / base_buyin;
         const min_multiple = base_buyin / min_buyin;
@@ -343,8 +345,15 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 30_000,
         });
         initNewWorld.transaction.add(computePriceIx).add(computeLimitIx);
-        //const txSign = await submitTransaction(initNewWorld.transaction, "confirmed", true);  
-        const txSign = await retrySubmitTransaction(initNewWorld.transaction, connection, "confirmed");
+        let txSign = await submitTransaction(initNewWorld.transaction, "confirmed", true); 
+        if(txSign){
+            const success = await checkTransactionStatus(connection, txSign);
+            if (!success) {
+                txSign = await retrySubmitTransaction(initNewWorld.transaction, connection, "confirmed");
+            }        
+        }else{
+            txSign = await retrySubmitTransaction(initNewWorld.transaction, connection, "confirmed");
+        }
         const worldPda = initNewWorld.worldPda;
         console.log(
             `World entity signature: ${txSign}`
@@ -368,8 +377,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 30_000,
         });
         const transaction = new anchor.web3.Transaction().add(addMapEntityIx).add(computeLimitIxMap).add(computePriceIx);
-        const signaturemap = await retrySubmitTransaction(transaction, connection, "confirmed");
-        //const signaturemap = await submitTransaction(transaction, "confirmed", true); 
+        //const signaturemap = await retrySubmitTransaction(transaction, connection, "confirmed");
+        let signaturemap = await submitTransaction(transaction, "confirmed", true); 
+        if(signaturemap){
+            const success1 = await checkTransactionStatus(connection, signaturemap);
+            if (!success1) {
+                signaturemap = await retrySubmitTransaction(transaction, connection, "confirmed");
+            }        
+        }else{
+            signaturemap = await retrySubmitTransaction(transaction, connection, "confirmed");
+        }
         console.log(
             `Map entity signature: ${signaturemap}`
         );
@@ -405,8 +422,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                     units: 200_000,
                 });
                 transactionfood.add(computeLimitIxFood).add(computePriceIx);
-                const signaturefood = await retrySubmitTransaction(transactionfood, connection, "confirmed");
-                //const signaturefood = await submitTransaction(transactionfood, "confirmed", true); 
+                //const signaturefood = await retrySubmitTransaction(transactionfood, connection, "confirmed");
+                let signaturefood = await submitTransaction(transactionfood, "confirmed", true); 
+                if(signaturefood){
+                    const success2 = await checkTransactionStatus(connection, signaturefood);
+                    if (!success2) {
+                        signaturefood = await retrySubmitTransaction(transactionfood, connection, "confirmed");
+                    }        
+                }else{
+                    signaturefood = await retrySubmitTransaction(transactionfood, connection, "confirmed");
+                }
                 console.log(`Food entity batch signature: ${signaturefood}`);
                 transactionfood = new Transaction();
             }
@@ -444,8 +469,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                     units: 200_000,
                 });
                 playercomponentstransaction.add(computeLimitIxPlayer).add(computePriceIx);
-                const signatureplayerscomponents = await retrySubmitTransaction(playercomponentstransaction, connection, "confirmed");
-                //const signatureplayerscomponents = await submitTransaction(playercomponentstransaction, "confirmed", true);
+                //const signatureplayerscomponents = await retrySubmitTransaction(playercomponentstransaction, connection, "confirmed");
+                let signatureplayerscomponents = await submitTransaction(playercomponentstransaction, "confirmed", true);
+                if(signatureplayerscomponents){
+                    const success3 = await checkTransactionStatus(connection, signatureplayerscomponents);
+                    if (!success3) {
+                        signatureplayerscomponents = await retrySubmitTransaction(playercomponentstransaction, connection, "confirmed");
+                    }        
+                }else{
+                    signatureplayerscomponents = await retrySubmitTransaction(playercomponentstransaction, connection, "confirmed");
+                }
                 console.log(`Player entity batch signature: ${signatureplayerscomponents}`);
         
                 playercomponentstransaction = new anchor.web3.Transaction();
@@ -472,8 +505,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 30_000,
         });
         anteroomcomponenttransaction.add(computeLimitIxAnteroom).add(computePriceIx);
-        const signatureanteroomcomponents = await retrySubmitTransaction(anteroomcomponenttransaction, connection, "confirmed");
-        //const signatureanteroomcomponents = await submitTransaction(anteroomcomponenttransaction, "confirmed", true); //await submitTransactionUser(anteroomcomponenttransaction);
+        //const signatureanteroomcomponents = await retrySubmitTransaction(anteroomcomponenttransaction, connection, "confirmed");
+        let signatureanteroomcomponents = await submitTransaction(anteroomcomponenttransaction, "confirmed", true); //await submitTransactionUser(anteroomcomponenttransaction);
+        if(signatureanteroomcomponents){
+            const success4 = await checkTransactionStatus(connection, signatureanteroomcomponents);
+            if (!success4) {
+                signatureanteroomcomponents = await retrySubmitTransaction(anteroomcomponenttransaction, connection, "confirmed");
+            }        
+        }else{
+            signatureanteroomcomponents = await retrySubmitTransaction(anteroomcomponenttransaction, connection, "confirmed");
+        }
         console.log(
             `Anteroom entity signature: ${signatureanteroomcomponents}`
         );
@@ -490,8 +531,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 50_000,
         });
         initmapomponenttransaction.add(computeLimitIxMapInit).add(computePriceIx);
-        const signature1map = await retrySubmitTransaction(initmapomponenttransaction, connection, "confirmed");
-        //const signature1map = await submitTransaction(initmapomponenttransaction, "confirmed", true); //await submitTransactionUser(initmapomponenttransaction);
+        //const signature1map = await retrySubmitTransaction(initmapomponenttransaction, connection, "confirmed");
+        let signature1map = await submitTransaction(initmapomponenttransaction, "confirmed", true); //await submitTransactionUser(initmapomponenttransaction);
+        if(signature1map){
+            const success5 = await checkTransactionStatus(connection, signature1map);
+            if (!success5) {
+                signature1map = await retrySubmitTransaction(initmapomponenttransaction, connection, "confirmed");
+            }        
+        }else{
+            signature1map = await retrySubmitTransaction(initmapomponenttransaction, connection, "confirmed");
+        }
         console.log(
             `Init map component signature: ${signature1map}`
         );
@@ -514,8 +563,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 units: 200_000,
             });
             initfoodcomponenttransaction.add(computeLimitIxFoodInit).add(computePriceIx);
-            const signature1food = await retrySubmitTransaction(initfoodcomponenttransaction, connection, "confirmed");
-            //const signature1food = await submitTransaction(initfoodcomponenttransaction, "confirmed", true);  //await submitTransactionUser(initfoodcomponenttransaction);
+            //const signature1food = await retrySubmitTransaction(initfoodcomponenttransaction, connection, "confirmed");
+            let signature1food = await submitTransaction(initfoodcomponenttransaction, "confirmed", true);  //await submitTransactionUser(initfoodcomponenttransaction);
+            if(signature1food){
+                const success6 = await checkTransactionStatus(connection, signature1food);
+                if (!success6) {
+                    signature1food = await retrySubmitTransaction(initfoodcomponenttransaction, connection, "confirmed");
+                }        
+            }else{
+                signature1food = await retrySubmitTransaction(initfoodcomponenttransaction, connection, "confirmed");
+            }
             console.log(`Init food component signature for batch: ${signature1food}`);
         }
 
@@ -536,8 +593,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 units: 200_000,
             });
             initplayerscomponenttransaction.add(computeLimitIxPlayersInit).add(computePriceIx);
-            const signature1players = await retrySubmitTransaction(initplayerscomponenttransaction, connection, "confirmed");
-            //const signature1players = await submitTransaction(initplayerscomponenttransaction, "confirmed", true); //await submitTransactionUser(initplayerscomponenttransaction);
+            //const signature1players = await retrySubmitTransaction(initplayerscomponenttransaction, connection, "confirmed");
+            let signature1players = await submitTransaction(initplayerscomponenttransaction, "confirmed", true); //await submitTransactionUser(initplayerscomponenttransaction);
+            if(signature1players){
+                const success7 = await checkTransactionStatus(connection, signature1players);
+                if (!success7) {
+                    signature1players = await retrySubmitTransaction(initplayerscomponenttransaction, connection, "confirmed");
+                }        
+            }else{
+                signature1players = await retrySubmitTransaction(initplayerscomponenttransaction, connection, "confirmed");
+            }
             console.log(`Init players component signature for batch: ${signature1players}`);
         }
 
@@ -552,8 +617,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 50_000,
         });
         initantecomponenttransaction.add(computeLimitIxAnteInit).add(computePriceIx);
-        const signature1ante = await retrySubmitTransaction(initantecomponenttransaction, connection, "confirmed");
-        //const signature1ante = await submitTransaction(initantecomponenttransaction, "confirmed", true); //await submitTransactionUser(initantecomponenttransaction);
+        //const signature1ante = await retrySubmitTransaction(initantecomponenttransaction, connection, "confirmed");
+        let signature1ante = await submitTransaction(initantecomponenttransaction, "confirmed", true); //await submitTransactionUser(initantecomponenttransaction);
+        if(signature1ante){
+            const success8 = await checkTransactionStatus(connection, signature1ante);
+            if (!success8) {
+                signature1ante = await retrySubmitTransaction(initantecomponenttransaction, connection, "confirmed");
+            }        
+        }else{
+            signature1ante = await retrySubmitTransaction(initantecomponenttransaction, connection, "confirmed");
+        }
         console.log(
             `Init anteroom component signature: ${signature1ante}`
         );
@@ -579,12 +652,46 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 200_000,
         });
         combinedTx.add(computeLimitIxVault).add(computePriceIx);
-        const createvaultsig = await retrySubmitTransaction(combinedTx, connection, "confirmed");
-        //const createvaultsig = await submitTransaction(combinedTx, "confirmed", true); 
+        //const createvaultsig = await retrySubmitTransaction(combinedTx, connection, "confirmed");
+        let createvaultsig = await submitTransaction(combinedTx, "confirmed", true); 
+        if(createvaultsig){
+            const success9 = await checkTransactionStatus(connection, createvaultsig);
+            if (!success9) {
+                createvaultsig = await retrySubmitTransaction(combinedTx, connection, "confirmed");
+            }        
+        }else{
+            createvaultsig = await retrySubmitTransaction(combinedTx, connection, "confirmed");
+        }
         console.log(
             `Created pda + vault signature: ${createvaultsig}`
         );
         
+        let referral_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
+        let [referralTokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from("token_account_owner_pda"), mint_of_token.toBuffer()],
+            referral_program_id
+            );
+        const tokenRefferalVault = await getAssociatedTokenAddress(mint_of_token, referralTokenAccountOwnerPda, true);
+        const createReferralAccountTx = createAssociatedTokenAccountInstruction(
+            playerKey,
+            tokenRefferalVault,
+            referralTokenAccountOwnerPda,
+            mint_of_token,
+        );
+        const referralTx = new Transaction()
+        .add(createReferralAccountTx); 
+        const computeLimitIxReferral = ComputeBudgetProgram.setComputeUnitLimit({
+            units: 200_000,
+        });
+        referralTx.add(computeLimitIxReferral).add(computePriceIx);
+        //const createreferralvaultsig = await retrySubmitTransaction(referralTx, connection, "confirmed");
+        let createreferralvaultsig = await submitTransaction(referralTx, "confirmed", true); 
+
+        console.log(
+            `Created referral pda + vault signature: ${createreferralvaultsig},
+            wallet address: ${referralTokenAccountOwnerPda.toString()}`
+        );
+
         const inittransaction = new anchor.web3.Transaction();
         const initGame = await ApplySystem({
             authority: playerKey,
@@ -610,8 +717,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 50_000,
           });
           inittransaction.add(computeLimitIxMapFunc).add(computePriceIx);
-          const signatureinitgame = await retrySubmitTransaction(inittransaction, connection, "confirmed");
-          //const signatureinitgame = await submitTransaction(inittransaction, "confirmed", true);  
+          //const signatureinitgame = await retrySubmitTransaction(inittransaction, connection, "confirmed");
+          let signatureinitgame = await submitTransaction(inittransaction, "confirmed", true);  
+          if(signatureinitgame){
+            const success11 = await checkTransactionStatus(connection, signatureinitgame);
+            if (!success11) {
+                signatureinitgame = await retrySubmitTransaction(inittransaction, connection, "confirmed");
+            }        
+          }else{
+            signatureinitgame = await retrySubmitTransaction(inittransaction, connection, "confirmed");
+          }
           console.log(
               `Init func game signature: ${signatureinitgame}`
           );
@@ -643,8 +758,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 units: 200_000,
               });
               initplayertransaction.add(computeLimitIxPlayerFunc).add(computePriceIx);
-            //const signatureplayerdinited = await submitTransaction(initplayertransaction, "confirmed", true); //await submitTransactionUser(initplayertransaction);
-            const signatureplayerdinited = await retrySubmitTransaction(initplayertransaction, connection, "confirmed");
+            let signatureplayerdinited = await submitTransaction(initplayertransaction, "confirmed", true); //await submitTransactionUser(initplayertransaction);
+            if(signatureplayerdinited){
+                const success12 = await checkTransactionStatus(connection, signatureplayerdinited);
+                if (!success12) {
+                    signatureplayerdinited = await retrySubmitTransaction(initplayertransaction, connection, "confirmed");
+                }        
+              }else{
+                signatureplayerdinited = await retrySubmitTransaction(initplayertransaction, connection, "confirmed");
+              }
+            //const signatureplayerdinited = await retrySubmitTransaction(initplayertransaction, connection, "confirmed");
             console.log(`Init func players signature for batch: ${signatureplayerdinited}`);
             }
 
@@ -675,8 +798,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 units: 100_000,
               });
               initantetransaction.add(computeLimitIxAnteFunc).add(computePriceIx);
-        const signatureanteinited = await retrySubmitTransaction(initantetransaction, connection, "confirmed");
-        //const signatureanteinited = await submitTransaction(initantetransaction, "confirmed", true);  //await submitTransactionUser(initantetransaction); 
+        //const signatureanteinited = await retrySubmitTransaction(initantetransaction, connection, "confirmed");
+        let signatureanteinited = await submitTransaction(initantetransaction, "confirmed", true);  //await submitTransactionUser(initantetransaction); 
+        if(signatureanteinited){
+            const success13 = await checkTransactionStatus(connection, signatureanteinited);
+            if (!success13) {
+                signatureanteinited = await retrySubmitTransaction(initantetransaction, connection, "confirmed");
+            }        
+        }else{
+            signatureanteinited = await retrySubmitTransaction(initantetransaction, connection, "confirmed");
+        }
         console.log(
             `Init func anteroom signature: ${signatureanteinited}`
         );
@@ -692,8 +823,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             units: 80_000,
           });
           maptx.add(computeLimitIxMapDel).add(computePriceIx);
-        const delsignature = await retrySubmitTransaction(maptx, connection, "confirmed");
-        //const delsignature = await submitTransaction(maptx, "confirmed", true); 
+        //const delsignature = await retrySubmitTransaction(maptx, connection, "confirmed");
+        let delsignature = await submitTransaction(maptx, "confirmed", true); 
+        if(delsignature){
+            const success14 = await checkTransactionStatus(connection, delsignature);
+            if (!success14) {
+                delsignature = await retrySubmitTransaction(maptx, connection, "confirmed");
+            }        
+        }else{
+            delsignature = await retrySubmitTransaction(maptx, connection, "confirmed");
+        }
         console.log(
             `Delegation signature map: ${delsignature}`
         );
@@ -715,12 +854,41 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 units: 200_000,
               });
               playertx.add(computeLimitIxPlayerDel).add(computePriceIx);
-            //const delsignature2 = await submitTransaction(playertx, "confirmed", true);
-            const delsignature2 = await retrySubmitTransaction(playertx, connection, "confirmed");
+            let delsignature2 = await submitTransaction(playertx, "confirmed", true);
+            if(delsignature2){
+                const success15 = await checkTransactionStatus(connection, delsignature2);
+                if (!success15) {
+                    delsignature2 = await retrySubmitTransaction(playertx, connection, "confirmed");
+                }        
+            }else{
+                delsignature2 = await retrySubmitTransaction(playertx, connection, "confirmed");
+            }
+            //const delsignature2 = await retrySubmitTransaction(playertx, connection, "confirmed");
             console.log(`Delegation signature food for batch: ${delsignature2}`);
         }
-
+        
         //await new Promise(resolve => setTimeout(resolve, 2000));
+
+        /*
+        const newfoodEntityPdas: any[] = [];
+        const newfoodComponentPdas: any[] = [];
+        const worldPda = await FindWorldPda( {worldId: new anchor.BN(4)});
+
+        for (let i = 1; i <= 16*5; i++) {
+            const seed = 'food' + i.toString();
+            const newfoodEntityPda = FindEntityPda({
+                worldId: new anchor.BN(4), //initNewWorld.worldId,
+                entityId: new anchor.BN(0),
+                seed: seed
+            });
+            newfoodEntityPdas.push(newfoodEntityPda);
+        }
+        const mapseed = "origin"; 
+        const newmapentityPda = FindEntityPda({
+            worldId: new anchor.BN(4),
+            entityId: new anchor.BN(0),
+            seed: mapseed
+        }) */
 
         let overallIndex = 0;
         let initFoodBatchSize = 5;
@@ -785,7 +953,7 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             setNewGameCreated(newGameInfo);
             const copiedActiveGameIds: ActiveGame[] = [...activeGames];
             copiedActiveGameIds.push(newGameInfo);  
-            setActiveGames(copiedActiveGameIds);
+            setActiveGames(copiedActiveGameIds); 
             const playerbalance = await connection.getBalance(playerKey, 'processed');
             const reclaim_transaction = new Transaction();
             const solTransferInstruction = SystemProgram.transfer({
@@ -794,8 +962,16 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
                 lamports: playerbalance - 5000,
             });
             reclaim_transaction.add(solTransferInstruction);
-            //const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
-            const reclaimsig = await retrySubmitTransaction(reclaim_transaction, connection, "confirmed");
+            let reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
+            if(reclaimsig){
+                const success16 = await checkTransactionStatus(connection, reclaimsig);
+                if (!success16) {
+                    reclaimsig = await retrySubmitTransaction(reclaim_transaction, connection, "confirmed");
+                }        
+            }else{
+                reclaimsig = await retrySubmitTransaction(reclaim_transaction, connection, "confirmed");
+            }
+            //const reclaimsig = await retrySubmitTransaction(reclaim_transaction, connection, "confirmed");
             console.log(`Reclaim leftover SOL: ${reclaimsig}`);
         //}
     }, [playerKey, connection]);
