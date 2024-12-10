@@ -30,13 +30,15 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
         icon: `${process.env.PUBLIC_URL}/token.png`,
         name: "LOADING"
     });
-    const [users, setUsers] = useState<Player[]>([]);
+    const users= useRef<Player[]>([]);
+    const usersLen = useRef(0);
+
     const [rank, setRank] = useState<number | null>(null);
     const { publicKey } = useWallet();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [homeHover, setHomeHover] = useState(false);
 
-    const tokens = [{network: "devnet", token: "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp"}, {network: "mainnet", token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"}]
+    const tokens = [{network: "devnet", token: "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp"}, {network: "mainnet", token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"}, {network: "mainnet", token: "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"}]
     //const options = [{ icon: "/usdc.png", name: "Magical Gem" }, { icon: "/usdc.png", name: "USDC" }, { icon: "/Solana_logo.png", name: "SOL" }];
     const options = useRef([{icon: `${process.env.PUBLIC_URL}/token.png`, name: "LOADING"}]);
 
@@ -52,11 +54,18 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
             const matchedTokens = tokens.filter(token => token.network === network);
             
             const promises = matchedTokens.map(async token => {
+            if(token.token.toString() === "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"){
+                return {
+                    icon: `${process.env.PUBLIC_URL}/agld.jpg`,
+                    name: "AGLD",
+                };
+            }else{
               const metadata = await fetchTokenMetadata(token.token, network);
-              return {
+            return {
                 icon: metadata.image,
                 name: metadata.name,
-              };
+            };
+            }
             });
       
             const optionsData = await Promise.all(promises);
@@ -166,20 +175,21 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                         points: 0
                     });
                 }
-                console.log("topParticipants:::::", res.data.topParticipants);
+                console.log("topParticipants:::::", res.data.topParticipants, res.data.totalCandidates);
         
                 const participants = res.data.topParticipants.map((participant: any) => (
                     { 
-                        name: participant.name, 
+                        name: participant.walletAddress, 
                         total: participant.winAmount
                     }
                 ));
-                setUsers(participants);
+                users.current = participants;
+                usersLen.current = res.data.totalCandidates;
             } catch (error) {
                 console.error("An error occurred during the request:", error);
             }
         })();
-    }, [publicKey, season.name]);
+    }, [publicKey, season]);
 
     return (
         <>
@@ -236,20 +246,20 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                     }
                     style={{marginRight: "2vw", width:"fit-content", marginTop: "5vh"}}
                 >
-                    <div className={`selected-option ${isDropdownOpen ? "open" : ""}`} style={{ display: "flex", alignItems: "center", whiteSpace:"nowrap", width:"fit-content" }}>
+                    <div className={`selected-option ${isDropdownOpen ? "open" : ""}`} style={{ display: "flex", alignItems: "center", textAlign:"center", whiteSpace:"nowrap", width:"90px" }}>
                         <img src={season.icon} alt={season.name} style={{ width: "24px", height: "24px", marginRight: "8px" }} />
-                        {season.name}
+                        {season.name.toString().slice(0,5)}
                     </div>
 
                     {isDropdownOpen &&  (
-                        <div className="dropdown-menu">
+                        <div className="dropdown-menu" style={{width:"90px"}}>
                             {options.current
                                 .filter((option) => option.name !== season.name)
                                 .map((option) => (
                                     <div
                                         key={option.name}
                                         className="dropdown-item"
-                                        style={{ display: "flex", alignItems: "center" }}
+                                        style={{width:"90px", display: "flex", alignItems: "center" }}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setSeason({
@@ -259,7 +269,7 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                                         }}
                                     >
                                         <img src={option.icon} alt={option.name} style={{ width: "24px", height: "24px", marginRight: "8px" }} />
-                                        <span className="dropdown-text"> {option.name} </span>
+                                        <span className="dropdown-text" style={{width:"90px"}}> {option.name} </span>
                                     </div>
                                 ))}
                         </div>
@@ -296,7 +306,7 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                             <div style={{ textAlign: "center", marginBottom: "16px" }}>
                                 <div style={{ fontSize: "25px", opacity: 0.8, marginBottom: "4px", color: "gray" }}>Global Ranking</div>
                                 <div style={{ fontSize: "40px", color: "rgb(103, 244, 182)" }}>
-                                    {userInfo.position} <span style={{ fontSize: "16px", opacity: 0.8, color: "#fff" }}>/ {users.length}</span>
+                                    {userInfo.position} <span style={{ fontSize: "16px", opacity: 0.8, color: "#fff" }}>/ {usersLen.current}</span>
                                 </div>
                             </div>
                         </div>
@@ -329,7 +339,7 @@ const Leaderboard: React.FC<{ setbuildViewerNumber: (number: number) => void }> 
                 <div style={{ overflowY: "auto", flex: 1 }}>
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <tbody>
-                            {users.map((player, i) => (
+                            {users.current.map((player, i) => (
                                 <tr key={i} onMouseEnter={() => setRank(i)} onMouseLeave={() => setRank(null)} style={{ backgroundColor: rank === i ? "#002200" : "transparent" }}>
                                     <td style={{ textAlign: "left", padding: "12px", fontSize: "25px" }}>{i + 1}</td>
                                     <td style={{ textAlign: "left", padding: "12px", fontSize: "25px" }}>

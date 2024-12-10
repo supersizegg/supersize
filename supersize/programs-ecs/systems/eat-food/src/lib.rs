@@ -15,6 +15,14 @@ pub enum SupersizeError {
     MapKeyMismatch,
 }
 
+pub fn decode_food(data: [u8; 4]) -> (u16, u16, u16) {
+    let packed = u32::from_le_bytes(data);
+    let x = (packed & 0x3FFF) as u16;          
+    let y = ((packed >> 14) & 0x3FFF) as u16;  
+    let size = ((packed >> 28) & 0x0F) as u16;    
+    (x, y, size)
+}
+
 #[system]
 pub mod eat_food {
 
@@ -37,14 +45,15 @@ pub mod eat_food {
         require!(player_authority == Some(authority), SupersizeError::NotOwner);
 
         section.food.retain(|food| {
-                let dx = (player_x as i16 - food.x as i16).abs();
-                let dy = (player_y as i16 - food.y as i16).abs();
+                let (decoded_x, decoded_y, decoded_food_value) = decode_food(food.data);
+                let dx = (player_x as i16 - decoded_x as i16).abs();
+                let dy = (player_y as i16 - decoded_y as i16).abs();
                 if dx < player_radius.ceil() as i16 && dy < player_radius.ceil() as i16 {
                     let distance = ((dx as f64).powf(2.0) + (dy as f64).powf(2.0)).sqrt();
                     if distance < player_radius {
-                        player.mass += 1;
-                        player.score += map.base_buyin as f64 / 1000.0;
-                        map.total_food_on_map -= 1;
+                        player.mass += decoded_food_value as u64;
+                        player.score += decoded_food_value as f64 * (map.base_buyin as f64 / 1000.0);
+                        map.total_food_on_map -= decoded_food_value as u64;
                         false 
                     } else {
                         true

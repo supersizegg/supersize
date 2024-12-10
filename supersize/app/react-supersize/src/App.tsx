@@ -220,38 +220,50 @@ const App: React.FC = () => {
     const [moveSignature, setMoveSignature] = useState<string | null>(null);
     const [transactionError, setTransactionError] = useState<string | null>(null);
     const [transactionSuccess, setTransactionSuccess] = useState<string | null>(null);
-       /*
-      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
-        "https://supersize-mainnet-sin.magicblock.app": {
+
+      /*
+      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }[]> = {
+        "https://supersize-mainnet-sin.magicblock.app" : [{
           worldId: new anchor.BN(8),
           worldPda: new PublicKey('B8nxHq1NadQKbuaAwow9vHaCty9LcWrYBtD5db216boR'),
-        }, //1, 9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma 
-        "https://supersize-mainnet-bos.magicblock.app": {
+        },{
+            worldId: new anchor.BN(10),
+            worldPda: new PublicKey('EEwdyjFd7bUupMq8iwxTSrWivQAR5QCVNUZtnqJR54kU'),
+          }, 
+        ],//1, 9LKNh9Ma4WjGUHvohbAAdGpZFNUWmgEQRRgvYwRL25ma 
+        "https://supersize-mainnet-bos.magicblock.app": [{
           worldId: new anchor.BN(7),
           worldPda: new PublicKey('9S7BFk4apJ3ZKVYbt7PSWeJY5n3qnsB4AVJWh1ogyo8r'),
-        }, //2, 5Fj5HJud66muuDyateWdP2HAPkED7CnyApDQBMreVQQH
-        "https://supersize-mainnet.magicblock.app": {
+        },{
+            worldId: new anchor.BN(9),
+            worldPda: new PublicKey('FpMmtdFbUTCVm1irFaX7aKVfe6XxaWt6xb5nYYv3LUER'),
+          },  
+        ], //2, 5Fj5HJud66muuDyateWdP2HAPkED7CnyApDQBMreVQQH
+        "https://supersize-mainnet.magicblock.app": [{
           worldId: new anchor.BN(4),
           worldPda: new PublicKey('AGUNzsmCpRp53DPYXY9Yw6Lwg5b5heSkTRyafTkfNYJv'),
-        }, //3, 8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt
+        },{
+            worldId: new anchor.BN(11),
+            worldPda: new PublicKey('AiS8sVquRX8t17m1ZCi82TqfKVMVvSvUvUibFT9jv33k'),
+          }, ] //3, 8XG8vqYo1vxURMXuU7RboftYGVWYq11M41HCzHLYzejt
       }; 
-       */
-   
-      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }> = {
-        "https://supersize-sin.magicblock.app": {
+     */
+
+      const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: PublicKey }[]> = {
+        "https://supersize-sin.magicblock.app": [{
           worldId: new anchor.BN(1666),
           worldPda: new PublicKey('BQ4vkTpteu5EcM5dYTSCGAQKbW5JumeyLm3o6yvyzqHw'),
-        },
-        "https://supersize.magicblock.app": {
+        },],
+        "https://supersize.magicblock.app": [{
           worldId: new anchor.BN(1683),
           worldPda: new PublicKey('3f6AomGdReXwbJ1cK54LdNULeMrUmw6kYS2Sfu9CPHoa'),
-        },
-        "https://supersize-fra.magicblock.app": {
+        },],
+        "https://supersize-fra.magicblock.app":[{
           worldId: new anchor.BN(1727),
           worldPda: new PublicKey('A5F8bV8wyMNS4dLpfckfxpfHFBTdgd8FW34K7UwxCNvX'),
-        }, //3o6derAZFQi5v7CZmkZX65eare4xpeVy1ZBpBbiaCA1L, 1715
+        },] //3o6derAZFQi5v7CZmkZX65eare4xpeVy1ZBpBbiaCA1L, 1715
       }; 
-     
+
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [gamewallet, setGameWallet] = useState("");
     const [openGameInfo, setOpenGameInfo] = useState<boolean[]>(new Array(activeGames.length).fill(false));
@@ -277,6 +289,23 @@ const App: React.FC = () => {
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [mousePosition, setMousePosition] = useState({x: 0,y: 0});
     
+    const currentPlayerRef = useRef(currentPlayer);
+    const exitHoveredRef = useRef(exitHovered);
+    const mousePositionRef = useRef(mousePosition);
+    const isMouseDownRef = useRef(isMouseDown);
+    useEffect(() => {
+        currentPlayerRef.current = currentPlayer;
+    }, [currentPlayer]);
+    useEffect(() => {
+        mousePositionRef.current = mousePosition;
+    }, [mousePosition]);
+    useEffect(() => {
+        exitHoveredRef.current = exitHovered;
+    }, [exitHovered]);
+    useEffect(() => {
+        isMouseDownRef.current = isMouseDown;
+    }, [isMouseDown]);
+
     const [panelContent, setPanelContent] = useState<JSX.Element | null>(null);
     const [buildViewerNumber, setbuildViewerNumber] = useState(0);
     const [leaderBoardActive, setLeaderboardActive] = useState(false)
@@ -322,8 +351,7 @@ const App: React.FC = () => {
         commitment: 'processed',
     }
     );  
-    
-    /*
+     /*
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-mainnet-sin.magicblock.app", {
         wsEndpoint: "wss://supersize-mainnet-sin.magicblock.app",
@@ -331,14 +359,14 @@ const App: React.FC = () => {
         new NodeWallet(wallet) 
     )); 
     */ 
-    
+
     const providerEphemeralRollup = useRef<anchor.AnchorProvider>(new anchor.AnchorProvider(
         new anchor.web3.Connection("https://supersize-fra.magicblock.app", {
         wsEndpoint: "wss://supersize-fra.magicblock.app",
         }),
         new NodeWallet(wallet) 
     )); 
-    
+        
     anchor.setProvider(provider); 
 
     useEffect(() => {
@@ -489,10 +517,10 @@ const App: React.FC = () => {
     
     useEffect(() => {
         if(activeGames[0]){
-            if(activeGames[0].name == "AGLD"){
-                swapAmount.current = "https://raydium.io/swap/?inputMint=sol&outputMint=7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
+            if(activeGames[0].token == "AGLD"){
+                swapAmount.current = "https://raydium.io/swap/?inputMint=sol&outputMint=7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn";
             }else{
-                swapAmount.current = `https://jup.ag/swap/SOL-${tokenMint}`
+                swapAmount.current = `https://jup.ag/swap/SOL-EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`; //${tokenMint}`
             }
         }
     }, [activeGames]); 
@@ -509,11 +537,23 @@ const App: React.FC = () => {
         );
     
         console.log('Updated providerEphemeralRollup:', providerEphemeralRollup.current);
-        const { worldId, worldPda } = endpointToWorldMap[fastestEndpoint];
+        //const { worldId, worldPda } = endpointToWorldMap[fastestEndpoint];
         //setActiveGames([{ worldId: worldId, worldPda: worldPda} as ActiveGame]);
-        const newGameInfo : ActiveGame = {worldId: worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:`${process.env.PUBLIC_URL}/token.png`, token:"LOADING", base_buyin: 0, min_buyin: 0, max_buyin: 0}
-        //setNewGameCreated(newGameInfo);
-        setActiveGames([newGameInfo]);
+        const newGameInfo : ActiveGame[]= endpointToWorldMap[fastestEndpoint].map((world: { worldId: anchor.BN; worldPda: PublicKey }) => ({
+            worldId: world.worldId,
+            worldPda: world.worldPda,
+            name: "loading",
+            active_players: 0,
+            max_players: 0,
+            size: 0,
+            image: `${process.env.PUBLIC_URL}/token.png`,
+            token: "LOADING",
+            base_buyin: 0,
+            min_buyin: 0,
+            max_buyin: 0
+        }));
+        //setActiveGames([newGameInfo]);
+        setActiveGames(newGameInfo);
         fetchAndLogMapData();
         setOpenGameInfo(new Array(activeGames.length).fill(false));
         setEndpointDone(true);
@@ -539,7 +579,11 @@ const App: React.FC = () => {
     };
     const handleSliderChange = (event: any) => {
         let value = parseFloat(event.target.value);
-        value = value > 10 ? 10 : value;
+        if(activeGames[0].max_buyin){
+            value = value > activeGames[0].max_buyin ? activeGames[0].max_buyin : value;
+        }else{
+            value = value > 10 ? 10 : value;
+        }
         value = value > 0.1 ? parseFloat(value.toFixed(1)) : value;
         setBuyIn(value);
     };
@@ -1328,6 +1372,7 @@ const App: React.FC = () => {
 
             if(anteacc){
                 const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
+                console.log(anteParsedData);
                 vault_token_account = anteParsedData.vaultTokenAccount;
                 mint_of_token_being_sent = anteParsedData.token;
                 let usertokenAccountInfo = await getAssociatedTokenAddress(
@@ -1336,22 +1381,28 @@ const App: React.FC = () => {
                   ); 
                 payout_token_account = usertokenAccountInfo;
                 const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
-                console.log("token", name);
+                console.log("token", name, mint_of_token_being_sent.toString());
                 
                 try{
-                    await axios.post("https://supersize.lewisarnsten.workers.dev/create-contest", {
+                    let response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-contest", {
                         name: name,
                         tokenAddress: mint_of_token_being_sent.toString()
                     })
+                    console.log(response)
                 }catch(error){
                     console.log('error', error)
                 }
                 try{
-                    await axios.post("https://supersize.lewisarnsten.workers.dev/create-user", {
+                    let username = publicKey.toString();
+                    if (mint_of_token_being_sent.toString() != "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"){
+                        username = publicKey.toString() + "_" + name
+                    }
+                    let response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-user", {
                         walletAddress: publicKey.toString(),
+                        name: username,
                         contestId: name,
-                        name: publicKey.toString(),
                     })
+                    console.log(response)
                 }catch(error){
                     console.log('error', error)
                 }
@@ -2100,6 +2151,11 @@ const App: React.FC = () => {
     }, [currentPlayer]);
 
     const handleMovementAndCharging = async () => {
+        const currentPlayer = currentPlayerRef.current;
+        const mousePosition = mousePositionRef.current;
+        const isMouseDown = isMouseDownRef.current;
+        const exitHovered = exitHoveredRef.current;
+
         const processSessionEphemTransaction = async (
             transaction: anchor.web3.Transaction
         ): Promise<string> => {
@@ -2247,39 +2303,7 @@ const App: React.FC = () => {
             handleMovementAndCharging(); 
         }, 30); 
         
-        return () => clearInterval(intervalId);
-    }, [gameId, currentPlayer, exitHovered, isMouseDown]);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if(lastUpdateRef.current !== null){
-            const now = performance.now();
-            //console.log(currentPlayer);
-            if (now - lastUpdateRef.current > 1000) {
-                console.log('force update');
-                setCurrentPlayer((prev) => {
-                    if (!prev) {
-                        return null; 
-                    }
-                    return {
-                        ...prev,
-                        x: prev.x, 
-                        y: prev.y, 
-                        name: prev.name, 
-                        authority: prev.authority,
-                        radius: prev.radius,
-                        mass: prev.mass,
-                        score: prev.score,
-                        target_x: prev.target_x,
-                        target_y: prev.target_y,
-                        timestamp: performance.now(),
-                    };
-                });            
-            }
-        }
-        }, 1000);
-
-        return () => clearInterval(interval); // Cleanup interval on unmount
+        return () => { clearInterval(intervalId); }
     }, [gameId]);
 
     useEffect(() => {
@@ -2507,17 +2531,19 @@ const App: React.FC = () => {
                 setIsMouseDown(false);
             };
             
+            console.log('Set mouse listeners');
             window.addEventListener('mousedown', handleMouseDown);
             window.addEventListener('mouseup', handleMouseUp);
             window.addEventListener('mousemove', handleMouseMove); 
 
             return () => {
+                console.log('Remove mouse listeners');
                 window.removeEventListener('mousemove', handleMouseMove);
                 window.removeEventListener('mousedown', handleMouseDown);
                 window.removeEventListener('mouseup', handleMouseUp);
             };
         }
-    }, [playerKey, gameId, entityMatch, currentPlayer, screenSize]);  
+    }, [playerKey, gameId, entityMatch, screenSize]);  
 
     useEffect(() => {        
         function translateLargerRectangle() {
@@ -2708,6 +2734,7 @@ const App: React.FC = () => {
                     const anteacc = await provider.connection.getAccountInfo(
                         anteComponentPda, "processed"
                     );
+                    console.log(anteComponentPda.toString());
                     let mint_of_token_being_sent = new PublicKey(0);
                     if(anteacc){
                         const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
@@ -3812,7 +3839,7 @@ const App: React.FC = () => {
                         </svg>
                         )}
                         </div> */}
-                        <button id="returnButton" onClick={() => {window.location.reload();}}>Return home</button>
+                        {cashoutTx !== null && cashoutTx !== 'error' && (<button id="returnButton" onClick={() => {window.location.reload();}}>Return home</button>)}
                     </div>
                 </div>
             )}

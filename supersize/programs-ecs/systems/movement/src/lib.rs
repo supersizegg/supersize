@@ -23,6 +23,16 @@ pub fn xorshift64(seed: u64) -> u64 {
     x
 }
 
+pub fn encode_food(x: u16, y: u16, food_value: u16) -> [u8; 4] {
+    assert!(x < 16_384, "x out of range");
+    assert!(y < 16_384, "y out of range");
+    assert!(food_value < 16, "z out of range");
+
+    let packed = ((food_value as u32) << 28) | ((y as u32) << 14) | (x as u32);
+    let data = packed.to_le_bytes(); 
+    data
+}
+
 #[system]
 pub mod movement {
 
@@ -88,10 +98,11 @@ pub mod movement {
                 let difference = -player.score * 0.002;
                 player.score = player.score + difference;
 
+                let step_unit = (player.mass as f64 / 1000.0).floor().clamp(1.0, 10.0) as u64;
                 let steps = ((player.mass as f64 - player.score * 1000.0 / entry_fee)).floor() as u64;
-
-                if steps >= 1 {
-                    player.mass = player.mass - steps;
+                let steps_to_take = steps / step_unit;
+                if steps_to_take >= 1 {
+                    player.mass = player.mass - (steps_to_take * step_unit);
                     let unit_x = dx / dist;
                     let unit_y = dy / dist;
 
@@ -100,31 +111,32 @@ pub mod movement {
                     let random_shift = (xorshift_output % 13) + 3; 
 
                     let free_space = 100 - section.food.len() as u64;
-                    let steps_to_add = if steps < free_space { steps } else { free_space };
-                    let remaining_steps = steps - steps_to_add;
-                    map.food_queue += remaining_steps;
+                    let steps_to_add = if steps_to_take < free_space { steps_to_take } else { free_space };
+                    let remaining_steps = steps_to_take - steps_to_add;
+                    map.food_queue += (remaining_steps * step_unit) as u64;
 
                     for n in 0..steps_to_add {
                         let hardvarx: u64 = xorshift_output.wrapping_mul(free_space as u64 + n + 1);
                         let hardvary: u64 = xorshift_output.wrapping_mul(free_space as u64 + n + 1).wrapping_shl(random_shift as u32);
-                        let seedx = (hardvarx % 100 as u64) + 1; 
-                        let seedy = (hardvary % 100) + 1;
-                        let pseudo_random_float_x : f64 = seedx as f64 / 100.0 + 1.2;
-                        let pseudo_random_float_y : f64 = seedy as f64 / 100.0 + 1.2;
+                        let seedx = (hardvarx % 100) as u64;
+                        let seedy = (hardvary % 100) as u64;
+                        let pseudo_random_float_x: f64 = (seedx as f64 / 200.0) + 1.2;
+                        let pseudo_random_float_y: f64 = (seedy as f64 / 200.0) + 1.2;
                         let offset_x = -unit_x * player_radius * pseudo_random_float_x;
                         let offset_y = -unit_y * player_radius * pseudo_random_float_y;
                         let food_x = player_x as i16 + offset_x.round() as i16;
                         let food_y = player_y as i16 + offset_y.round() as i16;
-                        let clamped_food_x = (food_x as u16).clamp(0, map.width);
-                        let clamped_food_y = (food_y as u16).clamp(0, map.height);
+                        let clamped_food_x = (food_x as u16).clamp(0, map.width - 1);
+                        let clamped_food_y = (food_y as u16).clamp(0, map.height - 1);
                         if clamped_food_x >= section.top_left_x && clamped_food_x < section.top_left_x + 1000 &&
                         clamped_food_y >= section.top_left_y && clamped_food_y < section.top_left_y + 1000 
                         {
-                            let newfood = section::Food { x: clamped_food_x, y: clamped_food_y };
+                            let encoded_data = encode_food(clamped_food_x, clamped_food_y, step_unit as u16);
+                            let newfood = section::Food { data: encoded_data };
                             section.food.push(newfood);
-                            map.total_food_on_map += 1;
+                            map.total_food_on_map += step_unit as u64;
                         } else {
-                            map.food_queue += 1;
+                            map.food_queue += step_unit as u64;
                         }
                     }
                 }

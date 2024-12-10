@@ -888,7 +888,8 @@ const CreateGameComponent: React.FC<GameComponentProps> = ({
             worldId: new anchor.BN(4),
             entityId: new anchor.BN(0),
             seed: mapseed
-        }) */
+        }) 
+        */
 
         let overallIndex = 0;
         let initFoodBatchSize = 5;

@@ -819,6 +819,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "buddy-link"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c710083db9979f30c4395c0792b48270419aec2feb7f8229ec62a983f067119b"
+dependencies = [
+ "ahash 0.8.11",
+ "anchor-lang",
+ "anchor-spl",
+ "borsh 0.10.3",
+ "solana-program",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -832,6 +845,7 @@ dependencies = [
  "anchor-spl",
  "anteroom",
  "bolt-lang",
+ "buddy-link",
  "player",
  "serde",
 ]
@@ -890,6 +904,7 @@ dependencies = [
  "anchor-spl",
  "anteroom",
  "bolt-lang",
+ "buddy-link",
  "player",
  "serde",
 ]
