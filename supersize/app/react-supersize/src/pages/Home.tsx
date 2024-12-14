@@ -1,6 +1,6 @@
 // import { withMainLayout } from "@layouts/MainLayout"
 import { withMainLayout } from "@layouts/MainLayout";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { ActiveGame } from "@utils/types";
 import { Link } from "react-router-dom";
 import Alert from "@components/Alert";
@@ -31,6 +31,7 @@ const Home = () => {
         setNewGameCreated
     } = useSupersizeContext();
     const [expandlist, setExpandlist] = useState(false);
+    const swapAmount = useRef("");
     const navigate = useNavigate();
     
     const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,6 +91,20 @@ const Home = () => {
         if (event.key === "Enter") {
             handleImageClick();
         }
+    };
+
+    useEffect(() => {
+        if(activeGames[0]){
+            if(activeGames[0].token == "AGLD"){
+                swapAmount.current = "https://raydium.io/swap/?inputMint=sol&outputMint=7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn";
+            }else{
+                swapAmount.current = `https://jup.ag/swap/SOL-EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`; //${tokenMint}`
+            }
+        }
+    }, [activeGames]);
+
+    const handleBuyClick = () => {
+        window.open(swapAmount.current, "_blank", "noopener,noreferrer");
     };
     
 
@@ -372,12 +387,17 @@ const Home = () => {
                     </div>
 
                     <div className="col-span-1 items-center mr-[1vw]">
-                        <Link
+                        <div className="play">
+                            <button className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white" onClick={handleBuyClick}>
+                                {`Buy ${activeGames[0] ? activeGames[0].token.toString().slice(0,7) : "LOADING"}`}
+                            </button>
+                        </div>
+                        {/* <Link
                             className="w-full bg-white flex items-center text-center justify-center text-black h-[3em] rounded-[1em] border border-white font-[Conthrax] text-base cursor-pointer transition-all duration-300 hover:bg-black hover:text-[#eee]"
                             to={"/create-game"}
                         >
                             Create Game
-                        </Link>
+                        </Link> */}
                     </div>
                 </div>
             </div>

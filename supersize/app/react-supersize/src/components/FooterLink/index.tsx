@@ -1,9 +1,13 @@
 import { useCallback, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const FooterLink = () => {
     const [gitbookHovered, setGitBookHovered] = useState(false);
     const [xHovered, setXHovered] = useState(false);
     const [tgHovered, setTgHovered] = useState(false);
+    const [buildHovered, setBuildHovered] = useState(false);
+
+    const navigate = useNavigate();
 
     const openDocs = useCallback(() => {
         window.open("https://docs.supersize.gg/", "_blank");
@@ -17,6 +21,30 @@ const FooterLink = () => {
 
     return (
         <div className="ml-auto flex bg-black mr-[2vw] text-white border border-[#FFFFFF4D] font-[Terminus] h-[40px] w-[300px]">
+            <div
+                className="w-[35px] h-[40px] flex cursor-pointer items-center justify-center border-r border-[#FFFFFF4D] px-[3px]"
+                onMouseEnter={() =>
+                    setBuildHovered(true)
+                }
+                onMouseLeave={() =>
+                    setBuildHovered(false)
+                }
+                onClick={() => { navigate('/create-game')}}
+            >
+                <img
+                    src={`${process.env.PUBLIC_URL}/build2.png`}
+                    alt="Image"
+                    className={` w-[20px] h-auto absolute ${buildHovered ? "opacity-20" : "opacity-80"} transition-opacity duration-300 ease-in-out`}
+                />
+                {buildHovered && (
+                    <img
+                        src={`${process.env.PUBLIC_URL}/buildhighlight2.png`}
+                        alt="Highlighted Image"
+                        className={`w-[20px] h-auto absolute ${buildHovered ? "opacity-80" : "opacity-20"} transition-opacity duration-300 ease-in-out`}
+                    />
+                )}
+            </div>
+            
             <div
                 className="w-[35px] h-[40px] flex cursor-pointer items-center justify-center border-r border-[#FFFFFF4D] px-[3px]"
                 onMouseEnter={() => setGitBookHovered(true)}

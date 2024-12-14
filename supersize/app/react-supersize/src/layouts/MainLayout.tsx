@@ -23,6 +23,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
     const [gitbookHovered, setGitBookHovered] = useState(false);
     const [xHovered, setXHovered] = useState(false);
     const [tgHovered, setTgHovered] = useState(false);
+    const [buildHovered, setBuildHovered] = useState(false);
     const navigate = useNavigate();
 
     const openDocs = useCallback(() => {
@@ -242,6 +243,30 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                                     <div
                                         className="w-[35px] h-[40px] flex cursor-pointer items-center justify-center px-[3px]"
                                         onMouseEnter={() =>
+                                            setBuildHovered(true)
+                                        }
+                                        onMouseLeave={() =>
+                                            setBuildHovered(false)
+                                        }
+                                        onClick={() => { navigate('/create-game')}}
+                                    >
+                                        <img
+                                            src={`${process.env.PUBLIC_URL}/build2.png`}
+                                            alt="Image"
+                                            className={` w-[23px] h-auto absolute ${buildHovered ? "opacity-20" : "opacity-80"} transition-opacity duration-300 ease-in-out`}
+                                        />
+                                        {buildHovered && (
+                                            <img
+                                                src={`${process.env.PUBLIC_URL}/buildhighlight2.png`}
+                                                alt="Highlighted Image"
+                                                className={`w-[23px] h-auto absolute ${buildHovered ? "opacity-80" : "opacity-20"} transition-opacity duration-300 ease-in-out`}
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div
+                                        className="w-[35px] h-[40px] flex cursor-pointer items-center justify-center px-[3px]"
+                                        onMouseEnter={() =>
                                             setGitBookHovered(true)
                                         }
                                         onMouseLeave={() =>
@@ -312,7 +337,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                 viewerIdx == 0 && <ReferrerModal />
             }
             {viewerIdx == 0 ? (
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center" style={{height: 0}}>
                     <SolNetStats tps={currentTPS} price={price} />
                     <div className="h-10 absolute flex items-center justify-center p-2 mx-auto w-full text-white font-mono flex-col cursor-pointer">
                         Learn More
