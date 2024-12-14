@@ -96,14 +96,15 @@ export const endpointToWorldMap: Record<
         worldPda: new PublicKey("BQ4vkTpteu5EcM5dYTSCGAQKbW5JumeyLm3o6yvyzqHw"),
     },
     "https://supersize.magicblock.app": {
-        worldId: new anchor.BN(1679),
-        worldPda: new PublicKey("7XR47TXSsQNHBeF4jp3yNtdWJUPpeBfTz7V83wprxXqK"),
+        worldId: new anchor.BN(1731),
+        worldPda: new PublicKey("EuCCHZwFm6AiGe7ZzPoVus7fpNGFETYFinvNyZTtFVHF"),
     },
     "https://supersize-fra.magicblock.app": {
-        worldId: new anchor.BN(1676),
-        worldPda: new PublicKey("7scyVWfSS3sQhiNA7smqmgMUi4HptWZGMvJczvGCzrKv"),
+        worldId: new anchor.BN(1727),
+        worldPda: new PublicKey("A5F8bV8wyMNS4dLpfckfxpfHFBTdgd8FW34K7UwxCNvX"),
     },
 };
+
 export const options = ["Europe", "America", "Asia"];
 
 export const API_BASE_URL = "http://localhost:3000/api";
