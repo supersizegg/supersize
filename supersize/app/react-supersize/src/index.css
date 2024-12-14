@@ -5,16 +5,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap");
 
 @font-face {
-  font-family: 'Conthrax';
-  src: url('../public/font/conthrax/conthrax-sb.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
+    font-family: "Conthrax";
+    src: url("../public/font/conthrax/conthrax-sb.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
 }
 @font-face {
-  font-family: 'Terminus'; 
-  src: url('../public/font/terminus/TerminusTTF-4.49.3.ttf') format('truetype'); 
-  font-weight: normal;
-  font-style: normal;
+    font-family: "Terminus";
+    src: url("../public/font/terminus/TerminusTTF-4.49.3.ttf")
+        format("truetype");
+    font-weight: normal;
+    font-style: normal;
 }
 
 * {
@@ -382,6 +383,13 @@ body {
 
 .info-container::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+.warning-alert {
+    border: 1px solid rgb(255, 239, 138);
+    color: rgb(255, 239, 138);
+    padding: 10px;
+    border-radius: 5px;
 }
 
 body {
