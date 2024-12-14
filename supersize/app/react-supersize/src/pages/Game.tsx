@@ -19,12 +19,13 @@ const Game = () => {
         players,
         visibleFood,
         currentPlayer,
+        cleanUp,
     } = useSupersizeContext();
 
     const [exitHovered, setExitHovered] = useState(false);
 
     return (
-        <div className="w-screen h-screen overflow-hidden">
+        <div className="gameWrapper w-screen h-screen overflow-hidden">
             <div
                 id="status"
                 className={`${gameId !== null ? "block" : "hidden"} absolute p-2.5 bg-[rgba(17,19,20,0.4)] text-white font-['Terminus'] text-[16.1px] top-2.5 right-2.5 font-bold text-center rounded-[5px] border border-gray-400 filter drop-shadow-[0px_0px_5px_gray]`}
@@ -66,6 +67,7 @@ const Game = () => {
             </div>
 
             <div
+                className="game"
                 style={{
                     display: gameId !== null ? "block" : "none",
                     height: screenSize.height * scale,
@@ -91,76 +93,6 @@ const Game = () => {
                             <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
                                 You got eaten!
                             </p>
-                            <div className="flex items-center justify-center">
-                                <a
-                                    className="font-terminus p-0 m-1 text-center text-white text-xl inline"
-                                    href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=mainnet`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    Reclaim SOL
-                                </a>
-                                {reclaimTx != null ? (
-                                    <svg
-                                        className="w-5 h-5 rounded-full inline-block stroke-[2px] stroke-[#15bd12] stroke-miter-10 shadow-inner ml-[5px] mt-[2px]"
-                                        style={{
-                                            animation:
-                                                "fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;",
-                                        }}
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 52 52"
-                                    >
-                                        <circle
-                                            className="stroke-[2px] stroke-[#15bd12] stroke-miter-10 fill-[#15bd12]"
-                                            style={{
-                                                strokeDasharray:
-                                                    "166; stroke-dashoffset: 166; animation: stroke 0.6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;",
-                                            }}
-                                            cx="26"
-                                            cy="26"
-                                            r="25"
-                                            fill="none"
-                                        />
-                                        <path
-                                            className="stroke-[white] stroke-dasharray-[48] stroke-dashoffset-[48] transform-origin-[50%_50%] animation-stroke"
-                                            fill="none"
-                                            d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                                        />
-                                    </svg>
-                                ) : (
-                                    <svg
-                                        className="inline ml-[5px] mt-[2px] h-[20px] w-[20px] stroke-[white]"
-                                        width="52"
-                                        height="52"
-                                        viewBox="0 0 38 38"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <g fill="none" fillRule="evenodd">
-                                            <g
-                                                transform="translate(1 1)"
-                                                strokeWidth="2"
-                                            >
-                                                <circle
-                                                    strokeOpacity=".5"
-                                                    cx="18"
-                                                    cy="18"
-                                                    r="18"
-                                                />
-                                                <path d="M36 18c0-9.94-8.06-18-18-18">
-                                                    <animateTransform
-                                                        attributeName="transform"
-                                                        type="rotate"
-                                                        from="0 18 18"
-                                                        to="360 18 18"
-                                                        dur="1s"
-                                                        repeatCount="indefinite"
-                                                    />
-                                                </path>
-                                            </g>
-                                        </g>
-                                    </svg>
-                                )}
-                            </div>
                             <button
                                 id="returnButton"
                                 onClick={() => navigate("/")}
@@ -193,6 +125,8 @@ const Game = () => {
                                     Cashout transaction
                                 </a>
                                 {cashoutTx != null ? (
+                                <>
+                                    {cashoutTx != 'error' ? (  
                                     <svg
                                         className="w-5 h-5 rounded-full inline-block stroke-[2px] stroke-[#15bd12] stroke-miter-10 shadow-inner ml-[5px] mt-[2px]"
                                         style={{
@@ -219,82 +153,16 @@ const Game = () => {
                                             d="M14.1 27.2l7.1 7.2 16.7-16.8"
                                         />
                                     </svg>
-                                ) : (
-                                    <svg
-                                        className="inline ml-[5px] mt-[2px] h-[20px] w-[20px] stroke-[white]"
-                                        width="52"
-                                        height="52"
-                                        viewBox="0 0 38 38"
-                                        xmlns="http://www.w3.org/2000/svg"
+                                    )
+                                    : (
+                                    <button
+                                    className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
+                                    onClick={() => cleanUp()}
                                     >
-                                        <g fill="none" fillRule="evenodd">
-                                            <g
-                                                transform="translate(1 1)"
-                                                strokeWidth="2"
-                                            >
-                                                <circle
-                                                    strokeOpacity=".5"
-                                                    cx="18"
-                                                    cy="18"
-                                                    r="18"
-                                                />
-                                                <path d="M36 18c0-9.94-8.06-18-18-18">
-                                                    <animateTransform
-                                                        attributeName="transform"
-                                                        type="rotate"
-                                                        from="0 18 18"
-                                                        to="360 18 18"
-                                                        dur="1s"
-                                                        repeatCount="indefinite"
-                                                    />
-                                                </path>
-                                            </g>
-                                        </g>
-                                    </svg>
-                                )}
-                            </div>
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <a
-                                    className="font-terminus p-0 m-1 text-center text-white text-xl inline"
-                                    href={`https://explorer.solana.com/tx/${reclaimTx}?cluster=mainnet`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    Reclaim SOL
-                                </a>
-                                {reclaimTx != null ? (
-                                    <svg
-                                        className="w-5 h-5 rounded-full inline-block stroke-[2px] stroke-[#15bd12] stroke-miter-10 shadow-inner ml-[5px] mt-[2px]"
-                                        style={{
-                                            animation:
-                                                "fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;",
-                                        }}
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 52 52"
-                                    >
-                                        <circle
-                                            className="stroke-[2px] stroke-[#15bd12] stroke-miter-10 fill-[#15bd12]"
-                                            style={{
-                                                strokeDasharray:
-                                                    "166; stroke-dashoffset: 166; animation: stroke 0.6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;",
-                                            }}
-                                            cx="26"
-                                            cy="26"
-                                            r="25"
-                                            fill="none"
-                                        />
-                                        <path
-                                            className="stroke-[white] stroke-dasharray-[48] stroke-dashoffset-[48] transform-origin-[50%_50%] animation-stroke"
-                                            fill="none"
-                                            d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                                        />
-                                    </svg>
+                                        Retry
+                                    </button>
+                                    )}
+                                </> 
                                 ) : (
                                     <svg
                                         className="inline ml-[5px] mt-[2px] h-[20px] w-[20px] stroke-[white]"

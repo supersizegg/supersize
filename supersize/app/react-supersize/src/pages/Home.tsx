@@ -7,6 +7,7 @@ import Alert from "@components/Alert";
 import { useSupersizeContext } from "@contexts/SupersizeContext";
 import { FindWorldPda } from "@magicblock-labs/bolt-sdk";
 import * as anchor from "@coral-xyz/anchor";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
     const {
@@ -30,7 +31,8 @@ const Home = () => {
         setNewGameCreated
     } = useSupersizeContext();
     const [expandlist, setExpandlist] = useState(false);
-
+    const navigate = useNavigate();
+    
     const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setPlayerName(event.target.value);
     };
@@ -363,7 +365,7 @@ const Home = () => {
                     <div className="col-span-1 items-center mr-[1vw]">
                         <button
                             className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
-                            onClick={() => joinGameTx(activeGames[0])}
+                            onClick={() => { navigate("/game"); joinGameTx(activeGames[0]);}}
                         >
                             Play
                         </button>

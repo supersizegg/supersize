@@ -67,7 +67,11 @@ import {
 } from "@solana/spl-token";
 import { LIQUIDITY_STATE_LAYOUT_V4 } from "@raydium-io/raydium-sdk";
 import { WalletNotConnectedError } from "@solana/wallet-adapter-base";
-
+import { initBuddyState, initialBuddyLink, useInitBuddyLink,
+    useBuddyState, useBuddyLink, BUDDY_STATUS, getTreasuryPDA, getBuddyPDA,
+    BUDDY_MINTS, getMemberPDA
+ } from "buddy.link";
+ 
 const useSupersize = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [savedPublicKey, setSavedPublicKey] = useState<PublicKey | null>(
@@ -511,49 +515,59 @@ const useSupersize = () => {
         [providerEphemeralRollup.current],
     );
 
-    const updateFoodList = useCallback(
-        (section: any, food_index: number) => {
-            const foodArray = section.food as any[];
-            const visibleFood: Food[] = [];
-            const foodData: Food[] = [];
-            foodArray.forEach((foodItem, index) => {
-                /*const colors = [
-                '#da375c', '#d7f5e2', '#fae661', '#e9392d', '#91cf97', '#4d6bad', '#5fb1f2', 
-              ];
-            const randomColor = colors[index % colors.length];
-            console.log(randomColor)*/
-                foodData.push({ x: foodItem.x, y: foodItem.y, color: "None" });
-                if (currentPlayer) {
-                    const halfWidth = screenSize.width / 2;
-                    const halfHeight = screenSize.height / 2;
-                    const diffX = foodItem.x - currentPlayer.x;
-                    const diffY = foodItem.y - currentPlayer.y;
-                    if (
-                        Math.abs(diffX) <= halfWidth &&
-                        Math.abs(diffY) <= halfHeight
-                    ) {
-                        visibleFood.push({
-                            x: diffX + screenSize.width / 2,
-                            y: diffY + screenSize.height / 2,
-                        } as Food);
-                    }
-                }
+    const decodeFood = (data: Uint8Array) => {
+        if (!(data instanceof Uint8Array) || data.length !== 4) {
+            throw new Error('Invalid food data format. Expected a Uint8Array of length 4.');
+        }
+        const buffer = data.buffer; // Get the ArrayBuffer from Uint8Array
+        const packed = new DataView(buffer).getUint32(data.byteOffset, true); // Little-endian
+        const x = packed & 0x3FFF;
+        const y = (packed >> 14) & 0x3FFF;
+        const size = (packed >> 28) & 0x0F;
+        return { x, y, size };
+    };
+    
+
+    const updateFoodList = useCallback((section: any, food_index: number) => {
+        const foodArray = section.food as any[];  
+        const visibleFood: Food[] = [];
+        const foodData: Food[] = [];
+        foodArray.forEach((foodItem, index) => {
+            const foodDataArray = new Uint8Array(foodItem.data);
+            const decodedFood = decodeFood(foodDataArray); 
+            foodData.push({ 
+                x: decodedFood.x, 
+                y: decodedFood.y, 
+                size: decodedFood.size
             });
-            if (foodData.length > 0) {
-                setAllFood((prevAllFood) => {
-                    return prevAllFood.map((foodArray, index) =>
-                        food_index === index ? foodData : foodArray,
-                    );
-                });
-                setFoodListLen((prevFoodListLen) => {
-                    const updatedFoodListLen = [...prevFoodListLen];
-                    updatedFoodListLen[food_index] = foodData.length;
-                    return updatedFoodListLen;
-                });
+            foodData.push({ x: decodedFood.x, y: decodedFood.y, size: decodedFood.size});
+            if (currentPlayer) {
+                const halfWidth = screenSize.width / 2;
+                const halfHeight = screenSize.height / 2;
+                const diffX = (decodedFood.x - currentPlayer.x);
+                const diffY = (decodedFood.y - currentPlayer.y);
+                if (Math.abs(diffX) <= halfWidth && Math.abs(diffY) <= halfHeight) {
+                    visibleFood.push({
+                        x: diffX + screenSize.width / 2,
+                        y: diffY + screenSize.height / 2,
+                        size: decodedFood.size,
+                    } as Food);
+                }
             }
-        },
-        [setAllFood, screenSize, currentPlayer],
-    );
+        });
+        if(foodData.length>0){
+            setAllFood((prevAllFood) => {
+                return prevAllFood.map((foodArray, index) =>
+                food_index === index ? foodData : foodArray
+                );
+            });
+            setFoodListLen((prevFoodListLen) => {
+                const updatedFoodListLen = [...prevFoodListLen];
+                updatedFoodListLen[food_index] = foodData.length;
+                return updatedFoodListLen;
+              });
+        }
+    }, [setAllFood, screenSize, currentPlayer]);
 
     const updateLeaderboard = useCallback(
         (players: any[]) => {
@@ -739,27 +753,23 @@ const useSupersize = () => {
         }
     }, [currentPlayer]);
 
-    const updateMap = useCallback(
-        (map: any) => {
-            const playerArray = map.players as any[];
-            //console.log(map);
-            if (map.nextFood) {
-                if (
-                    map.nextFood.x !== nextFood.current.x ||
-                    map.nextFood.y !== nextFood.current.y
-                ) {
-                    //console.log('new food', map.nextFood, nextFood.current);
-                    nextFood.current = { x: map.nextFood.x, y: map.nextFood.y };
-                    //processNewFoodTransaction(map.nextFood.x, map.nextFood.y);
-                }
-            } else if (map.foodQueue > 0) {
-                nextFood.current = { x: 0, y: 0 };
-                //console.log('new food', map.foodQueue);
-                //processNewFoodTransaction(0, 0);
+    const updateMap = useCallback((map: any) => {
+        const playerArray = map.players as any[];
+        //console.log(map); 
+        if(map.nextFood){
+            const foodDataArray = new Uint8Array(map.nextFood.data);
+            const decodedFood = decodeFood(foodDataArray); 
+            if(decodedFood.x !== nextFood.current.x || decodedFood.y !== nextFood.current.y){
+            //console.log('new food', map.nextFood, nextFood.current);
+            nextFood.current = {x: decodedFood.x, y: decodedFood.y};
+            //processNewFoodTransaction(map.nextFood.x, map.nextFood.y);
             }
-        },
-        [setPlayers, setCurrentPlayer, playerKey, allFood],
-    );
+        }else if(map.foodQueue > 0){
+            nextFood.current = {x: 0, y: 0};
+            //console.log('new food', map.foodQueue);
+            //processNewFoodTransaction(0, 0);
+        }
+    }, [setPlayers, setCurrentPlayer, playerKey, allFood]);
 
     const updatePlayers = useCallback(
         (player: any, player_index: number) => {
@@ -1007,586 +1017,429 @@ const useSupersize = () => {
     /**
      * Create a new join game transaction
      */
-    const joinGameTx = useCallback(
-        async (selectGameId: ActiveGame) => {
-            if (!playerKey) {
-                setTransactionError("Wallet not connected");
-                return;
-            }
-            if (!publicKey) {
-                setTransactionError("Wallet not connected");
-                return;
-            }
-            if (isSubmitting) return;
-            if (isJoining) return;
-            if (selectGameId.name == "loading") return;
-            setIsJoining(true);
-            setScreenSize({
-                width: selectGameId.size,
-                height: selectGameId.size,
-            });
-            const gameInfo = selectGameId;
-            let maxplayer = 20;
-            let foodcomponents = 32;
+    const joinGameTx = useCallback(async (selectGameId: ActiveGame) => {
+        if (!playerKey){
+            setTransactionError("Wallet not connected");
+            return;
+        }
+        if (!publicKey){
+            setTransactionError("Wallet not connected");
+            return;
+        }
+        if (isSubmitting) return;
+        if (isJoining) return;
+        if (selectGameId.name == "loading") return;
+        setIsJoining(true);
+        setScreenSize({width:selectGameId.size, height:selectGameId.size});
+        const gameInfo = selectGameId; 
+        let maxplayer=20;
+        let foodcomponents = 32;
 
-            const mapseed = "origin";
-            const mapEntityPda = FindEntityPda({
+        const mapseed = "origin"; 
+        const mapEntityPda = FindEntityPda({
+            worldId: gameInfo.worldId,
+            entityId: new anchor.BN(0),
+            seed: mapseed
+        })
+
+        const mapComponentPda = FindComponentPda({
+            componentId: MAP_COMPONENT,
+            entity: mapEntityPda,
+        });
+        let map_size = 4000;
+        const mapComponentClient = await getComponentsClient(MAP_COMPONENT);
+        const mapacc = await providerEphemeralRollup.current.connection.getAccountInfo(
+            mapComponentPda, "processed"
+        );
+        if(mapacc){
+            const mapParsedData = mapComponentClient.coder.accounts.decode("map", mapacc.data);
+            console.log('map size', mapParsedData.width)
+            map_size = mapParsedData.width;
+        }
+        setMapSize(map_size);
+        if(map_size==4000){
+            maxplayer=20;
+            foodcomponents = 16*5;
+        }
+        else if(map_size==6000){
+            maxplayer=40;
+            foodcomponents = 36*5;
+        }
+        else if(map_size==10000){
+            maxplayer=100;
+            foodcomponents = 100*5;
+        }
+
+        entityMatch.current = mapEntityPda;
+        const foodEntityPdas: any[] = [];
+        console.log(foodcomponents)
+
+        for (let i = 1; i < foodcomponents+1; i++) {
+            const foodseed = 'food' + i.toString(); 
+            const foodEntityPda =  FindEntityPda({
                 worldId: gameInfo.worldId,
                 entityId: new anchor.BN(0),
-                seed: mapseed,
+                seed: foodseed
+            })
+            foodEntityPdas.push(foodEntityPda);
+        }
+        const playerEntityPdas: any[] = [];
+        const playerClientER = await getComponentsClient(PLAYER_COMPONENT);
+        const playerClient = await getComponentsClientBasic(PLAYER_COMPONENT);
+        let newplayerEntityPda : any = null;
+        let myPlayerId = '';
+        let myPlayerStatus = 'new_player';
+        let need_to_undelegate = false;
+        for (let i = 1; i < maxplayer+1; i++) {
+            const playerentityseed = 'player' + i.toString();
+            const playerEntityPda =  FindEntityPda({
+                worldId: gameInfo.worldId,
+                entityId: new anchor.BN(0),
+                seed: playerentityseed
+            })
+            playerEntityPdas.push(playerEntityPda);
+            const playersComponentPda = FindComponentPda({
+                componentId: PLAYER_COMPONENT,
+                entity: playerEntityPda,
             });
-
-            const mapComponentPda = FindComponentPda({
-                componentId: MAP_COMPONENT,
-                entity: mapEntityPda,
-            });
-            let map_size = 4000;
-            const mapComponentClient = await getComponentsClient(MAP_COMPONENT);
-            const mapacc =
-                await providerEphemeralRollup.current.connection.getAccountInfo(
-                    mapComponentPda,
-                    "processed",
-                );
-            if (mapacc) {
-                const mapParsedData = mapComponentClient.coder.accounts.decode(
-                    "map",
-                    mapacc.data,
-                );
-                console.log("map size", mapParsedData.width);
-                map_size = mapParsedData.width;
-            }
-            setMapSize(map_size);
-            if (map_size == 4000) {
-                maxplayer = 20;
-                foodcomponents = 16 * 5;
-            } else if (map_size == 6000) {
-                maxplayer = 40;
-                foodcomponents = 36 * 5;
-            } else if (map_size == 10000) {
-                maxplayer = 100;
-                foodcomponents = 100 * 5;
-            }
-
-            entityMatch.current = mapEntityPda;
-            const foodEntityPdas: any[] = [];
-            console.log(foodcomponents);
-
-            for (let i = 1; i < foodcomponents + 1; i++) {
-                const foodseed = "food" + i.toString();
-                const foodEntityPda = FindEntityPda({
-                    worldId: gameInfo.worldId,
-                    entityId: new anchor.BN(0),
-                    seed: foodseed,
-                });
-                foodEntityPdas.push(foodEntityPda);
-            }
-
-            const playerEntityPdas: any[] = [];
-            const playerClientER = await getComponentsClient(PLAYER_COMPONENT);
-            const playerClient =
-                await getComponentsClientBasic(PLAYER_COMPONENT);
-            let newplayerEntityPda: any = null;
-            let myPlayerId = "";
-            let myPlayerStatus = "new_player";
-            let need_to_undelegate = false;
-            for (let i = 1; i < maxplayer + 1; i++) {
-                const playerentityseed = "player" + i.toString();
-                const playerEntityPda = FindEntityPda({
-                    worldId: gameInfo.worldId,
-                    entityId: new anchor.BN(0),
-                    seed: playerentityseed,
-                });
-                playerEntityPdas.push(playerEntityPda);
-                const playersComponentPda = FindComponentPda({
-                    componentId: PLAYER_COMPONENT,
-                    entity: playerEntityPda,
-                });
-                const playersacc = await provider.connection.getAccountInfo(
-                    playersComponentPda,
-                    "processed",
-                );
-                const playersaccER =
-                    await providerEphemeralRollup.current.connection.getAccountInfo(
-                        playersComponentPda,
-                        "processed",
-                    );
-                if (playersacc) {
-                    const playersParsedData =
-                        playerClient.coder.accounts.decode(
-                            "player",
-                            playersacc.data,
-                        );
-                    if (
-                        playersacc.owner.toString() ===
-                        "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
-                    ) {
-                        if (playersParsedData.authority !== null) {
-                            if (playersaccER) {
-                                const playersParsedDataER =
-                                    playerClientER.coder.accounts.decode(
-                                        "player",
-                                        playersaccER.data,
-                                    );
-                                if (
-                                    playersParsedData.authority.toString() ==
-                                    playerKey.toString()
-                                ) {
-                                    if (playersParsedDataER.authority) {
-                                        if (
-                                            playersParsedDataER.authority.toString() ==
-                                            playerKey.toString()
-                                        ) {
-                                            myPlayerStatus = "resume_session";
-                                            newplayerEntityPda =
-                                                playerEntityPda;
-                                            myPlayerId = playerentityseed;
-                                            need_to_undelegate = false;
-                                        } else {
-                                            myPlayerStatus = "rejoin_session";
-                                            newplayerEntityPda =
-                                                playerEntityPda;
-                                            myPlayerId = playerentityseed;
-                                            need_to_undelegate = false;
-                                        }
-                                    } else {
-                                        myPlayerStatus = "rejoin_session";
-                                        newplayerEntityPda = playerEntityPda;
-                                        myPlayerId = playerentityseed;
-                                        need_to_undelegate = false;
-                                    }
-                                } else {
-                                    if (
-                                        playersParsedDataER.authority == null &&
-                                        playersParsedData.authority !== null &&
-                                        playersParsedDataER.x == 50000 &&
-                                        playersParsedDataER.y == 50000 &&
-                                        playersParsedDataER.score == 0 &&
-                                        newplayerEntityPda == null
-                                    ) {
-                                        const startTime =
-                                            playersParsedDataER.joinTime.toNumber() *
-                                            1000;
-                                        const currentTime = Date.now();
-                                        const elapsedTime =
-                                            currentTime - startTime;
-                                        if (elapsedTime >= 10000) {
-                                            newplayerEntityPda =
-                                                playerEntityPda;
-                                            myPlayerId = playerentityseed;
-                                            need_to_undelegate = true;
-                                        }
-                                    }
+            const playersacc = await provider.connection.getAccountInfo(
+                playersComponentPda, "processed"
+            );
+            const playersaccER = await providerEphemeralRollup.current.connection.getAccountInfo(
+                playersComponentPda, "processed"
+            );
+            if(playersacc){
+                const playersParsedData = playerClient.coder.accounts.decode("player", playersacc.data);
+                if(playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"){
+                    if(playersParsedData.authority !== null){
+                        if(playersaccER){
+                            const playersParsedDataER = playerClientER.coder.accounts.decode("player", playersaccER.data);
+                            if(playersParsedData.authority.toString() == playerKey.toString()){
+                                if(playersParsedDataER.authority){
+                                if(playersParsedDataER.authority.toString() == playerKey.toString()){
+                                    myPlayerStatus = "resume_session";
+                                    newplayerEntityPda = playerEntityPda;
+                                    myPlayerId = playerentityseed;
+                                    need_to_undelegate=false;
                                 }
-                            } else if (playersParsedData.authority !== null) {
-                                if (
-                                    playersParsedData.authority.toString() ==
-                                    playerKey.toString()
-                                ) {
+                                else{
                                     myPlayerStatus = "rejoin_session";
                                     newplayerEntityPda = playerEntityPda;
                                     myPlayerId = playerentityseed;
-                                    need_to_undelegate = false;
+                                    need_to_undelegate=false;
+                                }
+                                }else{
+                                    myPlayerStatus = "rejoin_session";
+                                    newplayerEntityPda = playerEntityPda;
+                                    myPlayerId = playerentityseed;
+                                    need_to_undelegate=false;
+                                }
+                            }else{
+                                if(playersParsedDataER.authority == null && 
+                                    playersParsedData.authority !== null && 
+                                    playersParsedDataER.x == 50000 &&
+                                    playersParsedDataER.y == 50000 &&
+                                    playersParsedDataER.score == 0 && 
+                                    newplayerEntityPda == null
+                                ){
+                                    const startTime = playersParsedDataER.joinTime.toNumber() * 1000;       
+                                    const currentTime = Date.now();
+                                    const elapsedTime = currentTime - startTime;
+                                    if (elapsedTime >= 10000) {
+                                        newplayerEntityPda = playerEntityPda;
+                                        myPlayerId = playerentityseed;
+                                        need_to_undelegate=true;
+                                    }
                                 }
                             }
-                        }
-                    } else if (
-                        playersParsedData.authority == null &&
-                        newplayerEntityPda == null
-                    ) {
-                        newplayerEntityPda = playerEntityPda;
-                        myPlayerId = playerentityseed;
-                        need_to_undelegate = false;
-                    } else {
-                        if (playersParsedData.authority !== null) {
-                            if (
-                                playersParsedData.authority.toString() ==
-                                playerKey.toString()
-                            ) {
-                                myPlayerStatus = "rejoin_undelegated";
+                        }else if(playersParsedData.authority !== null){
+                            if(playersParsedData.authority.toString() == playerKey.toString()){
+                                myPlayerStatus = "rejoin_session";
                                 newplayerEntityPda = playerEntityPda;
                                 myPlayerId = playerentityseed;
-                                need_to_undelegate = false;
+                                need_to_undelegate=false;
                             }
                         }
                     }
-                } else {
-                    if (newplayerEntityPda == null) {
+                }
+                else if(playersParsedData.authority == null && newplayerEntityPda == null){
+                    newplayerEntityPda = playerEntityPda;
+                    myPlayerId = playerentityseed;
+                    need_to_undelegate=false;
+                }
+                else{
+                if(playersParsedData.authority !== null){
+                    if(playersParsedData.authority.toString() == playerKey.toString()){
+                        myPlayerStatus = "rejoin_undelegated";
                         newplayerEntityPda = playerEntityPda;
                         myPlayerId = playerentityseed;
-                        need_to_undelegate = false;
+                        need_to_undelegate=false;
                     }
+                } 
                 }
             }
-            console.log("my player", myPlayerId, myPlayerStatus);
+            else{
+                if(newplayerEntityPda == null){
+                    newplayerEntityPda = playerEntityPda;
+                    myPlayerId = playerentityseed;
+                    need_to_undelegate=false;
+                }
+            }
+            }
+            console.log('my player', myPlayerId, myPlayerStatus);
 
             const playerComponentPda = FindComponentPda({
                 componentId: PLAYER_COMPONENT,
                 entity: newplayerEntityPda,
             });
-            console.log("component pda", playerComponentPda.toString());
+            console.log('component pda', playerComponentPda.toString())
 
-            if (need_to_undelegate) {
+            if(need_to_undelegate){
                 try {
                     const undelegateIx = createUndelegateInstruction({
                         payer: playerKey,
                         delegatedAccount: playerComponentPda,
                         componentPda: PLAYER_COMPONENT,
-                    });
-                    let undeltx = new anchor.web3.Transaction().add(
-                        undelegateIx,
-                    );
-                    undeltx.recentBlockhash = (
-                        await providerEphemeralRollup.current.connection.getLatestBlockhash()
-                    ).blockhash;
+                        });
+                    let undeltx = new anchor.web3.Transaction()
+                    .add(undelegateIx);
+                    undeltx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
                     undeltx.feePayer = walletRef.current.publicKey;
                     undeltx.sign(walletRef.current);
                     //undeltx = await providerEphemeralRollup.current.wallet.signTransaction(undeltx);
-                    const playerundelsignature =
-                        await providerEphemeralRollup.current.sendAndConfirm(
-                            undeltx,
-                            [],
-                            { skipPreflight: false },
-                        );
-                    console.log("undelegate", playerundelsignature);
+                    const playerundelsignature = await providerEphemeralRollup.current.sendAndConfirm(undeltx, [], { skipPreflight: false });
+                    console.log('undelegate', playerundelsignature);
                 } catch (error) {
-                    console.log("Error undelegating:", error);
+                    console.log('Error undelegating:', error);
                 }
             }
 
-            const anteseed = "ante";
+            const anteseed = "ante"; 
             const anteEntityPda = FindEntityPda({
                 worldId: gameInfo.worldId,
                 entityId: new anchor.BN(0),
-                seed: anteseed,
-            });
+                seed: anteseed
+            })
             const anteComponentPda = FindComponentPda({
                 componentId: ANTEROOM_COMPONENT,
                 entity: anteEntityPda,
             });
-            const anteComponentClient =
-                await getComponentsClient(ANTEROOM_COMPONENT);
+            const anteComponentClient= await getComponentsClient(ANTEROOM_COMPONENT);
             const anteacc = await provider.connection.getAccountInfo(
-                anteComponentPda,
-                "processed",
+                anteComponentPda, "processed"
             );
-
+            
             let token_account_owner_pda = new PublicKey(0);
             let vault_token_account = new PublicKey(0);
             let mint_of_token_being_sent = new PublicKey(0);
             let sender_token_account = new PublicKey(0);
             let payout_token_account = new PublicKey(0);
-            let vault_program_id = new PublicKey(
-                "BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr",
-            );
+            let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
+            let referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
             const combinedTx = new Transaction();
 
-            if (anteacc) {
-                const anteParsedData =
-                    anteComponentClient.coder.accounts.decode(
-                        "anteroom",
-                        anteacc.data,
-                    );
+            if(anteacc){
+                const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
+                console.log(anteParsedData);
                 vault_token_account = anteParsedData.vaultTokenAccount;
                 mint_of_token_being_sent = anteParsedData.token;
                 let usertokenAccountInfo = await getAssociatedTokenAddress(
-                    mint_of_token_being_sent,
-                    publicKey,
-                );
+                    mint_of_token_being_sent,        
+                    publicKey       
+                  ); 
                 payout_token_account = usertokenAccountInfo;
-                const { name, image } = await fetchTokenMetadata(
-                    mint_of_token_being_sent.toString(),
-                );
-                console.log("token", name);
-
-                try {
-                    await axios.post(
-                        "https://supersize.lewisarnsten.workers.dev/create-contest",
-                        {
-                            name: name,
-                            tokenAddress: mint_of_token_being_sent.toString(),
-                        },
-                    );
-                } catch (error) {
-                    console.log("error", error);
-                }
-                try {
-                    await axios.post(
-                        "https://supersize.lewisarnsten.workers.dev/create-user",
-                        {
-                            walletAddress: publicKey.toString(),
-                            contestId: name,
-                            name: publicKey.toString(),
-                        },
-                    );
-                } catch (error) {
-                    console.log("error", error);
-                }
-
-                /*
-            const playerbalance = await connection.getBalance(playerKey, 'processed');
-            let targetBalance = 0.002 * LAMPORTS_PER_SOL;
-            const amountToTransfer = targetBalance > playerbalance ? targetBalance - playerbalance : 0;
-            console.log(amountToTransfer);
-            if(amountToTransfer > 0){
-                const soltransfertx = SystemProgram.transfer({
-                    fromPubkey: publicKey,
-                    toPubkey: playerKey,
-                    lamports: amountToTransfer, 
-                });
+                const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
+                console.log("token", name, mint_of_token_being_sent.toString());
                 
-                combinedTx.add(soltransfertx);
-            } */
-            } else {
-                setTransactionError("Failed to find game token info");
-                return;
-            }
+                try{
+                    let response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-contest", {
+                        name: name,
+                        tokenAddress: mint_of_token_being_sent.toString()
+                    })
+                    console.log(response)
+                }catch(error){
+                    console.log('error', error)
+                }
+                try{
+                    let username = publicKey.toString();
+                    if (mint_of_token_being_sent.toString() != "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"){
+                        username = publicKey.toString() + "_" + name
+                    }
+                    let response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-user", {
+                        walletAddress: publicKey.toString(),
+                        name: username,
+                        contestId: name,
+                    })
+                    console.log(response)
+                }catch(error){
+                    console.log('error', error)
+                }
+                
+                /*
+                const playerbalance = await connection.getBalance(playerKey, 'processed');
+                let targetBalance = 0.002 * LAMPORTS_PER_SOL;
+                const amountToTransfer = targetBalance > playerbalance ? targetBalance - playerbalance : 0;
+                console.log(amountToTransfer);
+                if(amountToTransfer > 0){
+                    const soltransfertx = SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: playerKey,
+                        lamports: amountToTransfer, 
+                    });
+                    
+                    combinedTx.add(soltransfertx);
+                } */
+                }else{
+                    setTransactionError("Failed to find game token info");
+                    return;
+                }
 
-            if (
-                myPlayerStatus !== "rejoin_undelegated" &&
-                myPlayerStatus !== "resume_session" &&
-                myPlayerStatus !== "rejoin_session"
-            ) {
-                let applyBuyInSystem = await ApplySystem({
+                if(myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session"){
+                    let [referralTokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+                        [Buffer.from("token_account_owner_pda"), mint_of_token_being_sent.toBuffer()],
+                        referral_vault_program_id
+                        );
+                    const referraltokenVault = await getAssociatedTokenAddress(mint_of_token_being_sent, referralTokenAccountOwnerPda, true);
+                    
+                    const BUDDY_LINK_PROGRAM_ID = new PublicKey("BUDDYtQp7Di1xfojiCSVDksiYLQx511DPdj2nbtG9Yu5");
+
+                    let buddyMemberPdaAccount : PublicKey;
+                    let memberName = "notmembersalt";
+                    //if(joinedOrg){
+                        /* const [memberPDA] = PublicKey.findProgramAddressSync(
+                            [
+                              Buffer.from("member_"),
+                              Buffer.from("test"),
+                              Buffer.from("_"),
+                              Buffer.from(member[0].account.name),
+                            ],
+                            BUDDY_LINK_PROGRAM_ID
+                          );     */ 
+                        //console.log(memberPDA.toString());   
+                        //memberName = member[0].account.name;        
+                        //buddyMemberPdaAccount = getMemberPDA(BUDDY_LINK_PROGRAM_ID, "supersize", member[0].account.name);
+                    //}else{
+                    buddyMemberPdaAccount = getMemberPDA(BUDDY_LINK_PROGRAM_ID, "supersize", memberName);
+                    //}
+                    //console.log(buddyMemberPdaAccount.toString());
+
+                    let [refferalPdaAccount] = PublicKey.findProgramAddressSync(
+                        [Buffer.from("subsidize"), buddyMemberPdaAccount.toBuffer(), mint_of_token_being_sent.toBuffer()],
+                        referral_vault_program_id
+                        );
+                    /*
+                    Referrer_member
+                    User -> Referrer (is a treasury) -> first owner (is a profile) -> authority (is wallet) -> derive member PDA with member_name_check
+
+                    Referrer_treasury
+                    User -> Referrer (is a treasury)
+
+                    Referrer_treasury_for_reward
+                    User -> Referrer (is a treasury) -> first owner (is a profile) -> authority (is wallet) -> derive treasury with mint
+                    */
+                    console.log(referralTokenAccountOwnerPda.toString(), referraltokenVault.toString())
+                    let applyBuyInSystem = await ApplySystem({
                     authority: publicKey,
                     world: gameInfo.worldPda,
                     entities: [
-                        {
-                            entity: newplayerEntityPda,
-                            components: [{ componentId: PLAYER_COMPONENT }],
-                        },
-                        {
-                            entity: anteEntityPda,
-                            components: [{ componentId: ANTEROOM_COMPONENT }],
-                        },
-                    ],
+                      {
+                        entity: newplayerEntityPda,
+                        components: [{ componentId:PLAYER_COMPONENT}],
+                      },
+                      {
+                        entity: anteEntityPda,
+                        components: [{ componentId:ANTEROOM_COMPONENT }],
+                      },
+                    ], 
                     systemId: BUY_IN,
                     args: {
                         buyin: buyIn,
+                        member_name: memberName,
                     },
                     extraAccounts: [
                         {
-                            pubkey: vault_token_account,
-                            isWritable: true,
-                            isSigner: false,
+                          pubkey: vault_token_account,
+                          isWritable: true,
+                          isSigner: false,
                         },
                         {
-                            pubkey: playerKey,
-                            isWritable: true,
-                            isSigner: false,
+                          pubkey: playerKey, 
+                          isWritable: true,
+                          isSigner: false,
                         },
                         {
-                            pubkey: payout_token_account,
+                            pubkey: payout_token_account, 
                             isWritable: true,
                             isSigner: false,
-                        },
+                          }, 
+                        {
+                            pubkey: referraltokenVault, 
+                            isWritable: true,
+                            isSigner: false,
+                            },
+                        {
+                            pubkey: referralTokenAccountOwnerPda, 
+                            isWritable: true,
+                            isSigner: false,
+                            },
+                        {
+                                pubkey: refferalPdaAccount, 
+                                isWritable: true,
+                                isSigner: false,
+                            }, 
+                        {
+                                pubkey: buddyMemberPdaAccount, 
+                                isWritable: true,
+                                isSigner: false,
+                            }, 
                         {
                             pubkey: publicKey,
                             isWritable: true,
                             isSigner: false,
+                            },
+                        {
+                          pubkey: SystemProgram.programId,
+                          isWritable: false,
+                          isSigner: false,
                         },
                         {
-                            pubkey: SystemProgram.programId,
-                            isWritable: false,
-                            isSigner: false,
+                          pubkey: TOKEN_PROGRAM_ID,
+                          isWritable: false,
+                          isSigner: false,
                         },
                         {
-                            pubkey: TOKEN_PROGRAM_ID,
-                            isWritable: false,
-                            isSigner: false,
+                          pubkey: SYSVAR_RENT_PUBKEY,
+                          isWritable: false,
+                          isSigner: false,
                         },
-                        {
-                            pubkey: SYSVAR_RENT_PUBKEY,
-                            isWritable: false,
-                            isSigner: false,
-                        },
-                    ],
-                });
-
-                const buddyLinkClient = new Client(
-                    connection as any,
-                    publicKey,
-                    "2iF3HaLpk6vuUXxGK3uDsxWoP5htC7NWZNctAevxZewY",
-                );
-                if (myReferralAccount.current) {
-                    const referrerRes = ""; //await getUser(referrerInput);
-                    if (myReferralAccount.current !== "") {
-                        //referrerRes.success
-                        const referrerBuddyLinkProfile =
-                            await buddyLinkClient.buddy.getProfile(
-                                new PublicKey(myReferralAccount.current),
-                            ); //.data.wallet
-                        if (referrerBuddyLinkProfile) {
-                            const treasury =
-                                await buddyLinkClient.pda.getTreasuryPDA(
-                                    [referrerBuddyLinkProfile?.account.pda],
-                                    [10_000],
-                                    mint_of_token_being_sent,
-                                );
-                            const member =
-                                (
-                                    await buddyLinkClient.member.getByTreasuryOwner(
-                                        treasury,
-                                    )
-                                )[0] || null;
-                            const remainingAccounts =
-                                await buddyLinkClient.accounts.validateReferrerAccounts(
-                                    mint_of_token_being_sent,
-                                    member.account.pda,
-                                );
-
-                            if (
-                                !remainingAccounts.memberPDA.equals(
-                                    PublicKey.default,
-                                )
-                            ) {
-                                // submit with referrer
-                                applyBuyInSystem = await ApplySystem({
-                                    authority: publicKey,
-                                    world: gameInfo.worldPda,
-                                    entities: [
-                                        {
-                                            entity: newplayerEntityPda,
-                                            components: [
-                                                {
-                                                    componentId:
-                                                        PLAYER_COMPONENT,
-                                                },
-                                            ],
-                                        },
-                                        {
-                                            entity: anteEntityPda,
-                                            components: [
-                                                {
-                                                    componentId:
-                                                        ANTEROOM_COMPONENT,
-                                                },
-                                            ],
-                                        },
-                                    ],
-                                    systemId: BUY_IN,
-                                    args: {
-                                        buyin: buyIn,
-                                        referrer: null,
-                                    },
-                                    extraAccounts: [
-                                        {
-                                            pubkey: vault_token_account,
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: playerKey,
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: payout_token_account,
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: publicKey,
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: SystemProgram.programId,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: TOKEN_PROGRAM_ID,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: SYSVAR_RENT_PUBKEY,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.programId,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.buddyProfile,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.buddy,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.buddyTreasury,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.memberPDA,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerMember,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerTreasury,
-                                            isWritable: true,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerTreasuryReward,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.mint,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                        {
-                                            pubkey: remainingAccounts.referrerATA,
-                                            isWritable: false,
-                                            isSigner: false,
-                                        },
-                                    ],
-                                });
-                            }
-                        }
-                    }
-                }
-                combinedTx.add(applyBuyInSystem.transaction);
+                      ],
+                  });
+                combinedTx.add(applyBuyInSystem.transaction);                  
             }
 
-            if (myPlayerStatus !== "resume_session") {
+            if(myPlayerStatus !== "resume_session"){
                 try {
                     const playerdeltx = new anchor.web3.Transaction();
                     const playerdelegateIx = createDelegateInstruction({
-                        entity: newplayerEntityPda,
-                        account: playerComponentPda,
-                        ownerProgram: PLAYER_COMPONENT,
-                        payer: publicKey,
+                    entity: newplayerEntityPda,
+                    account: playerComponentPda,
+                    ownerProgram: PLAYER_COMPONENT,
+                    payer: publicKey,
                     });
-                    combinedTx.add(playerdelegateIx);
-                    const playerdelsignature =
-                        await submitTransactionUser(combinedTx);
-                    console.log(`Delegation signature: ${playerdelsignature}`);
-                    const acc =
-                        await providerEphemeralRollup.current.connection.getAccountInfo(
-                            playerComponentPda,
-                        );
-                    if (acc) {
-                        console.log("confirm del", acc.owner.toString());
+                    combinedTx.add(playerdelegateIx)
+                    const playerdelsignature = await submitTransactionUser(combinedTx);
+                    console.log(
+                        `Delegation signature: ${playerdelsignature}`
+                    );
+                    const acc = await providerEphemeralRollup.current.connection.getAccountInfo(
+                        playerComponentPda
+                    );
+                    if(acc){
+                    console.log('confirm del', acc.owner.toString());
                     }
                 } catch (error) {
-                    console.log("Error delegating:", error);
-                    {
-                        /* const reclaim_transaction = new Transaction();
+                    console.log('Error delegating:', error);
+                    {/* const reclaim_transaction = new Transaction();
                     const playerbalance = await connection.getBalance(playerKey, 'processed');
                     const solTransferInstruction = SystemProgram.transfer({
                         fromPubkey: playerKey,
@@ -1604,8 +1457,7 @@ const useSupersize = () => {
                     const reclaimsig = await submitTransaction(reclaim_transaction, "confirmed", true);
                     console.log(
                         `buy in failed, reclaimed tokens: ${reclaimsig}`
-                    ); */
-                    }
+                    ); */}
                     setTransactionError("Buy in failed, please retry");
                     setIsSubmitting(false);
                     setIsJoining(false);
@@ -1617,41 +1469,58 @@ const useSupersize = () => {
                 authority: playerKey,
                 world: gameInfo.worldPda,
                 entities: [
-                    {
-                        entity: newplayerEntityPda,
-                        components: [{ componentId: PLAYER_COMPONENT }],
-                    },
-                    {
-                        entity: mapEntityPda,
-                        components: [{ componentId: MAP_COMPONENT }],
-                    },
-                ],
+                  {
+                    entity: newplayerEntityPda,
+                    components: [{ componentId:PLAYER_COMPONENT}],
+                  },
+                  {
+                    entity: mapEntityPda,
+                    components: [{ componentId:MAP_COMPONENT }],
+                  },
+                ], 
                 systemId: JOIN_GAME,
                 args: {
                     name: playerName,
                     //buyin: 1.0,
                 },
-            });
+              });
             const jointransaction = applySystem.transaction;
             const {
                 context: { slot: minContextSlot },
-                value: { blockhash, lastValidBlockHeight },
-            } =
-                await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
+                value: { blockhash, lastValidBlockHeight }
+            } = await providerEphemeralRollup.current.connection.getLatestBlockhashAndContext();
             jointransaction.recentBlockhash = blockhash;
             jointransaction.feePayer = walletRef.current.publicKey;
             jointransaction.sign(walletRef.current);
-            const signature = await providerEphemeralRollup.current.connection
-                .sendRawTransaction(jointransaction.serialize(), {
-                    skipPreflight: true,
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-            console.log("joined game", signature);
+            let signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
+                jointransaction.serialize(), 
+                { skipPreflight: true } 
+            ).catch((error) => {
+                   console.log(error)
+            });
+            console.log('joined game', signature);
+            
+            const startTime = Date.now();
+            while (Date.now() - startTime < 5000) {
+              const playersacc = await providerEphemeralRollup.current.connection.getAccountInfo(playerComponentPda, "processed");
+              if (playersacc) {
+                const playersParsedData = playerClientER.coder.accounts.decode("player", playersacc.data);
+                if (playersParsedData.authority !== null && playersParsedData.mass !== 0) {
+                    break; 
+                }
+              }
+              signature = await providerEphemeralRollup.current.connection.sendRawTransaction(
+                jointransaction.serialize(), 
+                { skipPreflight: true } 
+              ).catch((error) => {
+                    console.log(error)
+              });
+              await new Promise(resolve => setTimeout(resolve, 1000)); 
+            }
 
             if (signature) {
-                setGameId(mapEntityPda);
+                setCashoutTx(null);
+                setGameId(mapEntityPda); 
                 setMapSize(selectGameId.size);
                 entityMatch.current = mapEntityPda;
                 currentPlayerEntity.current = newplayerEntityPda;
@@ -1660,7 +1529,7 @@ const useSupersize = () => {
                 foodEntities.current = foodEntityPdas;
                 playerEntities.current = playerEntityPdas;
                 const emptyPlayer: Blob = {
-                    name: "unnamed",
+                    name: 'unnamed',
                     authority: null,
                     x: 50000,
                     y: 50000,
@@ -1673,20 +1542,18 @@ const useSupersize = () => {
                     target_x: 0,
                     target_y: 0,
                     timestamp: 0,
-                };
-                setAllPlayers(
-                    new Array(playerEntityPdas.length).fill(emptyPlayer),
-                );
+                }; 
+                setAllPlayers(new Array(playerEntityPdas.length).fill(emptyPlayer));
                 setAllFood(new Array(foodEntityPdas.length).fill([]));
                 setFoodListLen(new Array(foodEntityPdas.length).fill(0));
-                await subscribeToGame();
+                await subscribeToGame(); 
                 //setTimeout(() => {
                 setIsJoining(false);
                 //}, 5000);
             }
-        },
-        [playerKey, submitTransaction, subscribeToGame],
-    );
+        
+    }, [playerKey, buyIn, submitTransaction, subscribeToGame]);
+
 
     function findListIndex(pubkey: PublicKey): number | null {
         const index = allplayers.findIndex(
@@ -1800,74 +1667,60 @@ const useSupersize = () => {
         //const signature = await providerEphemeralRollup.current.sendAndConfirm(transaction);
     }, [playerKey, submitTransaction, subscribeToGame]);
 
+
     const cleanUp = async () => {
         //currentPlayer.x === 50000 &&
-        //currentPlayer.y === 50000 &&
+        //currentPlayer.y === 50000 && 
         if (
             currentPlayer &&
             Math.sqrt(currentPlayer.mass) == 0 &&
-            ((cashingOut && gameEnded == 2) || !cashingOut)
+            ((cashingOut && gameEnded==2) ||
+            !cashingOut)
         ) {
-            if (currentWorldId.current == null) {
-                setTransactionError("world not found");
+            if(currentWorldId.current==null){
+                setTransactionError('world not found');
                 return;
             }
             //console.log(currentPlayer)
-            if (
-                currentPlayerEntity.current &&
-                anteroomEntity.current &&
-                entityMatch.current
-            ) {
-                console.log("cashing out");
+            if(currentPlayerEntity.current && anteroomEntity.current && entityMatch.current){
+                console.log('cashing out')
                 const myplayerComponent = FindComponentPda({
                     componentId: PLAYER_COMPONENT,
                     entity: currentPlayerEntity.current,
                 });
-                let newplayersComponentClient =
-                    await getComponentsClient(PLAYER_COMPONENT);
-                (newplayersComponentClient.account as any).player
-                    .fetch(myplayerComponent, "processed")
-                    .then(updateMyPlayerCashout)
-                    .catch((error: any) => {
-                        console.error("Failed to fetch account:", error);
+                let newplayersComponentClient = await getComponentsClient(PLAYER_COMPONENT);
+                (newplayersComponentClient.account as any).player.fetch(myplayerComponent, "processed").then(updateMyPlayerCashout).catch((error: any) => {
+                    console.error("Failed to fetch account:", error);
                     });
                 const undelegateIx = createUndelegateInstruction({
                     payer: playerKey,
                     delegatedAccount: myplayerComponent,
                     componentPda: PLAYER_COMPONENT,
-                });
-                const tx = new anchor.web3.Transaction().add(undelegateIx);
-                tx.recentBlockhash = (
-                    await providerEphemeralRollup.current.connection.getLatestBlockhash()
-                ).blockhash;
+                    });
+                const tx = new anchor.web3.Transaction()
+                .add(undelegateIx);
+                tx.recentBlockhash = (await providerEphemeralRollup.current.connection.getLatestBlockhash()).blockhash;
                 tx.feePayer = walletRef.current.publicKey;
                 tx.sign(walletRef.current);
                 try {
-                    const playerdelsignature =
-                        await providerEphemeralRollup.current.sendAndConfirm(
-                            tx,
-                            [],
-                            { skipPreflight: false },
-                        );
+                    const playerdelsignature = await providerEphemeralRollup.current.sendAndConfirm(tx, [], { skipPreflight: false });
                     /*await waitSignatureConfirmation(
                         playerdelsignature,
                         providerEphemeralRollup.current.connection,
                         "finalized"
                     );*/
-                    console.log("undelegate", playerdelsignature);
+                    console.log('undelegate', playerdelsignature)
                 } catch (error) {
-                    console.log("Error undelegating:", error);
+                    console.log('Error undelegating:', error);
                 }
 
                 const anteComponentPda = FindComponentPda({
                     componentId: ANTEROOM_COMPONENT,
                     entity: anteroomEntity.current,
                 });
-                const anteComponentClient =
-                    await getComponentsClient(ANTEROOM_COMPONENT);
+                const anteComponentClient= await getComponentsClient(ANTEROOM_COMPONENT);
                 const anteacc = await provider.connection.getAccountInfo(
-                    anteComponentPda,
-                    "processed",
+                    anteComponentPda, "processed"
                 );
                 const mapComponent = FindComponentPda({
                     componentId: MAP_COMPONENT,
@@ -1880,195 +1733,159 @@ const useSupersize = () => {
                 let sender_token_account = new PublicKey(0);
                 let owner_token_account = new PublicKey(0);
                 let supersize_token_account = new PublicKey(0);
-                let vault_program_id = new PublicKey(
-                    "BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr",
-                );
-
-                if (anteacc && savedPublicKey) {
-                    const anteParsedData =
-                        anteComponentClient.coder.accounts.decode(
-                            "anteroom",
-                            anteacc.data,
-                        );
+                let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
+        
+                if(anteacc && savedPublicKey){
+                    const anteParsedData = anteComponentClient.coder.accounts.decode("anteroom", anteacc.data);
                     vault_token_account = anteParsedData.vaultTokenAccount;
                     mint_of_token_being_sent = anteParsedData.token;
                     owner_token_account = anteParsedData.gamemasterTokenAccount;
-                    const { name, image } = await fetchTokenMetadata(
-                        mint_of_token_being_sent.toString(),
-                    );
-                    console.log(
-                        "win amount",
-                        playerCashout.current * 0.98 - playerBuyIn.current,
-                        playerCashout.current,
-                        playerBuyIn.current,
-                    );
-
+                    const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
+                    console.log('win amount', (playerCashout.current * 0.98) - playerBuyIn.current, playerCashout.current, playerBuyIn.current);
+                    
                     try {
-                        await axios.post(
-                            "https://supersize.lewisarnsten.workers.dev/update-wins",
-                            {
-                                walletAddress: savedPublicKey?.toString(),
-                                amount:
-                                    playerCashout.current * 0.98 -
-                                    playerBuyIn.current,
-                                contestId: name,
-                            },
-                        );
-                    } catch (error) {
-                        console.log("error", error);
-                    }
-
+                        await axios.post('https://supersize.lewisarnsten.workers.dev/update-wins', {
+                            walletAddress: savedPublicKey?.toString(),
+                            amount: (playerCashout.current * 0.98) - playerBuyIn.current,
+                            contestId: name
+                        })
+                    }catch(error){
+                        console.log('error', error)
+                    } 
+                    
                     //supersize_token_account = anteParsedData.gamemasterTokenAccount;
-                    supersize_token_account = await getAssociatedTokenAddress(
-                        mint_of_token_being_sent,
-                        new PublicKey(
-                            "DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB",
-                        ),
-                    );
+                    supersize_token_account = await getAssociatedTokenAddress(mint_of_token_being_sent, new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB"));
                     let usertokenAccountInfo = await getAssociatedTokenAddress(
-                        mint_of_token_being_sent,
-                        savedPublicKey,
-                    );
+                        mint_of_token_being_sent,       
+                        savedPublicKey     
+                      ); 
                     sender_token_account = usertokenAccountInfo;
-                    let [tokenAccountOwnerPda] =
-                        PublicKey.findProgramAddressSync(
-                            [
-                                Buffer.from("token_account_owner_pda"),
-                                mapComponent.toBuffer(),
-                            ],
-                            vault_program_id,
+                    let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+                        [Buffer.from("token_account_owner_pda"), mapComponent.toBuffer()],
+                        vault_program_id
                         );
-                    if (playerCashoutAddy) {
+                    if (playerCashoutAddy){
                         sender_token_account = playerCashoutAddy;
                     }
-                    if (cashingOut && gameEnded == 2) {
-                        let referrer_token_account = null;
-                        if (myReferrer.current) {
-                            referrer_token_account = new PublicKey(
-                                myReferrer.current,
-                            );
-                        }
-                        const extraAccounts = referrer_token_account
-                            ? [
-                                {
-                                    pubkey: vault_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: sender_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: owner_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: supersize_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: tokenAccountOwnerPda,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: referrer_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: savedPublicKey,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: SystemProgram.programId,
-                                    isWritable: false,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: TOKEN_PROGRAM_ID,
-                                    isWritable: false,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: SYSVAR_RENT_PUBKEY,
-                                    isWritable: false,
-                                    isSigner: false,
-                                },
-                            ]
-                            : [
-                                {
-                                    pubkey: vault_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: sender_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: owner_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: supersize_token_account,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: tokenAccountOwnerPda,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: savedPublicKey,
-                                    isWritable: true,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: SystemProgram.programId,
-                                    isWritable: false,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: TOKEN_PROGRAM_ID,
-                                    isWritable: false,
-                                    isSigner: false,
-                                },
-                                {
-                                    pubkey: SYSVAR_RENT_PUBKEY,
-                                    isWritable: false,
-                                    isSigner: false,
-                                },
-                            ];
+                   if(cashingOut && gameEnded==2){
+                    setCashoutTx(null);
+                    let referrer_token_account = null;
+                    if(myReferrer.current){
+                        referrer_token_account = new PublicKey(myReferrer.current);
+                    }
+                    const extraAccounts = referrer_token_account ? [
+                        {
+                          pubkey: vault_token_account,
+                          isWritable: true,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: sender_token_account,
+                          isWritable: true,
+                          isSigner: false,
+                        },
+                        {
+                            pubkey: owner_token_account,
+                            isWritable: true,
+                            isSigner: false,
+                          },
+                          {
+                            pubkey: supersize_token_account,
+                            isWritable: true,
+                            isSigner: false,
+                          },
+                          {
+                            pubkey: tokenAccountOwnerPda,
+                            isWritable: true,
+                            isSigner: false,
+                          },
+                        {
+                          pubkey: savedPublicKey,
+                          isWritable: true,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: SystemProgram.programId,
+                          isWritable: false,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: TOKEN_PROGRAM_ID,
+                          isWritable: false,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: SYSVAR_RENT_PUBKEY,
+                          isWritable: false,
+                          isSigner: false,
+                        },
+                      ] : [
+                        {
+                          pubkey: vault_token_account,
+                          isWritable: true,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: sender_token_account,
+                          isWritable: true,
+                          isSigner: false,
+                        },
+                        {
+                            pubkey: owner_token_account,
+                            isWritable: true,
+                            isSigner: false,
+                          },
+                          {
+                            pubkey: supersize_token_account,
+                            isWritable: true,
+                            isSigner: false,
+                          },
+                          {
+                            pubkey: tokenAccountOwnerPda,
+                            isWritable: true,
+                            isSigner: false,
+                          },
+                        {
+                          pubkey: savedPublicKey,
+                          isWritable: true,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: SystemProgram.programId,
+                          isWritable: false,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: TOKEN_PROGRAM_ID,
+                          isWritable: false,
+                          isSigner: false,
+                        },
+                        {
+                          pubkey: SYSVAR_RENT_PUBKEY,
+                          isWritable: false,
+                          isSigner: false,
+                        },
+                      ]
 
-                        const applyCashOutSystem = await ApplySystem({
-                            authority: savedPublicKey,
-                            world: currentWorldId.current,
-                            entities: [
-                                {
-                                    entity: currentPlayerEntity.current,
-                                    components: [
-                                        { componentId: PLAYER_COMPONENT },
-                                    ],
-                                },
-                                {
-                                    entity: anteroomEntity.current,
-                                    components: [
-                                        { componentId: ANTEROOM_COMPONENT },
-                                    ],
-                                },
-                            ],
-                            systemId: CASH_OUT,
-                            extraAccounts: extraAccounts,
-                            /*[
+                    const applyCashOutSystem = await ApplySystem({
+                        authority: savedPublicKey,
+                        world: currentWorldId.current,
+                        entities: [
+                          {
+                            entity: currentPlayerEntity.current,
+                            components: [{ componentId:PLAYER_COMPONENT}],
+                          },
+                          {
+                            entity: anteroomEntity.current,
+                            components: [{ componentId:ANTEROOM_COMPONENT }],
+                          },
+                        ], 
+                        systemId: CASH_OUT,
+                        args: {
+                            referred: false,
+                        },
+                        extraAccounts: extraAccounts
+                        /*[
                             {
                               pubkey: vault_token_account,
                               isWritable: true,
@@ -2114,33 +1931,28 @@ const useSupersize = () => {
                               isWritable: false,
                               isSigner: false,
                             },
-                          ]*/
-                        });
-                        const cashouttx = new anchor.web3.Transaction().add(
-                            applyCashOutSystem.transaction,
-                        );
-                        const cashoutsignature =
-                            await submitTransactionUser(cashouttx);
+                          ]*/,
+                      });
+                    const cashouttx = new anchor.web3.Transaction().add(applyCashOutSystem.transaction); 
+                    const cashoutsignature = await submitTransactionUser(cashouttx);
 
-                        console.log("cashout", cashoutsignature);
-                        if (cashoutsignature) {
-                            setCashoutTx(cashoutsignature);
-                            playersComponentSubscriptionId.current = [];
-                            currentPlayerEntity.current = null;
-                            entityMatch.current = null;
-                            foodEntities.current = [];
-                            setPlayers([]);
-                            setAllFood([]);
-                            setFoodListLen([]);
-                            setGameId(null);
-                        } else {
-                            setCashoutTx("error");
-                            setTransactionError(
-                                "Error cashing out, please retry",
-                            );
-                            return;
-                        }
-                    } else {
+                    console.log('cashout', cashoutsignature);
+                    if (cashoutsignature){
+                        setCashoutTx(cashoutsignature);
+                        playersComponentSubscriptionId.current = [];
+                        currentPlayerEntity.current = null;
+                        entityMatch.current = null;
+                        foodEntities.current = [];
+                        setPlayers([]);
+                        setAllFood([]);
+                        setFoodListLen([]);
+                        setGameId(null);
+                    }else{
+                        setCashoutTx("error");
+                        setTransactionError("Error cashing out, please retry");
+                        return;
+                    }
+                    }else{
                         playersComponentSubscriptionId.current = [];
                         currentPlayerEntity.current = null;
                         entityMatch.current = null;
@@ -2150,7 +1962,7 @@ const useSupersize = () => {
                         setFoodListLen([]);
                         setGameId(null);
                     }
-
+                    
                     /*const reclaim_transaction = new Transaction(); //.add(computePriceIx);
                     const playerbalance = await connection.getBalance(playerKey, 'processed');
                     const solTransferInstruction = SystemProgram.transfer({
@@ -2176,35 +1988,27 @@ const useSupersize = () => {
                         //setGameEnded(4);
                     }*/
                 }
-            }
-            //if(gameEnded==0){
-            //    setGameEnded(1);
-            //}
-
-            if (mapComponentSubscriptionId?.current) {
-                await providerEphemeralRollup.current.connection.removeAccountChangeListener(
-                    mapComponentSubscriptionId.current,
-                );
-            }
-            if (myplayerComponentSubscriptionId?.current) {
-                await providerEphemeralRollup.current.connection.removeAccountChangeListener(
-                    myplayerComponentSubscriptionId.current,
-                );
-            }
-            if (foodComponentSubscriptionId?.current) {
-                for (let i = 0; i < foodEntities.current.length; i++) {
-                    await providerEphemeralRollup.current.connection.removeAccountChangeListener(
-                        foodComponentSubscriptionId.current[i],
-                    );
                 }
-            }
-            if (playersComponentSubscriptionId?.current) {
-                for (let i = 0; i < playerEntities.current.length; i++) {
-                    await providerEphemeralRollup.current.connection.removeAccountChangeListener(
-                        playersComponentSubscriptionId.current[i],
-                    );
+                //if(gameEnded==0){
+                //    setGameEnded(1);
+                //}
+                
+                if (mapComponentSubscriptionId?.current) {
+                    await providerEphemeralRollup.current.connection.removeAccountChangeListener(mapComponentSubscriptionId.current);
                 }
-            }
+                if (myplayerComponentSubscriptionId?.current) {
+                    await providerEphemeralRollup.current.connection.removeAccountChangeListener(myplayerComponentSubscriptionId.current);
+                }
+                if (foodComponentSubscriptionId?.current) {
+                    for (let i = 0; i < foodEntities.current.length; i++) {
+                        await providerEphemeralRollup.current.connection.removeAccountChangeListener(foodComponentSubscriptionId.current[i]);
+                    }
+                }
+                if (playersComponentSubscriptionId?.current) {
+                    for (let i = 0; i < playerEntities.current.length; i++) {
+                        await providerEphemeralRollup.current.connection.removeAccountChangeListener(playersComponentSubscriptionId.current[i]);
+                    }
+                }
         }
     };
 
@@ -2213,25 +2017,23 @@ const useSupersize = () => {
     }, [gameEnded]);
 
     useEffect(() => {
-        if (currentPlayer) {
-            const visibleFood = allFood.map((foodList) => {
-                return foodList.reduce<Food[]>((innerAcc, foodItem) => {
-                    const diffX = foodItem.x - currentPlayer.x;
-                    const diffY = foodItem.y - currentPlayer.y;
-                    if (
-                        Math.abs(diffX) <= screenSize.width / 2 &&
-                        Math.abs(diffY) <= screenSize.height / 2
-                    ) {
-                        innerAcc.push({
-                            x: foodItem.x, // - currentPlayer.x + screenSize.width / 2,
-                            y: foodItem.y, //- currentPlayer.y + screenSize.height / 2
-                            color: foodItem.color,
-                        });
-                    }
-                    return innerAcc;
-                }, []);
-            });
-            setVisibleFood(visibleFood);
+        if(currentPlayer){
+        const visibleFood = allFood.map((foodList) => {
+            return foodList.reduce<Food[]>((innerAcc, foodItem) => {
+                const diffX = foodItem.x - currentPlayer.x;
+                const diffY = foodItem.y - currentPlayer.y;
+                if (Math.abs(diffX) <= screenSize.width / 2 && Math.abs(diffY) <= screenSize.height / 2) {
+                    innerAcc.push({
+                        x: foodItem.x, // - currentPlayer.x + screenSize.width / 2,
+                        y: foodItem.y, //- currentPlayer.y + screenSize.height / 2
+                        size: foodItem.size
+                    });
+                }
+                return innerAcc;
+            }, []);
+        });     
+        //console.log(visibleFood);   
+        setVisibleFood(visibleFood);
         }
     }, [currentPlayer]);
 
@@ -2284,116 +2086,89 @@ const useSupersize = () => {
                     entity: currentPlayerEntity.current,
                 });
 
+
                 const alltransaction = new anchor.web3.Transaction();
-                let currentSection = getSectionIndex(
-                    currentPlayer.x,
-                    currentPlayer.y,
-                    mapSize,
-                    2,
-                );
-                for (const section_index of currentSection) {
+                let currentSection = getSectionIndex(currentPlayer.x, currentPlayer.y, mapSize, 2);
+                for (const section_index of currentSection) { 
                     const eatFoodTx = await ApplySystem({
                         authority: playerKey,
                         world: currentWorldId.current,
                         entities: [
-                            {
+                                {
                                 entity: currentPlayerEntity.current,
                                 components: [{ componentId: PLAYER_COMPONENT }],
-                            },
-                            {
+                                }, 
+                                {
                                 entity: foodEntities.current[section_index],
                                 components: [{ componentId: FOOD_COMPONENT }],
-                            },
-                            {
+                                },
+                                {
                                 entity: entityMatch.current,
                                 components: [{ componentId: MAP_COMPONENT }],
-                            },
+                                },
                         ],
                         systemId: EAT_FOOD,
                         args: {
                             timestamp: performance.now(),
                         },
                     });
-                    alltransaction.add(eatFoodTx.transaction);
+                    alltransaction.add(eatFoodTx.transaction);   
                 }
                 let playerstoeat = checkPlayerDistances(players, screenSize);
-                if (playerstoeat) {
+                if(playerstoeat){
                     let playersListIndex = findListIndex(playerstoeat);
-                    if (playersListIndex != null) {
-                        const eatPlayerTx = await ApplySystem({
-                            authority: playerKey,
-                            world: currentWorldId.current,
-                            entities: [
+                    if(playersListIndex != null){
+                        const eatPlayerTx = await ApplySystem({ 
+                        authority: playerKey,
+                        world: currentWorldId.current,
+                        entities: [
                                 {
-                                    entity: currentPlayerEntity.current,
-                                    components: [
-                                        { componentId: PLAYER_COMPONENT },
-                                    ],
-                                },
-                                {
-                                    entity: playerEntities.current[
-                                        playersListIndex
-                                    ],
-                                    components: [
-                                        { componentId: PLAYER_COMPONENT },
-                                    ],
-                                },
-                                {
-                                    entity: entityMatch.current,
-                                    components: [
-                                        { componentId: MAP_COMPONENT },
-                                    ],
-                                },
-                            ],
-                            systemId: EAT_PLAYER,
-                            args: {
-                                timestamp: performance.now(),
-                            },
-                        });
-
-                        alltransaction.add(eatPlayerTx.transaction);
+                                entity: currentPlayerEntity.current,
+                                components: [{ componentId: PLAYER_COMPONENT }],
+                              },
+                              {
+                                entity: playerEntities.current[playersListIndex],
+                                components: [{ componentId: PLAYER_COMPONENT }],
+                              }, 
+                              {
+                                entity: entityMatch.current,
+                                components: [{ componentId: MAP_COMPONENT }],
+                              },
+                        ],
+                        systemId: EAT_PLAYER, 
+                        args: {
+                            timestamp: performance.now(),
+                        },
+                    });
+                    
+                    alltransaction.add(eatPlayerTx.transaction);
                     }
                 }
 
-                let { food_x, food_y } = getClampedFoodPosition(
-                    currentPlayer.x,
-                    currentPlayer.y,
-                    newX,
-                    newY,
-                    currentPlayer.radius,
-                    mapSize,
-                    mapSize,
-                );
-                let targetSectionBoosting = getSectionIndex(
-                    food_x,
-                    food_y,
-                    mapSize,
-                    2,
-                );
+                let {food_x, food_y } = getClampedFoodPosition(currentPlayer.x, currentPlayer.y, newX, newY, currentPlayer.radius, mapSize, mapSize);
+                let targetSectionBoosting = getSectionIndex(food_x, food_y, mapSize, 2);
                 let selectedSection = targetSectionBoosting.reduce(
                     (minIndex, currentIndex) =>
-                        foodListLen[currentIndex] < foodListLen[minIndex]
-                            ? currentIndex
-                            : minIndex,
-                    targetSectionBoosting[0],
+                        foodListLen[currentIndex] < foodListLen[minIndex] ? currentIndex : minIndex,
+                    targetSectionBoosting[0]
                 );
                 //let targetSectionBoosting = getSectionIndex(food_x, food_y, mapSize, true);
                 const makeMove = await ApplySystem({
                     authority: playerKey,
                     world: currentWorldId.current,
                     entities: [
-                        {
-                            entity: currentPlayerEntity.current,
-                            components: [{ componentId: PLAYER_COMPONENT }],
-                        },
-                        {
-                            entity: foodEntities.current[selectedSection],
-                            components: [{ componentId: FOOD_COMPONENT }],
-                        },
-                        {
-                            entity: entityMatch.current,
-                            components: [{ componentId: MAP_COMPONENT }],
-                        },
+                      {
+                        entity: currentPlayerEntity.current,
+                        components: [{ componentId: PLAYER_COMPONENT }],
+                      },
+                      {
+                        entity: foodEntities.current[selectedSection],
+                        components: [{ componentId: FOOD_COMPONENT }],
+                      },
+                      { 
+                        entity: entityMatch.current,
+                        components: [{ componentId: MAP_COMPONENT }],
+                      },
                     ],
                     systemId: MOVEMENT,
                     args: {
@@ -2402,7 +2177,7 @@ const useSupersize = () => {
                         boost: isMouseDown,
                         timestamp: performance.now(),
                     },
-                });
+                }); 
                 let transaction = makeMove.transaction;
                 alltransaction.add(transaction);
 
@@ -2529,17 +2304,12 @@ const useSupersize = () => {
         return null;
     };
 
-    const checkFoodDistances = (
-        visibleFood: { x: number; y: number }[],
-        screenSize: { width: number; height: number },
-    ) => {
-        if (currentPlayer?.radius) {
+    const checkFoodDistances = (visibleFood: { x: number, y: number }[], screenSize: { width: number, height: number }) => {
+        if(currentPlayer?.radius){
             const centerX = screenSize.width / 2;
             const centerY = screenSize.height / 2;
-            return visibleFood.some((food) => {
-                const distance = Math.sqrt(
-                    (food.x - centerX) ** 2 + (food.y - centerY) ** 2,
-                );
+            return visibleFood.some(food => {
+                const distance = Math.sqrt((food.x - centerX) ** 2 + (food.y - centerY) ** 2);
                 return distance < currentPlayer.radius;
             });
         }
@@ -3860,6 +3630,7 @@ const useSupersize = () => {
         setPlayerName,
         setInputValue,
         setNewGameCreated,
+        cleanUp,
     };
 };
 

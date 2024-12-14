@@ -78,6 +78,7 @@ const SupersizeContext = createContext<
         transactionSuccess: string | null;
         setTransactionSuccess: Dispatch<SetStateAction<string | null>>;
         setNewGameCreated: Dispatch<SetStateAction<ActiveGame | null>>;
+        cleanUp: () => Promise<void>;
     }
     | undefined
 >(undefined);
