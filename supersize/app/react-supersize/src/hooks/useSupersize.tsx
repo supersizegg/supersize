@@ -149,6 +149,27 @@ const useSupersize = () => {
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+    const currentPlayerRef = useRef(currentPlayer);
+    const exitHoveredRef = useRef(exitHovered);
+    const mousePositionRef = useRef(mousePosition);
+    const isMouseDownRef = useRef(isMouseDown);
+
+    useEffect(() => {
+        currentPlayerRef.current = currentPlayer;
+    }, [currentPlayer]);
+
+    useEffect(() => {
+        mousePositionRef.current = mousePosition;
+    }, [mousePosition]);
+
+    useEffect(() => {
+        exitHoveredRef.current = exitHovered;
+    }, [exitHovered]);
+
+    useEffect(() => {
+        isMouseDownRef.current = isMouseDown;
+    }, [isMouseDown]);
+
     const [panelContent, setPanelContent] = useState<JSX.Element | null>(null);
     const [leaderBoardActive, setLeaderboardActive] = useState(false);
 
@@ -2038,6 +2059,11 @@ const useSupersize = () => {
     }, [currentPlayer]);
 
     const handleMovementAndCharging = async () => {
+        const currentPlayer = currentPlayerRef.current;
+        const mousePosition = mousePositionRef.current;
+        const isMouseDown = isMouseDownRef.current;
+        const exitHovered = exitHoveredRef.current;
+
         const processSessionEphemTransaction = async (
             transaction: anchor.web3.Transaction,
         ): Promise<string> => {
@@ -2213,38 +2239,6 @@ const useSupersize = () => {
         }, 30);
 
         return () => clearInterval(intervalId);
-    }, [gameId, currentPlayer, exitHovered, isMouseDown]);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (lastUpdateRef.current !== null) {
-                const now = performance.now();
-                //console.log(currentPlayer);
-                if (now - lastUpdateRef.current > 1000) {
-                    console.log("force update");
-                    setCurrentPlayer((prev) => {
-                        if (!prev) {
-                            return null;
-                        }
-                        return {
-                            ...prev,
-                            x: prev.x,
-                            y: prev.y,
-                            name: prev.name,
-                            authority: prev.authority,
-                            radius: prev.radius,
-                            mass: prev.mass,
-                            score: prev.score,
-                            target_x: prev.target_x,
-                            target_y: prev.target_y,
-                            timestamp: performance.now(),
-                        };
-                    });
-                }
-            }
-        }, 1000);
-
-        return () => clearInterval(interval); // Cleanup interval on unmount
     }, [gameId]);
 
     useEffect(() => {
@@ -2513,18 +2507,19 @@ const useSupersize = () => {
             const handleMouseUp = () => {
                 setIsMouseDown(false);
             };
-
+            console.log('Set mouse listeners');
             window.addEventListener("mousedown", handleMouseDown);
             window.addEventListener("mouseup", handleMouseUp);
             window.addEventListener("mousemove", handleMouseMove);
 
             return () => {
+                console.log('Remove mouse listeners');
                 window.removeEventListener("mousemove", handleMouseMove);
                 window.removeEventListener("mousedown", handleMouseDown);
                 window.removeEventListener("mouseup", handleMouseUp);
             };
         }
-    }, [playerKey, gameId, entityMatch, currentPlayer, screenSize]);
+    }, [playerKey, gameId, entityMatch, screenSize]);
 
     useEffect(() => {
         function translateLargerRectangle() {

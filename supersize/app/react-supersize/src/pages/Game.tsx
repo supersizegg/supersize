@@ -125,44 +125,43 @@ const Game = () => {
                                     Cashout transaction
                                 </a>
                                 {cashoutTx != null ? (
-                                <>
-                                    {cashoutTx != 'error' ? (  
-                                    <svg
-                                        className="w-5 h-5 rounded-full inline-block stroke-[2px] stroke-[#15bd12] stroke-miter-10 shadow-inner ml-[5px] mt-[2px]"
-                                        style={{
-                                            animation:
-                                                "fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;",
-                                        }}
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 52 52"
-                                    >
-                                        <circle
-                                            className="stroke-[2px] stroke-[#15bd12] stroke-miter-10 fill-[#15bd12]"
-                                            style={{
-                                                strokeDasharray:
-                                                    "166; stroke-dashoffset: 166; animation: stroke 0.6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;",
-                                            }}
-                                            cx="26"
-                                            cy="26"
-                                            r="25"
-                                            fill="none"
-                                        />
-                                        <path
-                                            className="stroke-[white] stroke-dasharray-[48] stroke-dashoffset-[48] transform-origin-[50%_50%] animation-stroke"
-                                            fill="none"
-                                            d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                                        />
-                                    </svg>
-                                    )
-                                    : (
-                                    <button
-                                    className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
-                                    onClick={() => cleanUp()}
-                                    >
-                                        Retry
-                                    </button>
-                                    )}
-                                </> 
+                                    <>
+                                        {cashoutTx != "error" ? (
+                                            <svg
+                                                className="w-5 h-5 rounded-full inline-block stroke-[2px] stroke-[#15bd12] stroke-miter-10 shadow-inner ml-[5px] mt-[2px]"
+                                                style={{
+                                                    animation:
+                                                        "fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;",
+                                                }}
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 52 52"
+                                            >
+                                                <circle
+                                                    className="stroke-[2px] stroke-[#15bd12] stroke-miter-10 fill-[#15bd12]"
+                                                    style={{
+                                                        strokeDasharray:
+                                                            "166; stroke-dashoffset: 166; animation: stroke 0.6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;",
+                                                    }}
+                                                    cx="26"
+                                                    cy="26"
+                                                    r="25"
+                                                    fill="none"
+                                                />
+                                                <path
+                                                    className="stroke-[white] stroke-dasharray-[48] stroke-dashoffset-[48] transform-origin-[50%_50%] animation-stroke"
+                                                    fill="none"
+                                                    d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                                                />
+                                            </svg>
+                                        ) : (
+                                            <button
+                                                className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
+                                                onClick={() => cleanUp()}
+                                            >
+                                                Retry
+                                            </button>
+                                        )}
+                                    </>
                                 ) : (
                                     <svg
                                         className="inline ml-[5px] mt-[2px] h-[20px] w-[20px] stroke-[white]"
@@ -197,12 +196,14 @@ const Game = () => {
                                     </svg>
                                 )}
                             </div>
-                            <button
-                                id="returnButton"
-                                onClick={() => navigate("/")}
-                            >
-                                Return home
-                            </button>
+                            {cashoutTx !== null && cashoutTx !== "error" && (
+                                <button
+                                    id="returnButton"
+                                    onClick={() => navigate("/")}
+                                >
+                                    Return home
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

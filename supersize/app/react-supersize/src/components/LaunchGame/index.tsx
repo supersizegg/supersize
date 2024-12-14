@@ -5,9 +5,9 @@ import { useState } from "react";
 
 const LanchGame = () => {
     const options = [
-        { id: 0, size: 4000, players: 20, cost: "0.4 SOL" },
-        { id: 1, size: 6000, players: 40, cost: "0.8 SOL" },
-        { id: 2, size: 10000, players: 100, cost: "2.0 SOL" },
+        { id: 0, size: 4000, players: 20, cost: "1 SOL" },
+        { id: 1, size: 6000, players: 40, cost: "2.5 SOL" },
+        { id: 2, size: 10000, players: 100, cost: "4 SOL" },
     ];
 
     const [selectedOption, setSelectedOption] = useState(0);

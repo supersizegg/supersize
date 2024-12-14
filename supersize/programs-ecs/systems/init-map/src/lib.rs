@@ -30,14 +30,14 @@ pub mod init_map {
         }
 
         require!(
-            args.size == 4000 || args.size == 6000 || args.size == 10000,
+            args.size == 4000 || args.size == 6000 || args.size == 8000,
             SupersizeError::BadMapSize
         );
 
         map.max_players = match args.size {
             4000 => 20,
-            6000 => 40,
-            10000 => 100,
+            6000 => 45,
+            8000 => 80,
             _ => return Err(SupersizeError::BadMapSize.into()), 
         };
         

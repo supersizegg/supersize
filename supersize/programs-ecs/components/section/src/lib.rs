@@ -13,8 +13,7 @@ pub struct Section {
 
 #[component_deserialize(delegate)]
 pub struct Food{
-    pub x: u16,
-    pub y: u16,
+    pub data: [u8; 4]
 }
 
 impl Default for Section {
