@@ -81,8 +81,10 @@ const useSupersize = () => {
 
     const [isReferrerModalOpen, setIsReferrerModalOpen] = useState(false);
     const [referrerInput, setReferrerInput] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
     const myReferralAccount = useRef<string>("");
     const myReferrer = useRef<string>("");
+    const { referrer, member, profile } = useBuddyLink();
 
     const [fastestEndpoint, setFastestEndpoint] = useState<string | null>(null);
     const [enpointDone, setEndpointDone] = useState<boolean>(false);
@@ -190,6 +192,7 @@ const useSupersize = () => {
     const [playerExiting, setPlayerExiting] = useState(false);
     const [countdown, setCountdown] = useState(5);
     const [buyIn, setBuyIn] = useState(0.0);
+    const [joinedOrg, setJoinedOrg] = useState(false);
 
     const [selectedOption, setSelectedOption] = useState(options[0]);
 
@@ -221,60 +224,6 @@ const useSupersize = () => {
     );
 
     anchor.setProvider(provider);
-
-    const getRefferal = async (inputKey: any) => {
-        const buddyLinkClient = new Client(
-            connection as any,
-            inputKey,
-            "2iF3HaLpk6vuUXxGK3uDsxWoP5htC7NWZNctAevxZewY",
-        );
-        const transaction = new Transaction();
-        const organizationName = "Supersize";
-        // check if user has buddy link profile and treasury
-        const playerBuddyProfile =
-            await buddyLinkClient.buddy.getProfile(inputKey);
-        if (!playerBuddyProfile) {
-            const playerProfileCreateIx =
-                await buddyLinkClient.initialize.createProfile(playerName);
-            const playerSolTreasuryCreateIx =
-                await buddyLinkClient.initialize.createTreasuryByName(
-                    playerName,
-                );
-            const playerUsdcTreasuryCreateIx =
-                await buddyLinkClient.initialize.createTreasuryByName(
-                    playerName,
-                    USDC_MINT,
-                );
-            transaction.add(
-                ...playerProfileCreateIx,
-                ...playerSolTreasuryCreateIx,
-                ...playerUsdcTreasuryCreateIx,
-            );
-        }
-        // check if user has member
-        const playerBuddyMember = await buddyLinkClient.member.getByName(
-            organizationName,
-            playerName,
-        );
-        if (!playerBuddyMember) {
-            const playerMemberCreateIx =
-                await buddyLinkClient.initialize.createMember(
-                    organizationName,
-                    playerName,
-                );
-            transaction.add(...playerMemberCreateIx);
-        }
-
-        if (transaction.instructions.length > 0) {
-            const buddyTxSig = await submitTransactionUser(transaction);
-        }
-        //myReferralAccount.current = "";
-        //setIsReferrerModalOpen(true);
-        do {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-        } while (!isReferrerModalOpen);
-        setIsReferrerModalOpen(false);
-    };
 
     const submitTransactionUser = useCallback(
         async (transaction: Transaction): Promise<string | null> => {
@@ -432,11 +381,57 @@ const useSupersize = () => {
         }
     }, [publicKey, savedPublicKey]);
 
+    const setInputUsername = (inputUsername: any) => {
+        const user = { name: inputUsername, referrer: referrer, referral_done: false};
+        localStorage.setItem('user', JSON.stringify(user));
+        setPlayerName(inputUsername);
+    };
+
+    useEffect(() => {
+        const retrievedUser = localStorage.getItem('user');
+        if(retrievedUser){
+            let myusername = JSON.parse(retrievedUser).name;
+            setPlayerName(myusername);
+        }
+    }, []);
+
     useEffect(() => {
         if (publicKey) {
-            setSavedPublicKey(publicKey);
-            setIsReferrerModalOpen(true);
-            //getRefferal(publicKey);
+            const retrievedUser = localStorage.getItem('user');
+            const retrievedRefferal = localStorage.getItem('referrer');
+            //console.log('retrieved', member[0], retrievedRefferal, retrievedUser);
+            if(member){
+                if(member[0]){
+                    const user = { name: member[0].account.name, referrer: referrer, referral_done: true};
+                    localStorage.setItem('user', JSON.stringify(user));
+                    setPlayerName(member[0].account.name);
+                    setJoinedOrg(true);
+                }
+                else{ 
+                    if(!retrievedUser || retrievedRefferal !== null){
+                        const user = { name: publicKey.toString().slice(0,12), referrer: referrer, referral_done: false};
+                        localStorage.setItem('user', JSON.stringify(user));
+                        setUsername(publicKey.toString().slice(0,12));
+                        setIsReferrerModalOpen(true);
+                        setJoinedOrg(false);
+                    }
+                }
+            }
+            else{ 
+                if(!retrievedUser || retrievedRefferal !== null){
+                    const user = { name: publicKey.toString().slice(0,12), referrer: referrer, referral_done: false};
+                    localStorage.setItem('user', JSON.stringify(user));
+                    setUsername(publicKey.toString().slice(0,12));
+                    setIsReferrerModalOpen(true);
+                    setJoinedOrg(false);
+                }
+            }
+        }
+    }, [member]);
+
+    useEffect(() => {
+        if (publicKey) {
+            setSavedPublicKey(publicKey); 
         }
     }, [publicKey]);
 
@@ -3592,8 +3587,11 @@ const useSupersize = () => {
         referrerInput, 
         setReferrerInput, 
         setIsReferrerModalOpen, 
-        getRefferal, 
         isReferrerModalOpen,
+        referrer,
+        username,
+        setUsername,
+        setInputUsername,
         currentTPS, 
         price,
         gameId,

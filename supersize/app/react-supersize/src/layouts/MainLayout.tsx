@@ -14,9 +14,12 @@ import LeaderboardButton from "@components/LeaderboardButton";
 import { useNavigate } from "react-router-dom";
 import useSupersize from "@hooks/useSupersize";
 import ReferrerModal from "@components/ReferrerModal";
+import CopyLink from "../components/buddyReferral";
+import Invite from "../components/buddyInvite";
+import TweetLink from "../components/buddyTweet";
 
 const MainLayout = ({ children }: PropsWithChildren) => {
-    const { currentTPS, price, isReferrerModalOpen } = useSupersize();
+    const { currentTPS, price, isReferrerModalOpen, setIsReferrerModalOpen, setReferrerInput } = useSupersize();
     const [viewerIdx, setViewerIdx] = useState(0);
     const [footerVisible, setFooterVisible] = useState(false);
 
@@ -130,6 +133,15 @@ const MainLayout = ({ children }: PropsWithChildren) => {
         navigate("/leaderboard");
     }, []);
 
+    const handleCreateClick = useCallback(() => {
+        setIsReferrerModalOpen(true);
+    }, []);
+    const handleCloseModal = useCallback(() => {
+        console.log("hi")
+        setIsReferrerModalOpen(false);
+    }, []);
+    console.log(isReferrerModalOpen)
+
     return (
         <section className={`${isReferrerModalOpen ? "bg-black bg-opacity-50" : ""}`}>
             {viewerIdx == 0 ? (
@@ -141,6 +153,12 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                             handleLeaderboadClick={handleLeaderboadClick}
                         />
                         <WalletConnectButton />
+                        <div
+                        className="text-white font-[terminus] h-[6vh] mt-[15vh] cursor-pointer absolute right-[1vw] w-fit z-10 text-right"
+                        >
+                        <TweetLink />
+                        <CopyLink handleCreateClick={handleCreateClick}/>
+                        </div>
                     </div>
                 </div>
             ) : (
@@ -334,7 +352,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                 </div>
             )}
             {
-                viewerIdx == 0 && <ReferrerModal />
+                viewerIdx == 0 && isReferrerModalOpen && <ReferrerModal handleCloseModal={handleCloseModal}/>
             }
             {viewerIdx == 0 ? (
                 <div className="flex justify-between items-center" style={{height: 0}}>

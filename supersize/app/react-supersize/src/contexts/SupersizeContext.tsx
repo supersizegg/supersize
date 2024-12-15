@@ -39,11 +39,14 @@ const SupersizeContext = createContext<
                 name: string;
             }>
         >;
+        referrer: string;
+        username: string;
+        setUsername: Dispatch<SetStateAction<string>>;
+        setInputUsername: (inputUsername: any) => void;
         isReferrerModalOpen: boolean;
         setIsReferrerModalOpen: Dispatch<SetStateAction<boolean>>;
         referrerInput: string;
         setReferrerInput: Dispatch<SetStateAction<string>>;
-        getRefferal: (inputKey: any) => Promise<void>;
         currentTPS: number;
         price: number;
         gameId: anchor.web3.PublicKey | null;
