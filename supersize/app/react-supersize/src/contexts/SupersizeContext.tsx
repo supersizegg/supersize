@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
 import useSupersize from "@hooks/useSupersize";
 import { Commitment, PublicKey, Transaction } from "@solana/web3.js";
 import { ActiveGame, Blob, Food } from "@utils/types";
@@ -82,6 +83,9 @@ const SupersizeContext = createContext<
         setTransactionSuccess: Dispatch<SetStateAction<string | null>>;
         setNewGameCreated: Dispatch<SetStateAction<ActiveGame | null>>;
         cleanUp: () => Promise<void>;
+        getComponentsClient: (componentId: PublicKey) => Promise<Program>;
+        getComponentsClientBasic: (componentId: PublicKey) => Promise<Program>;
+        fetchTokenMetadata: (tokenAddress: string) => Promise<{ name: string; image: string }>;
     }
     | undefined
 >(undefined);

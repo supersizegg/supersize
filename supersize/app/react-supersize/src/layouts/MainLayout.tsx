@@ -140,49 +140,9 @@ const MainLayout = ({ children }: PropsWithChildren) => {
         console.log("hi")
         setIsReferrerModalOpen(false);
     }, []);
-    console.log(isReferrerModalOpen)
 
     return (
         <section className={`${isReferrerModalOpen ? "bg-black bg-opacity-50" : ""}`}>
-            {viewerIdx == 0 ? (
-                <div className="flex justify-between items-center">
-                    <Dropdown />
-                    <TopNavText />
-                    <div className="flex flex-row items-center">
-                        <LeaderboardButton
-                            handleLeaderboadClick={handleLeaderboadClick}
-                        />
-                        <WalletConnectButton />
-                        <div
-                        className="text-white font-[terminus] h-[6vh] mt-[15vh] cursor-pointer absolute right-[1vw] w-fit z-10 text-right"
-                        >
-                        <TweetLink />
-                        <CopyLink handleCreateClick={handleCreateClick}/>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="flex items-center justify-between z-10 backdrop-blur-[10px] h-[10vh] bg-opacity-30">
-                    <div>
-                        <span
-                            className="text-white font-conthrax text-[3rem] pl-8 pt-2 z-10 opacity-100 cursor-pointer"
-                            onClick={() => setViewerIdx(0)}
-                        >
-                            SUPERSIZE
-                        </span>
-                    </div>
-                    {!footerVisible && (
-                        <div className="inline-flex items-center mr-[1vw]">
-                            <button
-                                className="p-3 bg-white text-black flex items-center justify-center h-12 rounded-xl border border-white font-conthrax text-base cursor-pointer transition-all duration-300 z-10 hover:bg-black hover:text-gray-300 hover:border-white"
-                                onClick={() => setViewerIdx(0)}
-                            >
-                                Play
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
             {viewerIdx == 0 ? (
                 children
             ) : (

@@ -1,4 +1,6 @@
 import { API_BASE_URL } from "@utils/constants";
+import {Blob } from "@utils/types";
+
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import * as crypto from "crypto-js";
 import * as anchor from "@coral-xyz/anchor";
@@ -146,3 +148,165 @@ export async function getPriorityFeeEstimate(
     );
     return data.result;
 }
+
+
+
+export async function fetchTokenMetadata (
+    tokenAddress: string,
+){
+    try {
+        const response = await fetch(
+            "https://devnet.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    id: 1, // Unique identifier
+                    method: "getAsset",
+                    params: [tokenAddress], // Token address passed in an array
+                }),
+            },
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Error fetching asset:", errorText);
+            throw new Error(
+                `HTTP Error: ${response.status} ${response.statusText}`,
+            );
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        const content = data.result?.content;
+        if (!content) {
+            throw new Error("Content not found in response");
+        }
+
+        // Check if json_uri is present and not empty
+        const jsonUri = content.json_uri;
+        if (jsonUri) {
+            const metadataResponse = await fetch(jsonUri);
+            if (!metadataResponse.ok) {
+                const errorText = await metadataResponse.text();
+                console.error(
+                    "Error fetching metadata from json_uri:",
+                    errorText,
+                );
+                throw new Error(
+                    `HTTP Error: ${metadataResponse.status} ${metadataResponse.statusText}`,
+                );
+            }
+            const metadataJson = await metadataResponse.json();
+            return {
+                name: metadataJson.name || "Unknown",
+                image: metadataJson.image || "",
+            };
+        }
+
+        // Fallback to metadata from content if json_uri is empty
+        const name = content.metadata?.symbol || "Unknown";
+        const image = content.links?.image || content.files?.[0]?.uri || "";
+
+        if (!image) {
+            throw new Error("Image URI not found");
+        }
+
+        return { name, image };
+    } catch (error) {
+        console.error("Error fetching token metadata:", error);
+        throw error;
+    }
+};
+
+
+export const getSectionIndex = (
+    x: number,
+    y: number,
+    mapSize: number,
+    duplicateEncodings: number = 5,
+): number[] => {
+    const sectionSize = 1000;
+    const sectionsPerRow = mapSize / sectionSize;
+    const mapSectionCount = sectionsPerRow * sectionsPerRow;
+    const adjustedX = Math.min(x, mapSize - 1);
+    const adjustedY = Math.min(y, mapSize - 1);
+    const row = Math.floor(adjustedY / sectionSize);
+    const col = Math.floor(adjustedX / sectionSize);
+    let baseIndex = row * sectionsPerRow + col;
+    let food_indices: number[] = [];
+    for (let i = 0; i < duplicateEncodings; i++) {
+        food_indices.push(baseIndex + i * mapSectionCount);
+    }
+    return food_indices;
+};
+
+export const getClampedFoodPosition = (
+    player_x: number,
+    player_y: number,
+    target_x: number,
+    target_y: number,
+    player_radius: number,
+    map_width: number,
+    map_height: number,
+): { food_x: number; food_y: number } => {
+    const dx = target_x - player_x;
+    const dy = target_y - player_y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const unit_x = dx / dist;
+    const unit_y = dy / dist;
+    const pseudo_random_float_x = 1.5;
+    const pseudo_random_float_y = 1.5;
+    const offset_x = -unit_x * player_radius * pseudo_random_float_x;
+    const offset_y = -unit_y * player_radius * pseudo_random_float_y;
+    const food_x = Math.round(player_x + offset_x);
+    const food_y = Math.round(player_y + offset_y);
+    const clamped_food_x = Math.min(Math.max(food_x, 0), map_width);
+    const clamped_food_y = Math.min(Math.max(food_y, 0), map_height);
+    return { food_x: clamped_food_x, food_y: clamped_food_y };
+};
+
+export const checkPlayerDistances = (
+    visiblePlayers: Blob[],
+    currentPlayer: Blob,
+    screenSize: { width: number; height: number },
+) => {
+    if (currentPlayer?.radius) {
+        for (const player of visiblePlayers) {
+            const distance = Math.sqrt(
+                (player.x - currentPlayer.x) ** 2 +
+                (player.y - currentPlayer.y) ** 2,
+            );
+            if (distance < currentPlayer.radius) {
+                return player.authority;
+            }
+        }
+    }
+    return null;
+};
+
+export const findListIndex = (pubkey: PublicKey, players: Blob[]): number | null => {
+    const index = players.findIndex(
+        (player) => player.authority?.toString() === pubkey.toString(),
+    );
+    return index !== -1 ? index : null;
+};
+
+export const decodeFood = (data: Uint8Array) => {
+    if (!(data instanceof Uint8Array) || data.length !== 4) {
+        throw new Error('Invalid food data format. Expected a Uint8Array of length 4.');
+    }
+    const buffer = data.buffer; // Get the ArrayBuffer from Uint8Array
+    const packed = new DataView(buffer).getUint32(data.byteOffset, true); // Little-endian
+    const x = packed & 0x3FFF;
+    const y = (packed >> 14) & 0x3FFF;
+    const size = (packed >> 28) & 0x0F;
+    return { x, y, size };
+};

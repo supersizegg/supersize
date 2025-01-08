@@ -25,6 +25,148 @@ const Game = () => {
 
     const [exitHovered, setExitHovered] = useState(false);
 
+    /*
+        useEffect(() => {
+        if (entityMatch || gameId) {
+            const handleMouseMove = (event: MouseEvent) => {
+                setMousePosition({ x: event.clientX, y: event.clientY });
+            };
+
+            const handleMouseDown = (event: MouseEvent) => {
+                setIsMouseDown(true);
+            };
+
+            const handleMouseUp = () => {
+                setIsMouseDown(false);
+            };
+            console.log('Set mouse listeners');
+            window.addEventListener("mousedown", handleMouseDown);
+            window.addEventListener("mouseup", handleMouseUp);
+            window.addEventListener("mousemove", handleMouseMove);
+
+            return () => {
+                console.log('Remove mouse listeners');
+                window.removeEventListener("mousemove", handleMouseMove);
+                window.removeEventListener("mousedown", handleMouseDown);
+                window.removeEventListener("mouseup", handleMouseUp);
+            };
+        }
+    }, [playerKey, gameId, screenSize]);
+
+    useEffect(() => {
+        function translateLargerRectangle() {
+            const largerRectangle = document.getElementsByClassName(
+                "game",
+            )[0] as HTMLElement;
+            const smallerRectangle = document.getElementsByClassName(
+                "gameWrapper",
+            )[0] as HTMLElement;
+
+            if (largerRectangle && smallerRectangle) {
+                const widthLarger = screenSize.width * scale;
+                const heightLarger = screenSize.height * scale;
+                const widthSmaller = smallerRectangle.offsetWidth;
+                const heightSmaller = smallerRectangle.offsetHeight;
+                const deltaX = widthSmaller / 2 - widthLarger / 2;
+                const deltaY = heightSmaller / 2 - heightLarger / 2;
+                largerRectangle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            } else {
+                console.error(
+                    'Elements with class name "gameWrapper" or "game" not found.',
+                );
+            }
+        }
+        translateLargerRectangle();
+    }, [gameId, screenSize]);
+
+    useEffect(() => {
+        let status: string = '<span class="title">Leaderboard</span>';
+        for (let i = 0; i < leaderboard.length; i++) {
+            status += "<br />";
+            const currentItem = leaderboard[i];
+            if (
+                currentPlayer &&
+                currentItem &&
+                currentItem.authority &&
+                currentPlayer.authority
+            ) {
+                if (currentItem.authority.equals(currentPlayer.authority)) {
+                    status +=
+                        '<span class="me">' +
+                        (i + 1) +
+                        ". " +
+                        currentItem.name +
+                        "</span>";
+                } else {
+                    status += i + 1 + ". " + currentItem.name;
+                }
+            } else {
+                status += i + 1 + ". " + currentItem.name;
+            }
+        }
+        const statusElement = document.getElementById("status");
+        if (statusElement) {
+            statusElement.innerHTML = status;
+        }
+    }, [setLeaderboard, leaderboard]);
+
+    useEffect(() => {
+    if (currentPlayer) {
+        const playersWithAuthority = allplayers.filter(
+            (player) =>
+                player.authority !== null &&
+                player.x !== 50000 &&
+                player.y !== 50000 &&
+                Math.sqrt(player.mass) !== 0,
+        );
+        updateLeaderboard(playersWithAuthority);
+        const newVisiblePlayers: Blob[] = playersWithAuthority.reduce(
+            (accumulator: Blob[], playerx) => {
+                if (
+                    currentPlayer &&
+                    playerx.authority &&
+                    currentPlayer.authority
+                ) {
+                    if (
+                        currentPlayer.authority.toString() !=
+                        playerx.authority.toString()
+                    ) {
+                        const halfWidth = screenSize.width / 2;
+                        const halfHeight = screenSize.height / 2;
+                        const diffX = playerx.x - currentPlayer.x;
+                        const diffY = playerx.y - currentPlayer.y;
+
+                        if (
+                            Math.abs(diffX) <= halfWidth &&
+                            Math.abs(diffY) <= halfHeight
+                        ) {
+                            accumulator.push({
+                                name: playerx.name,
+                                authority: playerx.authority,
+                                x: playerx.x, //diffX + screenSize.width / 2,
+                                y: playerx.y, //diffY + screenSize.height / 2,
+                                radius:
+                                    4 + Math.sqrt(playerx.mass / 10) * 6,
+                                mass: playerx.mass,
+                                score: playerx.score,
+                                tax: playerx.tax,
+                                speed: playerx.speed,
+                                removal: playerx.removal,
+                                target_x: playerx.target_x,
+                                target_y: playerx.target_y,
+                                timestamp: performance.now(),
+                            });
+                        }
+                    }
+                }
+                return accumulator;
+            },
+            [],
+        );
+        setPlayers(newVisiblePlayers);
+    }
+    }, [currentPlayer]);
+    */
     return (
         <div className="gameWrapper w-screen h-screen overflow-hidden">
             <div

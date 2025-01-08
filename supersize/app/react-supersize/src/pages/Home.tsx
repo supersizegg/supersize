@@ -107,6 +107,167 @@ const Home = () => {
         window.open(swapAmount.current, "_blank", "noopener,noreferrer");
     };
     
+    /*
+        const fetchAndLogMapData = async () => {
+        for (let i = 0; i < activeGames.length; i++) {
+            const mapseed = "origin";
+            const mapEntityPda = FindEntityPda({
+                worldId: activeGames[i].worldId,
+                entityId: new anchor.BN(0),
+                seed: mapseed,
+            });
+            const mapComponentPda = FindComponentPda({
+                componentId: MAP_COMPONENT,
+                entity: mapEntityPda,
+            });
+
+            try {
+                let token_image = `${process.env.PUBLIC_URL}/token.png`;
+                let token_name = "LOADING";
+                let base_buyin = 0;
+                let min_buyin = 0;
+                let max_buyin = 0;
+                const anteseed = "ante";
+                const anteEntityPda = FindEntityPda({
+                    worldId: activeGames[i].worldId,
+                    entityId: new anchor.BN(0),
+                    seed: anteseed,
+                });
+                const anteComponentPda = FindComponentPda({
+                    componentId: ANTEROOM_COMPONENT,
+                    entity: anteEntityPda,
+                });
+                const anteComponentClient =
+                    await getComponentsClient(ANTEROOM_COMPONENT);
+                const anteacc = await provider.connection.getAccountInfo(
+                    anteComponentPda,
+                    "processed",
+                );
+                let mint_of_token_being_sent = new PublicKey(0);
+                if (anteacc) {
+                    const anteParsedData =
+                        anteComponentClient.coder.accounts.decode(
+                            "anteroom",
+                            anteacc.data,
+                        );
+                    //console.log(anteParsedData)
+                    mint_of_token_being_sent = anteParsedData.token;
+                    base_buyin = anteParsedData.baseBuyin;
+                    max_buyin = anteParsedData.maxBuyin;
+                    min_buyin = anteParsedData.minBuyin;
+                    if (
+                        mint_of_token_being_sent.toString() ===
+                        "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
+                    ) {
+                        token_image = `${process.env.PUBLIC_URL}/agld.jpg`;
+                        token_name = "AGLD";
+                    } else {
+                        //token_image = `${process.env.PUBLIC_URL}/usdc.png`;
+                        //token_name = "USDC";
+                        try {
+                            //console.log(mint_of_token_being_sent.toString())
+                            const { name, image } = await fetchTokenMetadata(
+                                mint_of_token_being_sent.toString(),
+                            );
+                            //console.log('metadata', name, image)
+                            token_image = image;
+                            token_name = name;
+                        } catch (error) {
+                            console.error("Error fetching token data:", error);
+                        }
+                    }
+                }
+
+                const mapComponentClient =
+                    await getComponentsClient(MAP_COMPONENT);
+                const mapacc =
+                    await providerEphemeralRollup.current.connection.getAccountInfo(
+                        mapComponentPda,
+                        "processed",
+                    );
+                if (mapacc) {
+                    const mapParsedData =
+                        mapComponentClient.coder.accounts.decode(
+                            "map",
+                            mapacc.data,
+                        );
+                    console.log(
+                        `Parsed Data for game ID ${activeGames[i].worldId}:`,
+                        mapParsedData,
+                    );
+                    const playerClient =
+                        await getComponentsClientBasic(PLAYER_COMPONENT);
+                    let activeplayers = 0;
+                    for (
+                        let player_index = 1;
+                        i < mapParsedData.maxPlayers + 1;
+                        player_index++
+                    ) {
+                        const playerentityseed =
+                            "player" + player_index.toString();
+                        const playerEntityPda = FindEntityPda({
+                            worldId: activeGames[i].worldId,
+                            entityId: new anchor.BN(0),
+                            seed: playerentityseed,
+                        });
+                        const playersComponentPda = FindComponentPda({
+                            componentId: PLAYER_COMPONENT,
+                            entity: playerEntityPda,
+                        });
+                        const playersacc =
+                            await provider.connection.getAccountInfo(
+                                playersComponentPda,
+                                "processed",
+                            );
+                        if (playersacc) {
+                            const playersParsedData =
+                                playerClient.coder.accounts.decode(
+                                    "player",
+                                    playersacc.data,
+                                );
+                            //console.log(playersParsedData)
+                            if (playersParsedData.authority != null) {
+                                activeplayers = activeplayers + 1;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    setActiveGames((prevActiveGames) => {
+                        const updatedGames = prevActiveGames.map((game) =>
+                            game.worldId === activeGames[i].worldId &&
+                                game.worldPda.toString() ===
+                                activeGames[i].worldPda.toString()
+                                ? {
+                                    ...game,
+                                    name: mapParsedData.name,
+                                    active_players: activeplayers,
+                                    max_players: mapParsedData.maxPlayers,
+                                    size: mapParsedData.width,
+                                    image: token_image,
+                                    token: token_name,
+                                    base_buyin: base_buyin,
+                                    min_buyin: min_buyin,
+                                    max_buyin: max_buyin,
+                                }
+                                : game,
+                        );
+                        return updatedGames;
+                    });
+                } else {
+                    console.log(
+                        `No account info found for game ID ${activeGames[i].worldId}`,
+                    );
+                }
+            } catch (error) {
+                console.log(
+                    `Error fetching map data for game ID ${activeGames[i].worldId}:`,
+                    error,
+                );
+            }
+        }
+    };
+    */
 
     return (
         <div className="flex h-[84vh]">
@@ -151,28 +312,35 @@ const Home = () => {
                             </div>
                         </div>
                         <input
-                            type="number"
-                            className="w-[20%] outline-none flex items-end justify-end text-right mr-[15px] text-[1rem] border-none bg-transparent font-[Terminus] overflow-hidden select-none"
-                            value={buyIn}
-                            onChange={(e) =>
-                                setBuyIn(parseFloat(e.target.value))
-                            }
-                            placeholder="0.1"
-                            step={0.01}
-                            min={0.1}
-                        />
+                        className="w-[20%] outline-none flex items-end justify-end text-right mr-[15px] text-[1rem] border-none bg-transparent font-[Terminus] overflow-hidden select-none"
+                        type="number"
+                        value={buyIn}
+                        onChange={(e) => setBuyIn(parseFloat(e.target.value))}
+                        placeholder={activeGames[0] ? activeGames[0].base_buyin.toString() : "0"}
+                        step={activeGames[0] ? activeGames[0].min_buyin / 10 : 0}
+                        min={activeGames[0] ? activeGames[0].min_buyin : 0}
+                        max={activeGames[0] ? activeGames[0].max_buyin : 0}
+                        style={{
+                        flexGrow: 1, 
+                        flexShrink: 0,
+                        marginLeft: "10px",
+                        marginRight: "0",
+                        zIndex: 1,
+                        position: "relative", 
+                        }}
+                    />
                     </div>
 
                     <div className="bg-black col-start-3 col-span-2 flex h-[2.5em] text-white ml-[0.5em] text-[1rem] font-[Terminus] items-center justify-center overflow-hidden">
-                        <input
-                            type="range"
-                            className="slider h-[1px] bg-white outline-none"
-                            min={0.1}
-                            max={10.01}
-                            step={0.1}
-                            value={buyIn}
-                            onChange={handleSliderChange}
-                        />
+                        <input 
+                        type="range" 
+                        className="slider h-[1px] bg-white outline-none"
+                        min={activeGames[0] ? activeGames[0].min_buyin : 0}  
+                        max={activeGames[0] ? (activeGames[0].max_buyin + activeGames[0].min_buyin/10) : 0} 
+                        step={activeGames[0] ? (activeGames[0].min_buyin/10) : 0} 
+                        value={buyIn} 
+                        onChange={handleSliderChange} 
+                         />
                     </div>
 
                     <div className="col-start-1 col-span-2 justify-start items-center ml-[1vw]">

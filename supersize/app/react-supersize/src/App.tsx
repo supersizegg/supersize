@@ -18,7 +18,9 @@ import { initBuddyState, initialBuddyLink, useInitBuddyLink,
     useBuddyState, useBuddyLink, BUDDY_STATUS, getTreasuryPDA, getBuddyPDA,
     BUDDY_MINTS, getMemberPDA
  } from "buddy.link";
- 
+import { MagicBlockEngineProvider } from "./engine/MagicBlockEngineProvider";
+import { MenuBar } from "./components/menu/MenuBar";
+
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 const initialState = {
@@ -54,18 +56,22 @@ function App() {
 
     return (
         <>
-        <ConnectionProvider endpoint={CONNECTION_STRING}>
+        {/*<ConnectionProvider endpoint={CONNECTION_STRING}>
             <WalletProvider wallets={wallets} autoConnect>
-                <WalletModalProvider>
+                <WalletModalProvider> */}
                     <BrowserRouter>
+                    <MagicBlockEngineProvider>
                         <SupersizeProvider>
+                            <MenuBar />
                             <AppRoutes />
                         </SupersizeProvider>
                         <InitBuddyLinkWrapper />
+                    </MagicBlockEngineProvider>
                     </BrowserRouter>
+        {/*}
                 </WalletModalProvider>
             </WalletProvider>
-        </ConnectionProvider>
+        </ConnectionProvider> */}
         </>
     );
 }

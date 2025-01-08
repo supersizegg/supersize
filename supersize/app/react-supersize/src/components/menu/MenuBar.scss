@@ -1,0 +1,26 @@
+.MenuBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.KeysBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.TopBar {
+  flex-grow: 0;
+  text-align: left;
+}
+
+.Separator {
+  width: 1px;
+  height: 100%;
+  background-color: #ccc;
+  margin: 0 10px;
+}
