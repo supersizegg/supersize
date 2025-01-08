@@ -2,8 +2,9 @@ import { AccountInfo, PublicKey } from "@solana/web3.js";
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { decodeFood } from "@utils/helper";
 import { Food, Blob } from "@utils/types";
-import { getComponentMapOnEphem, getComponentPlayerOnEphem, getComponentSectionOnEphem } from "./gamePrograms";
+import { COMPONENT_MAP_ID, COMPONENT_PLAYER_ID, COMPONENT_SECTION_ID, getComponentMapOnEphem, getComponentPlayerOnEphem, getComponentSectionOnEphem } from "./gamePrograms";
 import { useCallback } from "react";
+import { FindComponentPda } from "@magicblock-labs/bolt-sdk";
 
 
 export function updateFoodList(
@@ -215,132 +216,109 @@ export function handleMapComponentChange(
 };
 
 // Subscribe to the game state
-//wip
-/*
 export function subscribeToGame(
   engine: MagicBlockEngine,
+  foodEntities: PublicKey[],
+  playerEntities: PublicKey[],
   entityMatch: PublicKey,
   currentPlayerEntity: PublicKey,
+  currentPlayer: Blob,
+  nextFood: { x: number; y: number },
+  isJoining: boolean,
+  foodComponentSubscriptionId: any,
+  playersComponentSubscriptionId: any,
+  myplayerComponentSubscriptionId: any,
+  mapComponentSubscriptionId: any,
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
   setCurrentPlayer: (player: Blob) => void,
   setGameEnded: (gameEnded: number) => void,
-  isJoining: boolean,
+  setAllFood: (callback: (prevAllFood: any[]) => any[]) => void,
+  setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
+  setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
 
-  for (let i = 0; i < foodEntities.current.length; i++) {
+  for (let i = 0; i < foodEntities.length; i++) {
       const foodComponenti = FindComponentPda({
-          componentId: FOOD_COMPONENT,
-          entity: foodEntities.current[i],
+          componentId: COMPONENT_SECTION_ID,
+          entity: foodEntities[i],
       });
       if (foodComponentSubscriptionId.current === null) {
           foodComponentSubscriptionId.current = [
-              providerEphemeralRollup.current.connection.onAccountChange(
-                  foodComponenti,
-                  (accountInfo) =>
-                      handleFoodComponentChange(accountInfo, i),
-                  "processed",
-              ),
+              engine.subscribeToEphemAccountInfo(foodComponenti, (accountInfo) => {
+                if (!accountInfo) {
+                  return;
+                }
+                const coder = getComponentSectionOnEphem(engine).coder;
+                handleFoodComponentChange(coder.accounts.decode("section", accountInfo.data), i, engine, setAllFood, setFoodListLen, currentPlayer);
+              }),
           ];
       } else {
           foodComponentSubscriptionId.current = [
               ...foodComponentSubscriptionId.current,
-              providerEphemeralRollup.current.connection.onAccountChange(
-                  foodComponenti,
-                  (accountInfo) =>
-                      handleFoodComponentChange(accountInfo, i),
-                  "processed",
-              ),
+              engine.subscribeToEphemAccountInfo(foodComponenti, (accountInfo) => {
+                if (!accountInfo) {
+                  return;
+                }
+                const coder = getComponentSectionOnEphem(engine).coder;
+                handleFoodComponentChange(coder.accounts.decode("section", accountInfo.data), i, engine, setAllFood, setFoodListLen, currentPlayer);
+              }),
           ];
       }
   }
 
-  for (let i = 0; i < playerEntities.current.length; i++) {
+  for (let i = 0; i < playerEntities.length; i++) {
       const playersComponenti = FindComponentPda({
-          componentId: PLAYER_COMPONENT,
-          entity: playerEntities.current[i],
+          componentId: COMPONENT_PLAYER_ID,
+          entity: playerEntities[i],
       });
       if (playersComponentSubscriptionId.current === null) {
           playersComponentSubscriptionId.current = [
-              providerEphemeralRollup.current.connection.onAccountChange(
-                  playersComponenti,
-                  (accountInfo) =>
-                      handlePlayersComponentChange(accountInfo, i, playersComponentClient, engine, allPlayers, setAllPlayers),
-                  "processed",
-              ),
+              engine.subscribeToEphemAccountInfo(playersComponenti, (accountInfo) => {
+                if (!accountInfo) {
+                  return;
+                }
+                const coder = getComponentPlayerOnEphem(engine).coder;
+                handlePlayersComponentChange(coder.accounts.decode("player", accountInfo.data), i, engine, setAllPlayers);
+              }),
           ];
       } else {
           playersComponentSubscriptionId.current = [
               ...playersComponentSubscriptionId.current,
-              providerEphemeralRollup.current.connection.onAccountChange(
-                  playersComponenti,
-                  (accountInfo) =>
-                      handlePlayersComponentChange(accountInfo, i),
-                  "processed",
-              ),
+              engine.subscribeToEphemAccountInfo(playersComponenti, (accountInfo) => {
+                if (!accountInfo) {
+                  return;
+                }
+                const coder = getComponentPlayerOnEphem(engine).coder;
+                handlePlayersComponentChange(coder.accounts.decode("player", accountInfo.data), i, engine, setAllPlayers);
+              }),
           ];
       }
   }
 
   const myplayerComponent = FindComponentPda({
-      componentId: PLAYER_COMPONENT,
-      entity: currentPlayerEntity.current,
+      componentId: COMPONENT_PLAYER_ID,
+      entity: currentPlayerEntity,
   });
 
-  myplayerComponentSubscriptionId.current =
-      providerEphemeralRollup.current.connection.onAccountChange(
-          myplayerComponent,
-          handleMyPlayerComponentChange,
-          "processed",
-      );
-  (playersComponentClient.current?.account as any).player
-      .fetch(myplayerComponent, "processed")
-      .then(updateMyPlayer)
-      .catch((error: any) => {
-          console.error("Failed to fetch account:", error);
-      });
-  for (let i = 0; i < foodEntities.current.length; i++) {
-      const foodComponenti = FindComponentPda({
-          componentId: FOOD_COMPONENT,
-          entity: foodEntities.current[i],
-      });
-      (foodComponentClient.current?.account as any).section
-          .fetch(foodComponenti, "processed")
-          .then((fetchedData: any) => updateFoodList(fetchedData, i))
-          .catch((error: any) => { });
-  }
-
-  for (let i = 0; i < playerEntities.current.length; i++) {
-      const playersComponenti = FindComponentPda({
-          componentId: PLAYER_COMPONENT,
-          entity: playerEntities.current[i],
-      });
-      //console.log( i, playerEntities.current[i]);
-      //console.log('player component', playersComponenti);
-      (playersComponentClient.current?.account as any).player
-          .fetch(playersComponenti, "processed")
-          .then((fetchedData: any) => updatePlayers(fetchedData, i))
-          .catch((error: any) => {
-              //console.error("Failed to fetch account:", error);
-          });
-  }
+  myplayerComponentSubscriptionId = engine.subscribeToEphemAccountInfo(myplayerComponent, (accountInfo) => {
+    if (!accountInfo) {
+      return;
+    }
+    const coder = getComponentPlayerOnEphem(engine).coder;
+    handleMyPlayerComponentChange(coder.accounts.decode("player", accountInfo.data), engine, setCurrentPlayer, setGameEnded, isJoining);
+  });
 
   const mapComponent = FindComponentPda({
-      componentId: MAP_COMPONENT,
-      entity: entityMatch.current,
+      componentId: COMPONENT_MAP_ID,
+      entity: entityMatch,
   });
-  mapComponentSubscriptionId.current =
-      providerEphemeralRollup.current.connection.onAccountChange(
-          mapComponent,
-          handleMapComponentChange,
-          "processed",
-      );
-  (mapComponentClient.current?.account as any).map
-      .fetch(mapComponent, "processed")
-      .then(updateMap)
-      .catch((error: any) => {
-          console.error("Failed to fetch account:", error);
-      });
+
+  mapComponentSubscriptionId = engine.subscribeToEphemAccountInfo(mapComponent, (accountInfo) => {
+    if (!accountInfo) {
+      return;
+    }
+    const coder = getComponentMapOnEphem(engine).coder;
+    handleMapComponentChange(coder.accounts.decode("map", accountInfo.data), engine, nextFood, setNextFood);
+  });
 
 };
-
-*/
