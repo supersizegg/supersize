@@ -28,7 +28,8 @@ export function MenuBar() {
         <LeaderboardButton
             handleLeaderboadClick={() => navigate("/leaderboard")}
         />
-        <MenuSession />
+        {/* TODO: move session wallet management to profile */}
+        {/* <MenuSession /> */}
         <div className="Separator"></div>
         <MenuWallet />
       </div>

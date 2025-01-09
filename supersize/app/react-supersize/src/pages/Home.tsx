@@ -1,6 +1,5 @@
-// import { withMainLayout } from "@layouts/MainLayout"
 import { withMainLayout } from "@layouts/MainLayout";
-import { useCallback, useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { ActiveGame } from "@utils/types";
 import { Link } from "react-router-dom";
 import Alert from "@components/Alert";
@@ -8,6 +7,8 @@ import { useSupersizeContext } from "@contexts/SupersizeContext";
 import { FindWorldPda } from "@magicblock-labs/bolt-sdk";
 import * as anchor from "@coral-xyz/anchor";
 import { useNavigate } from "react-router-dom";
+
+import FooterLink from "@components/Footer";
 
 const Home = () => {
     const {
@@ -270,6 +271,7 @@ const Home = () => {
     */
 
     return (
+        <div>
         <div className="flex h-[84vh]">
             <div className="flex items-center justify-center w-screen h-[84vh] absolute font-[Conthrax]">
                 <img
@@ -570,6 +572,8 @@ const Home = () => {
                 </div>
             </div>
 
+            
+
             {isSubmitting && isJoining && (
                 <div className="fixed bottom-[120px] left-0 flex justify-center items-end w-full z-[1000]">
                     <div className="w-9 h-9 border-4 border-solid border-black/10 border-l-[#09f] rounded-full animate-spin"></div>
@@ -591,7 +595,9 @@ const Home = () => {
                 />
             )}
         </div>
+        <FooterLink />
+        </div>
     );
 };
 
-export default withMainLayout(Home);
+export default Home;
