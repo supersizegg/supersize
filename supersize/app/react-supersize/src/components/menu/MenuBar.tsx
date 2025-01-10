@@ -15,7 +15,7 @@ export function MenuBar() {
   const navigate = useNavigate();
 
   return (
-    <div className="MenuBar backdrop-blur-[10px]">
+    <div className="MenuBar">
       <button
         className="TopBar"
         onClick={() => {

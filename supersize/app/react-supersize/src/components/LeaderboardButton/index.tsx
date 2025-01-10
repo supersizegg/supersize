@@ -10,21 +10,14 @@ const LeaderboardButton: React.FC<LeaderboardButtonProps> = ({
     return (
         <>
             {leaderBoardActive ? (
-                <img
-                    src="/leaderboardhighlight.png"
-                    alt="leaderboard"
-                    className="w-[6vh] h-[6vh] mt-[2vh] cursor-pointer mr-4"
-                    onMouseLeave={() => setLeaderboardActive(false)}
-                    onClick={handleLeaderboadClick}
-                />
+                <span className="text-[#eee] font-[terminus] text-[1.5vh] mt-[2vh] cursor-pointer mr-4" onMouseLeave={() => setLeaderboardActive(false)} onClick={handleLeaderboadClick}>
+                    Leaderboard
+                </span>
             ) : (
-                <img
-                    src="/leaderboard.png"
-                    alt="leaderboard"
-                    className="w-[6vh] h-[6vh] mt-[2vh] cursor-pointer mr-4"
-                    onMouseEnter={() => setLeaderboardActive(true)}
-                    onClick={handleLeaderboadClick}
-                />
+                <span className="text-[#eee] font-[terminus] text-[1.5vh] mt-[2vh] cursor-pointer mr-4"  onMouseEnter={() => setLeaderboardActive(true)}
+                onClick={handleLeaderboadClick}>
+                Leaderboard
+                </span>
             )}
         </>
     );

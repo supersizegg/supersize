@@ -20,6 +20,7 @@ import { initBuddyState, initialBuddyLink, useInitBuddyLink,
  } from "buddy.link";
 import { MagicBlockEngineProvider } from "./engine/MagicBlockEngineProvider";
 import { MenuBar } from "./components/menu/MenuBar";
+import WebGLBackground from "@components/ThreeBackground";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
@@ -59,6 +60,7 @@ function App() {
         {/*<ConnectionProvider endpoint={CONNECTION_STRING}>
             <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider> */}
+                <WebGLBackground />
                     <BrowserRouter>
                     <MagicBlockEngineProvider>
                         <SupersizeProvider>

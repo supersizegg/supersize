@@ -1,0 +1,38 @@
+.Home {
+  text-align: center;
+  padding: 20px;
+}
+
+.ButtonContainer {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.LeftButton {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.RightButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.TableContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 80%;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  background-color: #000000;
+} 
