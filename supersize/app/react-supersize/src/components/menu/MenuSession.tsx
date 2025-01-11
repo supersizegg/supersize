@@ -19,10 +19,7 @@ export function MenuSession() {
     });
   }, [engine]);
 
-  const needsFunding =
-    sessionLamports !== undefined
-      ? sessionLamports < engine.getSessionMinLamports()
-      : true;
+  const needsFunding = sessionLamports !== undefined ? sessionLamports < engine.getSessionMinLamports() : true;
 
   const extras = [];
   if (engine.getWalletConnected() && needsFunding) {

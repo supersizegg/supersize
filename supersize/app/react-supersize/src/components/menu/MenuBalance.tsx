@@ -32,7 +32,7 @@ export function MenuBalance({
       onClick={() => {
         navigator.clipboard.writeText(publicKey.toBase58());
       }}
-      isSoft={true}
+      // isSoft={true}
     />
   );
 }

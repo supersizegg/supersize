@@ -1,44 +1,28 @@
 import * as React from "react";
-
-import { useNavigate } from "react-router-dom";
-
+import { Link, NavLink } from "react-router-dom";
 import { MenuWallet } from "./MenuWallet";
-import { MenuSession } from "./MenuSession";
-
 import "./MenuBar.scss";
-import CopyLink from "../buddyReferral";
-import Invite from "../buddyInvite";
-import TweetLink from "../buddyTweet";
-import LeaderboardButton from "@components/LeaderboardButton";
 
 export function MenuBar() {
-  const navigate = useNavigate();
-
   return (
-    <div className="MenuBar">
-      <button
-        className="TopBar"
-        onClick={() => {
-          navigate("/");
-        }}
-      >
-        <div className="Text">Supersize</div>
-      </button>
-      <div className="KeysBar">
-        <LeaderboardButton
-            handleLeaderboadClick={() => navigate("/leaderboard")}
-        />
-        {/* TODO: move session wallet management to profile */}
-        {/* <MenuSession /> */}
-        <div className="Separator"></div>
+    <header className="menu-bar">
+      <div className="menu-bar-left">
+        <Link to="/" className="logo">
+          <img src="/token.png" alt="Supersize" />
+          <span>Supersize</span>
+        </Link>
+      </div>
+
+      <div className="menu-bar-right">
+        <nav className="nav-links">
+          <NavLink to="/" end>
+            Lobby
+          </NavLink>
+          <NavLink to="/leaderboard">Leaderboard</NavLink>
+          <NavLink to="/profile">Profile</NavLink>
+        </nav>
         <MenuWallet />
       </div>
-      <div
-          className="text-white font-[terminus] h-[6vh] mt-[13vh] cursor-pointer absolute right-[1vw] w-fit z-10 text-right"
-          >
-          <TweetLink />
-          <CopyLink handleCreateClick={() => {}}/>
-          </div>
-    </div>
+    </header>
   );
 }

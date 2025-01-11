@@ -7,21 +7,17 @@ import "./Button.scss";
 export function Button({
   icon,
   text,
-  isSoft,
+  className,
   onClick,
 }: {
   icon?: string;
   text: string;
-  isSoft?: boolean;
+  className?: string;
   onClick?: () => void;
 }) {
-  const classNames = ["Button"];
-  if (isSoft) {
-    classNames.push("Soft");
-  }
   return (
-    <button className={classNames.join(" ")} onClick={onClick}>
-      {icon ? <img className="Icon" src={icon} /> : undefined}
+    <button className={className} onClick={onClick}>
+      {icon ? <img className="icon" src={icon} /> : undefined}
       <Text value={text} />
     </button>
   );
