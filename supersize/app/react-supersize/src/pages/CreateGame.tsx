@@ -1,4 +1,3 @@
-import { withGameLayout } from "@layouts/GameLayout";
 import { useState } from "react";
 import LanchGame from "@components/LaunchGame";
 import EarnFees from "@components/EarnFees";
@@ -36,4 +35,4 @@ const CreateGame = () => {
     );
 };
 
-export default withGameLayout(CreateGame);
+export default CreateGame;

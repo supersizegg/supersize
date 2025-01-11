@@ -1,13 +1,7 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import "./Footer.css";
 
 const Footer: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleCreateGame = () => {
-    navigate("/create-game");
-  };
 
   const openDocs = () => {
     window.open("https://docs.supersize.gg/", "_blank");
@@ -28,18 +22,6 @@ const Footer: React.FC = () => {
       </span>
 
       <div className="footerIcons">
-        <div className="footerIcon" onClick={handleCreateGame}>
-          <img
-            src={`${process.env.PUBLIC_URL}/build2.png`}
-            alt="Build icon"
-            className="footerIconImg"
-          />
-          <img
-            src={`${process.env.PUBLIC_URL}/buildhighlight2.png`}
-            alt="Build icon hover"
-            className="footerIconImg footerIconImgHover"
-          />
-        </div>
 
         <div className="footerIcon" onClick={openDocs}>
           <img

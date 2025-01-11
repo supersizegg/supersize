@@ -1,4 +1,3 @@
-import { withLeaderboardLayout } from "@layouts/LeaderboardLayout";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -274,4 +273,4 @@ const Leaderboard: React.FC = () => {
     );
 };
 
-export default withLeaderboardLayout(Leaderboard);
+export default Leaderboard;

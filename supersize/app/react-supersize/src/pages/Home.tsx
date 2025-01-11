@@ -1,7 +1,8 @@
 import React from "react";
-import "./Home.scss";
+import { useNavigate } from "react-router-dom";
 
 import FooterLink from "@components/Footer";
+import "./Home.scss";
 
 interface GameRow {
   server: string;
@@ -19,8 +20,9 @@ function getPingColor(ping: number) {
 }
 
 const Home = () => {
+  const navigate = useNavigate();
 
-  // @todo: fetch all available servers from on-chain programs  
+  // @todo: fetch all available servers from on-chain programs
   const gameRows: GameRow[] = [
     { server: "Server 1", gameId: "000001", token: "Token A", buyIn: 100, players: "0/20", ping: 50 },
     { server: "Server 2", gameId: "000002", token: "Token A", buyIn: 100, players: "0/20", ping: 400 },
@@ -33,8 +35,10 @@ const Home = () => {
         <div className="home-header">
           <input className="search-game-input" type="text" placeholder="Search Game" />
           <div className="header-buttons">
-            <button className="btn-outlined btn-orange">How to Play</button>
-            <button className="btn-outlined btn-green">+ Create Game</button>
+            <button className="btn-outlined btn-orange" disabled>How to Play</button>
+            <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
+              + Create Game
+            </button>
           </div>
         </div>
 
