@@ -1,38 +1,130 @@
-.Home {
-  text-align: center;
-  padding: 20px;
+.home-container {
+  background-color: #1b1b1b;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 1200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-.ButtonContainer {
+.home-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
+  align-items: center;
+
+  .search-game-input {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: #fff;
+    width: 200px;
+
+    &::placeholder {
+      color: #aaa;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #666;
+    }
+  }
+
+  .header-buttons {
+    display: flex;
+    gap: 1rem;
+  }
 }
 
-.LeftButton {
-  flex-grow: 1;
-  text-align: left;
+.btn-outlined {
+  background: transparent;
+  border: 2px solid currentColor;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+
+  &:hover {
+    opacity: 0.5;
+    color: #fff;
+  }
+
+  &.btn-orange {
+    color: #ffa500;
+  }
+
+  &.btn-green {
+    color: #00d37d;
+  }
 }
 
-.RightButtons {
-  display: flex;
-  gap: 10px;
+.table-container {
+  overflow-x: auto;
 }
 
-.TableContainer {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-table {
+.lobby-table {
+  width: 100%;
   border-collapse: collapse;
-  width: 80%;
+  min-width: 700px;
+
+  thead {
+    background-color: #2f2f2f;
+    th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      border-bottom: 1px solid #444;
+    }
+  }
+
+  tbody {
+    tr {
+      &:nth-of-type(even) {
+        // background-color: #262626;
+      }
+      &:hover {
+        background-color: #333;
+      }
+      td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #444;
+        vertical-align: middle;
+      }
+    }
+  }
 }
 
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: center;
-  background-color: #000000;
-} 
+.ping-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .ping-circle {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+  }
+}
+
+.btn-play {
+  background-color: #0077ff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #005ec7;
+  }
+}
