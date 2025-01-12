@@ -1,5 +1,5 @@
 .home-container {
-  background-color: #1b1b1b;
+  // background-color: #1b1b1b;
   margin: 2rem auto;
   padding: 2rem;
   border-radius: 8px;
@@ -67,6 +67,9 @@
 }
 
 .table-container {
+  background-color: #1b1b1b;
+  padding: 2rem;
+  border-radius: 8px;
   overflow-x: auto;
 }
 
