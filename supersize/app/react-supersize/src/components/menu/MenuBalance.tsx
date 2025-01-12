@@ -24,7 +24,7 @@ export function MenuBalance({
 
   const abbreviation = publicKey.toBase58().substring(0, 8);
   const sols =
-    lamports !== undefined ? (lamports / 1_000_000_000).toFixed(3) : "?????";
+    lamports !== undefined ? (lamports / 1_000_000_000).toFixed(3) : 0;
 
   return (
     <Button

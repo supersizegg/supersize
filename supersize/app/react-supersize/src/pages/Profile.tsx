@@ -38,6 +38,8 @@ function GeneralTab() {
     <div className="general-tab">
       <MenuSession />
 
+      <hr className="divider" />
+
       <div className="row-inline">
         <input type="text" placeholder="Username" />
         <button className="btn-save">Save</button>
