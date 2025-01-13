@@ -2,6 +2,10 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+
+  .divider {
+    border-color: #333;
+  }
 }
 
 .profile-container {
