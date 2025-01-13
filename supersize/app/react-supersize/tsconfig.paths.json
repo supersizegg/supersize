@@ -19,6 +19,15 @@
             ],
             "@layouts/*": [
                 "./src/layouts/*"
+            ],
+            "@states/*": [
+                "./src/states/*"
+            ],
+            "@engine/*": [
+                "./src/engine/*"
+            ],            
+            "@backend/*": [
+                "./src/backend/*"
             ]
         }
     }

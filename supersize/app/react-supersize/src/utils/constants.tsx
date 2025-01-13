@@ -87,23 +87,23 @@ export const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: 
     },
 }; */
 
-export const endpointToWorldMap: Record<
-    string,
-    { worldId: anchor.BN; worldPda: PublicKey }
-> = {
-    "https://supersize-sin.magicblock.app": {
+export const activeGamesList: { worldId: anchor.BN; worldPda: PublicKey; endpoint: string }[] = [
+    {
         worldId: new anchor.BN(1666),
-        worldPda: new PublicKey("BQ4vkTpteu5EcM5dYTSCGAQKbW5JumeyLm3o6yvyzqHw"),
+        worldPda: new PublicKey('BQ4vkTpteu5EcM5dYTSCGAQKbW5JumeyLm3o6yvyzqHw'),
+        endpoint: "https://supersize-sin.magicblock.app",
     },
-    "https://supersize.magicblock.app": {
+    {
         worldId: new anchor.BN(1731),
-        worldPda: new PublicKey("EuCCHZwFm6AiGe7ZzPoVus7fpNGFETYFinvNyZTtFVHF"),
+        worldPda: new PublicKey('EuCCHZwFm6AiGe7ZzPoVus7fpNGFETYFinvNyZTtFVHF'),
+        endpoint: "https://supersize.magicblock.app",
     },
-    "https://supersize-fra.magicblock.app": {
+    {
         worldId: new anchor.BN(1727),
-        worldPda: new PublicKey("A5F8bV8wyMNS4dLpfckfxpfHFBTdgd8FW34K7UwxCNvX"),
-    },
-};
+        worldPda: new PublicKey('A5F8bV8wyMNS4dLpfckfxpfHFBTdgd8FW34K7UwxCNvX'),
+        endpoint: "https://supersize-fra.magicblock.app",
+    }
+];
 
 export const options = ["Europe", "America", "Asia"];
 

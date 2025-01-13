@@ -139,7 +139,7 @@ export async function gameSystemBuyIn(
                 isSigner: false,
             },
         ];
-  
+
         const applyBuyInSystem = await ApplySystem({
             authority: engine.getWalletPayer(),
             world: gameInfo.worldPda,
@@ -162,7 +162,6 @@ export async function gameSystemBuyIn(
         });
         combinedTx.add(applyBuyInSystem.transaction);
     }
-  
     if (myPlayerStatus !== "resume_session") {
         try {
             const playerdeltx = new anchor.web3.Transaction();

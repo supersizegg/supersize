@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react";
-import useSupersize from "@hooks/useSupersize";
 
 interface Player {
     name: string;

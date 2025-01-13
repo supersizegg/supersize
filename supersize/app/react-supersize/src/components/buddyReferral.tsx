@@ -2,7 +2,6 @@ import { useBuddyState, BUDDY_MEMBER } from 'buddy.link'
 import React, { useCallback, useMemo, useState } from 'react'
 import Invite from './buddyInvite'
 import { Copy } from 'lucide-react'
-import useSupersize from "@hooks/useSupersize";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 interface ShareProps {
@@ -13,7 +12,6 @@ interface ShareProps {
 const CopyLink: React.FC<ShareProps> = React.memo(({ baseUrl = 'https://supersize.gg', handleCreateClick}) => {
   const [member] = useBuddyState(BUDDY_MEMBER);
   const { publicKey, sendTransaction } = useWallet();
-  const { setUsername, setIsReferrerModalOpen, isReferrerModalOpen, username } = useSupersize();
 
   const [isCopying, setIsCopying] = useState(false) //Control loading state, prevent duplicate clicks
   const [textContet, setTextContent] = useState("Copy referral link")

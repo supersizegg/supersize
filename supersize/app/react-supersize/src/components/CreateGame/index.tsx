@@ -1,15 +1,20 @@
-import useSupersize from "@hooks/useSupersize";
 import React, { useState } from "react";
+
+import { gameExecuteNewGame } from "../../states/gameExecuteNewGame";
+import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
+import { ActiveGame } from "@utils/types";
 
 type gameProps = {
     game_size: number;
     userKey: string;
+    activeGames: ActiveGame[];
+    setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
 };
 
 type FormData = [number, number, number, string, string, string];
 
-const CreateGame: React.FC<gameProps> = ({ game_size, userKey }) => {
-    const { newGameTx } = useSupersize();
+const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setActiveGames }) => {
+    const engine = useMagicBlockEngine();
     const [formData, setFormData] = useState<FormData>([
         game_size,
         10.0,
@@ -96,7 +101,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey }) => {
             </label>
             <button
                 onClick={() => {
-                    newGameTx(...formData);
+                    gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGames, setActiveGames);
                 }}
                 className="px-4 py-2 text-[20px] font-[Terminus] rounded-[10px] cursor-pointer bg-[#000] text-white border-[1px] border-[#C4B5FD] shadow-[rgb(109,88,135)_0px_0px_10px_0px] transition-all duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#000] hover:border-[#755E92] hover:shadow-none"
             >

@@ -1,16 +1,29 @@
-import useSupersize from "@hooks/useSupersize";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Invite from "../buddyInvite";
+import { useState } from "react";
 
 type ReferrerModalProps = {
     handleCloseModal: () => void;
+    referrer: string | null;
+    isReferrerModalOpen: boolean;
+    setIsReferrerModalOpen: (isOpen: boolean) => void;
 };
 const ReferrerModal: React.FC<ReferrerModalProps> = ({
     handleCloseModal,
+    referrer,
+    isReferrerModalOpen, 
+    setIsReferrerModalOpen, 
 }) => {
     const {publicKey} = useWallet();
 
-    const {referrerInput, setReferrerInput, setIsReferrerModalOpen, isReferrerModalOpen, referrer, username, setUsername, setInputUsername, } = useSupersize();
+
+    const [referrerInput, setReferrerInput] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+
+    const setInputUsername = (inputUsername: any) => {
+        const user = { name: inputUsername, referrer: referrer, referral_done: false};
+        localStorage.setItem('user', JSON.stringify(user));
+    };
 
     /*const handleCancel = () => {
         setReferrerInput(""); 

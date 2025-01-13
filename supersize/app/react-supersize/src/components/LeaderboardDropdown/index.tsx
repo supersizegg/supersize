@@ -1,4 +1,3 @@
-import useSupersize from "@hooks/useSupersize";
 import { useEffect, useRef, useState } from "react";
 
 const LeaderboardDropdown = () => {
@@ -15,7 +14,13 @@ const LeaderboardDropdown = () => {
             token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
         },
     ];
-    const { leaderBoardOptions, setSeason, season } = useSupersize();
+    const leaderBoardOptions = useRef([
+        { icon: `${process.env.PUBLIC_URL}/token.png`, name: "LOADING" },
+    ]);
+    const [season, setSeason] = useState({
+        icon: `${process.env.PUBLIC_URL}/token.png`,
+        name: "LOADING",
+    });
 
     useEffect(() => {
         const loadTokenMetadata = async () => {

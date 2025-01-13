@@ -102,7 +102,6 @@ interface Food {
 }
 
 interface GameComponentProps {
-  gameId: PublicKey | null;
   players: Blob[];
   visibleFood: Food[];
   currentPlayer: Blob | null;
@@ -110,7 +109,7 @@ interface GameComponentProps {
   scale: number;
 }
 
-const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleFood, currentPlayer, screenSize, scale }) => {
+const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, currentPlayer, screenSize, scale }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [lastTime, setLastTime] = useState<number>(0);
   const playersRef = useRef(players);
@@ -176,7 +175,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
   };
 
   const renderWithInterpolation = (prevPos: Blob, currPos: Blob, alpha: number) => {
-    if (gameId !== null && currentPlayerRef.current) {
+    if (currentPlayerRef.current) {
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -237,7 +236,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
       previousTime.current = time;
       window.requestAnimationFrame(loop);
     });
-  }, [gameId]);
+  }, []);
 
   /*if(currentPlayerPos.current){
       currentPlayerPos.current = updatePlayerPosition(currentPlayerPos.current, currentPlayerPos.current.target_x, currentPlayerPos.current.target_y, timeStep);
@@ -539,7 +538,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ gameId, players, visibleF
 };
 
   return (
-      <canvas id="gamecanvas" ref={canvasRef} style={{ position: "relative", width: "100%", height: "100%",display: gameId !== null ? 'block' : 'none' }}></canvas>
+      <canvas id="gamecanvas" ref={canvasRef} style={{ position: "relative", width: "100%", height: "100%",display: "block" }}></canvas>
   );
 };
 

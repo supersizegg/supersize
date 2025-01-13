@@ -6,13 +6,16 @@ import CreateGame from "@pages/CreateGame";
 import Game from "@pages/Game";
 import Leaderboard from "@pages/Leaderboard";
 import Profile from "@pages/Profile";
+import { ActiveGame } from "@utils/types";
+import { useState } from "react";
 
 const AppRoutes = () => {
+    const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     return (
         <Routes>
             <Route index element={<Home />} />
-            <Route path="/create-game" element={<CreateGame />} />
-            <Route path="/game" element={<Game />} />
+            <Route path="/create-game" element={<CreateGame activeGames={activeGames} setActiveGames={setActiveGames} />} />
+            <Route path="/game" element={<Game gameInfo={activeGames[0]} screenSize={{ width: 2000, height: 2000 }} players={[]} visibleFood={[]} />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />

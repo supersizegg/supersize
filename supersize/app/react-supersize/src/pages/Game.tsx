@@ -1,30 +1,115 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import GameComponent from "@components/Game";
 import { PublicKey } from "@solana/web3.js";
 import { useNavigate } from "react-router-dom";
-import { useSupersizeContext } from "@contexts/SupersizeContext";
 import { scale } from "@utils/constants";
-import useSupersize from "@hooks/useSupersize";
+import { ActiveGame, Blob, Food } from "@utils/types";
+import { FindComponentPda } from "@magicblock-labs/bolt-sdk";
+import { COMPONENT_PLAYER_ID } from "../states/gamePrograms";
+import { BN } from "@coral-xyz/anchor";
+import { gameSystemExit } from "../states/gameSystemExit";
+import { useMagicBlockEngine } from "../engine/MagicBlockEngineProvider";
+import { playerFetchOnEphem } from "../states/gameFetch";
+import { updateMyPlayer } from "../states/gameListen";
+import { gameSystemCashOut } from "../states/gameSystemCashOut";
 
-const Game = () => {
+type gameProps = {
+    gameInfo: ActiveGame;
+    screenSize: { width: number; height: number };
+    players: Blob[];
+    visibleFood: Food[];
+};
+
+
+const Game = ({gameInfo, screenSize, players, visibleFood}: gameProps) => {
     const navigate = useNavigate();
-    const {
-        gameId,
-        gameEnded,
-        playerExiting,
-        countdown,
-        screenSize,
-        reclaimTx,
-        cashoutTx,
-        handleExitClick,
-        players,
-        visibleFood,
-        currentPlayer,
-        cleanUp,
-    } = useSupersizeContext();
+    const engine = useMagicBlockEngine();
 
+    const [currentPlayer, setCurrentPlayer] = useState<Blob | null>(null);
+    const entityMatch = useRef<PublicKey | null>(null);
+
+    const currentPlayerEntity = useRef<PublicKey | null>(null);
+    const anteroomEntity = useRef<PublicKey | null>(null);
+
+    const [countdown, setCountdown] = useState(5);
     const [exitHovered, setExitHovered] = useState(false);
+    const playerRemovalTimeRef = useRef<BN | null>(null);
+    const [playerExiting, setPlayerExiting] = useState(false);
 
+    const [gameEnded, setGameEnded] = useState(0);
+    const [isJoining, setIsJoining] = useState(false);
+
+    const [cashoutTx, setCashoutTx] = useState<string | null>(null);
+    
+    const handleExitClick = async () => {
+        if (!currentPlayerEntity.current) {
+            return;
+        }
+        if (!entityMatch.current) {
+            return;
+        }
+
+        if (playerRemovalTimeRef.current !== null) {
+            const currentTime = Date.now();
+            const elapsedTime = currentTime - playerRemovalTimeRef.current.toNumber() * 1000;
+            
+            if (elapsedTime > 10000 || elapsedTime < 5000) {
+                await gameSystemExit(engine, gameInfo, currentPlayerEntity.current, entityMatch.current);
+            } else {
+                return;
+            }
+        }
+
+        setCountdown(5);
+        setPlayerExiting(true);
+        await gameSystemExit(engine, gameInfo, currentPlayerEntity.current, entityMatch.current);
+        if (currentPlayerEntity.current) {
+            const myplayerComponent = FindComponentPda({
+                componentId: COMPONENT_PLAYER_ID,
+                entity: currentPlayerEntity.current,
+            });
+            const playerData = await playerFetchOnEphem(engine, myplayerComponent);
+            if (playerData) {
+                updateMyPlayer(playerData, setCurrentPlayer, setGameEnded, isJoining);
+            }
+        }
+
+        const interval = setInterval(() => {
+            setCountdown(countdown - 1);
+        }, 1000);
+
+        let startTime = Date.now();
+        const checkRemovalTime = setInterval(() => {
+            if (playerRemovalTimeRef.current && !playerRemovalTimeRef.current.isZero()) {
+                startTime = playerRemovalTimeRef.current.toNumber() * 1000;
+                clearInterval(checkRemovalTime);
+
+                const timeoutinterval = setInterval(() => {
+                    if (playerRemovalTimeRef.current) {
+                        startTime = playerRemovalTimeRef.current.toNumber() * 1000;
+                    }
+                    const currentTime = Date.now();
+                    const elapsedTime = currentTime - startTime;
+
+                    if (elapsedTime >= 6000) {
+                        if (!currentPlayerEntity.current) {
+                            return;
+                        }
+                        if (!entityMatch.current) {
+                            return;
+                        }
+                        console.log("5 seconds have passed");
+                        gameSystemExit(engine, gameInfo, currentPlayerEntity.current, entityMatch.current);
+                        clearInterval(timeoutinterval);
+                        clearInterval(interval);
+                        setPlayerExiting(false);
+                    } else {
+                        console.log("Waiting...", elapsedTime);
+                    }
+                }, 1000);
+            }
+        }, 100);
+    };
     /*
         useEffect(() => {
         if (entityMatch || gameId) {
@@ -171,18 +256,14 @@ const Game = () => {
         <div className="gameWrapper w-screen h-screen overflow-hidden">
             <div
                 id="status"
-                className={`${
-                    gameId !== null ? "block" : "hidden"
-                } absolute p-2.5 bg-[rgba(17,19,20,0.4)] text-white font-['Terminus'] text-[16.1px] top-2.5 right-2.5 font-bold text-center rounded-[5px] border border-gray-400 filter drop-shadow-[0px_0px_5px_gray]`}
+                className={`block absolute p-2.5 bg-[rgba(17,19,20,0.4)] text-white font-['Terminus'] text-[16.1px] top-2.5 right-2.5 font-bold text-center rounded-[5px] border border-gray-400 filter drop-shadow-[0px_0px_5px_gray]`}
                 style={{ zIndex: 9999 }}
             >
                 <span className="font-[25px] text-white">Leaderboard</span>
             </div>
 
             <div
-                className={`${
-                    gameId !== null ? "block" : "hidden"
-                } flex items-center fixed top-0 left-0 m-2.5 z-[9999]`}
+                className={`block flex items-center fixed top-0 left-0 m-2.5 z-[9999]`}
                 style={{ zIndex: 9999 }}
                 onMouseEnter={() => {
                     setExitHovered(true);
@@ -205,9 +286,7 @@ const Game = () => {
             </div>
 
             <div
-                className={`${
-                    gameId !== null ? "block" : "hidden"
-                } fixed bottom-0 left-0 m-2 z-[9999] text-white text-base font-[terminus] flex flex-col`}
+                className={`block fixed bottom-0 left-0 m-2 z-[9999] text-white text-base font-[terminus] flex flex-col`}
             >
                 <div>
                     <span className="opacity-50">Your size: </span>
@@ -220,13 +299,12 @@ const Game = () => {
             <div
                 className="game"
                 style={{
-                    display: gameId !== null ? "block" : "none",
+                    display: "block",
                     height: screenSize.height * scale,
                     width: screenSize.width * scale,
                 }}
             >
                 <GameComponent
-                    gameId={gameId}
                     players={players}
                     visibleFood={visibleFood.flat()}
                     currentPlayer={currentPlayer}
@@ -236,9 +314,7 @@ const Game = () => {
             </div>
 
             <div
-                className={`${
-                    gameId === null ? "block" : "hidden"
-                } w-screen h-screen`}
+                className={`block w-screen h-screen`}
             >
                 {gameEnded === 1 && (
                     <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black z-[9999]">
@@ -321,7 +397,7 @@ const Game = () => {
                                         ) : (
                                             <button
                                                 className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
-                                                onClick={() => cleanUp()}
+                                                onClick={() => {if(currentPlayerEntity.current && anteroomEntity.current) {gameSystemCashOut(engine, gameInfo, currentPlayerEntity.current, anteroomEntity.current)}}}
                                             >
                                                 Retry
                                             </button>

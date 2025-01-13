@@ -1,4 +1,4 @@
-import { Idl, Program } from "@coral-xyz/anchor";
+import { Idl, Program, AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import {
   AccountInfo,
@@ -10,26 +10,22 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { WalletName } from "@solana/wallet-adapter-base";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import * as anchor from "@coral-xyz/anchor";
 
-const ENDPOINT_CHAIN_RPC = "https://api.devnet.solana.com";
-const ENDPOINT_CHAIN_WS = "wss://api.devnet.solana.com";
+const ENDPOINT_CHAIN_RPC = "https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
+const ENDPOINT_CHAIN_WS = "wss://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
 
 const _ENDPOINT_CHAIN_RPC = "http://127.0.0.1:7899";
 const _ENDPOINT_CHAIN_WS = "ws://127.0.0.1:7900";
 
-const ENDPOINT_EPHEM_RPC = "https://devnet.magicblock.app";
-const ENDPOINT_EPHEM_WS = "wss://devnet.magicblock.app:8900";
-
-const _ENDPOINT_EPHEM_RPC = "http://localhost:8899";
-const _ENDPOINT_EPHEM_WS = "ws://localhost:8900";
-
 const TRANSACTION_COST_LAMPORTS = 5000;
 
-const connectionChain = new Connection(ENDPOINT_CHAIN_RPC, {
+let connectionChain = new Connection(ENDPOINT_CHAIN_RPC, {
   wsEndpoint: ENDPOINT_CHAIN_WS,
 });
-const connectionEphem = new Connection(ENDPOINT_EPHEM_RPC, {
-  wsEndpoint: ENDPOINT_EPHEM_WS,
+let connectionEphem = new Connection("https://supersize-sin.magicblock.app", {
+  wsEndpoint: "wss://supersize-sin.magicblock.app",
 });
 
 interface SessionConfig {
@@ -46,6 +42,9 @@ export class MagicBlockEngine {
   private walletContext: WalletContextState;
   private sessionKey: Keypair;
   private sessionConfig: SessionConfig;
+  private endpointEphemRpc: string;
+  private provider: AnchorProvider;
+  private providerEphemeralRollup: AnchorProvider;
 
   constructor(
     walletContext: WalletContextState,
@@ -55,13 +54,45 @@ export class MagicBlockEngine {
     this.walletContext = walletContext;
     this.sessionKey = sessionKey;
     this.sessionConfig = sessionConfig;
+    this.endpointEphemRpc = "https://supersize-sin.magicblock.app";
+
+    this.provider = new AnchorProvider(
+      connectionChain,
+      new NodeWallet(this.sessionKey),
+      { preflightCommitment: "processed" }
+    );
+
+    anchor.setProvider(this.provider); 
+
+    this.providerEphemeralRollup = new AnchorProvider(
+      connectionEphem,
+      new NodeWallet(this.sessionKey),
+      { preflightCommitment: "processed" }
+    );
+  }
+
+  public setEndpointEphemRpc(endpoint: string): void {
+    this.endpointEphemRpc = endpoint;
+    connectionEphem = new Connection(endpoint, {
+      wsEndpoint: endpoint.replace("http", "ws"),
+    });
+    this.providerEphemeralRollup = new AnchorProvider(
+      connectionEphem,
+      new NodeWallet(this.sessionKey),
+      { preflightCommitment: "processed" }
+    );
+    console.log(`Endpoint for ephemeral RPC set to: ${this.endpointEphemRpc}`);
+  }
+
+  public getEndpointEphemRpc(): string {
+    return this.endpointEphemRpc;
   }
 
   getProgramOnChain<T extends Idl>(idl: {}): Program<T> {
-    return new Program<T>(idl as T, { connection: connectionChain });
+    return new Program<T>(idl as T, this.provider);
   }
   getProgramOnEphem<T extends Idl>(idl: {}): Program<T> {
-    return new Program<T>(idl as T, { connection: connectionEphem });
+    return new Program<T>(idl as T, this.providerEphemeralRollup);
   }
 
   getConnectionChain(): Connection {

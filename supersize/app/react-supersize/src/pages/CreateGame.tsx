@@ -2,8 +2,14 @@ import { useState } from "react";
 import LanchGame from "@components/LaunchGame";
 import EarnFees from "@components/EarnFees";
 import ModGame from "@components/ModGame";
+import { ActiveGame } from "@utils/types";
 
-const CreateGame = () => {
+type CreateGameProps = {
+    activeGames: ActiveGame[];
+    setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
+};
+
+const CreateGame: React.FC<CreateGameProps> = ({ activeGames, setActiveGames }) => {
     const tabs = [0, 1, 2];
     const [tab, setTab] = useState(0);
 
@@ -11,7 +17,7 @@ const CreateGame = () => {
         <div className="flex flex-col h-[84vh] w-full justify-center items-center">
             <div className="h-[60vh] p-[2vw] w-[60vw] bg-black border border-[#272B30] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] rounded-[0.75rem]">
                 {tab === 0 ? (
-                    <LanchGame />
+                    <LanchGame activeGames={activeGames} setActiveGames={setActiveGames} />
                 ) : tab === 1 ? (
                     <EarnFees />
                 ) : (

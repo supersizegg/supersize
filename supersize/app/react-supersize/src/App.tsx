@@ -11,7 +11,6 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { CONNECTION_STRING } from "@utils/constants";
-import { SupersizeProvider } from "@contexts/SupersizeContext";
 import {useConnection, useWallet} from '@solana/wallet-adapter-react';
 import {Connection} from "@solana/web3.js";
 import { initBuddyState, initialBuddyLink, useInitBuddyLink,
@@ -60,13 +59,11 @@ function App() {
         {/*<ConnectionProvider endpoint={CONNECTION_STRING}>
             <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider> */}
-                {/* <WebGLBackground /> */}
+                 <WebGLBackground /> 
                     <BrowserRouter>
                     <MagicBlockEngineProvider>
-                        <SupersizeProvider>
                             <MenuBar />
                             <AppRoutes />
-                        </SupersizeProvider>
                         <InitBuddyLinkWrapper />
                     </MagicBlockEngineProvider>
                     </BrowserRouter>

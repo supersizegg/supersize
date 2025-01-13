@@ -25,7 +25,7 @@ from "./gameFetch";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token";
 import { connection } from "@utils/constants";
 
-export async function gameExecuteJoin(
+export async function gameExecuteNewGame(
   engine: MagicBlockEngine,
   game_size: number,
   max_buyin: number,
@@ -499,6 +499,8 @@ export async function gameExecuteJoin(
         base_buyin: base_buyin,
         min_buyin: min_buyin,
         max_buyin: max_buyin,
+        endpoint: "https://api.supersize.gg/game",
+        ping: 1000,
     };
 
     console.log("new game info", newGameInfo.worldId, newGameInfo.worldPda.toString());

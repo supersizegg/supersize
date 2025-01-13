@@ -1,9 +1,14 @@
 import CreateGame from "@components/CreateGame";
-import { useSupersizeContext } from "@contexts/SupersizeContext";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { ActiveGame } from "@utils/types";
 import { useState } from "react";
 
-const LanchGame = () => {
+type launchProps = {
+    activeGames: ActiveGame[];
+    setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
+};
+
+const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
     const options = [
         { id: 0, size: 4000, players: 20, cost: "1 SOL" },
         { id: 1, size: 6000, players: 40, cost: "2.5 SOL" },
@@ -55,6 +60,8 @@ const LanchGame = () => {
             <div style={{ marginRight: "1.5vw", marginTop: "1vw" }}>
                 <CreateGame
                     game_size={options[selectedOption].size}
+                    activeGames={activeGames}
+                    setActiveGames={setActiveGames}
                     userKey={
                         publicKey !== null
                             ? publicKey.toString()
