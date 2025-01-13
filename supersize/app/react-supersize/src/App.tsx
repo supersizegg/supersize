@@ -59,7 +59,7 @@ function App() {
         {/*<ConnectionProvider endpoint={CONNECTION_STRING}>
             <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider> */}
-                 <WebGLBackground /> 
+                {/* <WebGLBackground /> */} 
                     <BrowserRouter>
                     <MagicBlockEngineProvider>
                             <MenuBar />
