@@ -1,0 +1,368 @@
+{
+  "address": "9rthxrCfneJKfPtv8PQmYk7hGQsUfeyeDKRp3uC4Uwh6",
+  "metadata": {
+    "name": "movement",
+    "version": "0.1.10",
+    "spec": "0.1.0",
+    "description": "Created with Bolt"
+  },
+  "instructions": [
+    {
+      "name": "execute_3",
+      "discriminator": [
+        110,
+        111,
+        120,
+        86,
+        172,
+        152,
+        117,
+        173
+      ],
+      "accounts": [
+        {
+          "name": "player"
+        },
+        {
+          "name": "section"
+        },
+        {
+          "name": "map"
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_args",
+          "type": "bytes"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Map",
+      "discriminator": [
+        182,
+        30,
+        142,
+        151,
+        42,
+        241,
+        180,
+        244
+      ]
+    },
+    {
+      "name": "Player",
+      "discriminator": [
+        205,
+        222,
+        112,
+        7,
+        165,
+        155,
+        206,
+        218
+      ]
+    },
+    {
+      "name": "Section",
+      "discriminator": [
+        2,
+        85,
+        249,
+        212,
+        33,
+        214,
+        36,
+        179
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NotOwner",
+      "msg": "Not owner of this player."
+    },
+    {
+      "code": 6001,
+      "name": "NotInGame",
+      "msg": "Player not in game."
+    },
+    {
+      "code": 6002,
+      "name": "MapKeyMismatch",
+      "msg": "Component doesn't belong to map."
+    }
+  ],
+  "types": [
+    {
+      "name": "BoltMetadata",
+      "docs": [
+        "Metadata for the component."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Map",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "authority",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "width",
+            "type": "u16"
+          },
+          {
+            "name": "height",
+            "type": "u16"
+          },
+          {
+            "name": "base_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "max_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "min_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "max_players",
+            "type": "u8"
+          },
+          {
+            "name": "total_active_buyins",
+            "type": "f64"
+          },
+          {
+            "name": "total_food_on_map",
+            "type": "u64"
+          },
+          {
+            "name": "food_queue",
+            "type": "u64"
+          },
+          {
+            "name": "next_food",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "map::Food"
+                }
+              }
+            }
+          },
+          {
+            "name": "frozen",
+            "type": "bool"
+          },
+          {
+            "name": "bolt_metadata",
+            "type": {
+              "defined": {
+                "name": "BoltMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Player",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "authority",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "map",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "buy_in",
+            "type": "f64"
+          },
+          {
+            "name": "payout_token_account",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "current_game_wallet_balance",
+            "type": "f64"
+          },
+          {
+            "name": "tax",
+            "type": "f64"
+          },
+          {
+            "name": "join_time",
+            "type": "i64"
+          },
+          {
+            "name": "x",
+            "type": "u16"
+          },
+          {
+            "name": "y",
+            "type": "u16"
+          },
+          {
+            "name": "target_x",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "target_y",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "score",
+            "type": "f64"
+          },
+          {
+            "name": "mass",
+            "type": "u64"
+          },
+          {
+            "name": "speed",
+            "type": "f32"
+          },
+          {
+            "name": "scheduled_removal_time",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "boost_click_time",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "bolt_metadata",
+            "type": {
+              "defined": {
+                "name": "BoltMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Section",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "map",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "top_left_x",
+            "type": "u16"
+          },
+          {
+            "name": "top_left_y",
+            "type": "u16"
+          },
+          {
+            "name": "food",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "section::Food"
+                }
+              }
+            }
+          },
+          {
+            "name": "bolt_metadata",
+            "type": {
+              "defined": {
+                "name": "BoltMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "map::Food",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "data",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "section::Food",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "data",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

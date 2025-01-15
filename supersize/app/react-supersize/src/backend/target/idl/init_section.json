@@ -1,0 +1,249 @@
+{
+  "address": "4euz4ceqv5ugh1x6wZP3BsLNZHqBxQwXcK59psw5KeQw",
+  "metadata": {
+    "name": "init_section",
+    "version": "0.1.10",
+    "spec": "0.1.0",
+    "description": "Created with Bolt"
+  },
+  "instructions": [
+    {
+      "name": "execute_2",
+      "discriminator": [
+        105,
+        108,
+        50,
+        190,
+        253,
+        180,
+        77,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "section"
+        },
+        {
+          "name": "map"
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_args",
+          "type": "bytes"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Map",
+      "discriminator": [
+        182,
+        30,
+        142,
+        151,
+        42,
+        241,
+        180,
+        244
+      ]
+    },
+    {
+      "name": "Section",
+      "discriminator": [
+        2,
+        85,
+        249,
+        212,
+        33,
+        214,
+        36,
+        179
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NotAuthorized",
+      "msg": "Wallet not authorized."
+    },
+    {
+      "code": 6001,
+      "name": "AuthorityNotFound",
+      "msg": "Authority not found."
+    }
+  ],
+  "types": [
+    {
+      "name": "BoltMetadata",
+      "docs": [
+        "Metadata for the component."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Map",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "authority",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "width",
+            "type": "u16"
+          },
+          {
+            "name": "height",
+            "type": "u16"
+          },
+          {
+            "name": "base_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "max_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "min_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "max_players",
+            "type": "u8"
+          },
+          {
+            "name": "total_active_buyins",
+            "type": "f64"
+          },
+          {
+            "name": "total_food_on_map",
+            "type": "u64"
+          },
+          {
+            "name": "food_queue",
+            "type": "u64"
+          },
+          {
+            "name": "next_food",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "map::Food"
+                }
+              }
+            }
+          },
+          {
+            "name": "frozen",
+            "type": "bool"
+          },
+          {
+            "name": "bolt_metadata",
+            "type": {
+              "defined": {
+                "name": "BoltMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Section",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "map",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "top_left_x",
+            "type": "u16"
+          },
+          {
+            "name": "top_left_y",
+            "type": "u16"
+          },
+          {
+            "name": "food",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "section::Food"
+                }
+              }
+            }
+          },
+          {
+            "name": "bolt_metadata",
+            "type": {
+              "defined": {
+                "name": "BoltMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "map::Food",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "data",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "section::Food",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "data",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

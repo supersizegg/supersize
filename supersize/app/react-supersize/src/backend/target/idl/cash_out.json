@@ -1,0 +1,354 @@
+{
+  "address": "BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr",
+  "metadata": {
+    "name": "cash_out",
+    "version": "0.1.10",
+    "spec": "0.1.0",
+    "description": "Created with Bolt"
+  },
+  "instructions": [
+    {
+      "name": "execute_2",
+      "discriminator": [
+        105,
+        108,
+        50,
+        190,
+        253,
+        180,
+        77,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "player"
+        },
+        {
+          "name": "anteroom"
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_args",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "init_extra_accounts",
+      "discriminator": [
+        58,
+        71,
+        119,
+        115,
+        48,
+        174,
+        40,
+        177
+      ],
+      "accounts": [
+        {
+          "name": "vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "sender_token_account",
+          "writable": true
+        },
+        {
+          "name": "game_owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "supersize_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_account_owner_pda",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "rent"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Anteroom",
+      "discriminator": [
+        155,
+        119,
+        131,
+        251,
+        168,
+        75,
+        38,
+        134
+      ]
+    },
+    {
+      "name": "Player",
+      "discriminator": [
+        205,
+        222,
+        112,
+        7,
+        165,
+        155,
+        206,
+        218
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NotOwner",
+      "msg": "Not owner of this player."
+    },
+    {
+      "code": 6001,
+      "name": "StillInGame",
+      "msg": "Player still in game."
+    },
+    {
+      "code": 6002,
+      "name": "InvalidGameVault",
+      "msg": "Invalid game vault."
+    },
+    {
+      "code": 6003,
+      "name": "InvalidPayoutAccount",
+      "msg": "Payout account mismatch."
+    },
+    {
+      "code": 6004,
+      "name": "InvalidPda",
+      "msg": "Invalid pda."
+    },
+    {
+      "code": 6005,
+      "name": "InvalidGameVaultOwner",
+      "msg": "Invalid game vault owner."
+    },
+    {
+      "code": 6006,
+      "name": "InvalidSupersizeTokenAccount",
+      "msg": "Invalid supersize payout account."
+    },
+    {
+      "code": 6007,
+      "name": "InvalidGameOwnerTokenAccount",
+      "msg": "Invalid game owner payout account."
+    },
+    {
+      "code": 6008,
+      "name": "MissingTokenDecimals",
+      "msg": "Token decimals not set."
+    },
+    {
+      "code": 6009,
+      "name": "InvalidMint",
+      "msg": "Token mint mismatch."
+    },
+    {
+      "code": 6010,
+      "name": "MapKeyMismatch",
+      "msg": "Component doesn't belong to map."
+    },
+    {
+      "code": 6011,
+      "name": "InvalidBuddyLinkProgram",
+      "msg": "Invalid Buddy Link Program."
+    }
+  ],
+  "types": [
+    {
+      "name": "Anteroom",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "map",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "base_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "max_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "min_buyin",
+            "type": "f64"
+          },
+          {
+            "name": "token",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "token_decimals",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "vault_token_account",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "gamemaster_token_account",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "bolt_metadata",
+            "type": {
+              "defined": {
+                "name": "BoltMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "BoltMetadata",
+      "docs": [
+        "Metadata for the component."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Player",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "authority",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "map",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "buy_in",
+            "type": "f64"
+          },
+          {
+            "name": "payout_token_account",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "current_game_wallet_balance",
+            "type": "f64"
+          },
+          {
+            "name": "tax",
+            "type": "f64"
+          },
+          {
+            "name": "join_time",
+            "type": "i64"
+          },
+          {
+            "name": "x",
+            "type": "u16"
+          },
+          {
+            "name": "y",
+            "type": "u16"
+          },
+          {
+            "name": "target_x",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "target_y",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "score",
+            "type": "f64"
+          },
+          {
+            "name": "mass",
+            "type": "u64"
+          },
+          {
+            "name": "speed",
+            "type": "f32"
+          },
+          {
+            "name": "scheduled_removal_time",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "boost_click_time",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "bolt_metadata",
+            "type": {
+              "defined": {
+                "name": "BoltMetadata"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
