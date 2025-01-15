@@ -30,10 +30,6 @@ export async function gameSystemCashOut(
   currentPlayerEntity: PublicKey,
 ) {
     console.log('cashing out');
-    const myplayerComponent = FindComponentPda({
-        componentId: COMPONENT_PLAYER_ID,
-        entity: currentPlayerEntity,
-    });
 
     const playerAccount = await playerFetchOnEphem(engine, currentPlayerEntity);
     const playerCashoutAddy = playerAccount?.payoutTokenAccount;
@@ -44,18 +40,6 @@ export async function gameSystemCashOut(
     //const myReferrer = playerAccount?.referrerTokenAccount;
 
     const anteAccount = await anteroomFetchOnEphem(engine, anteroomEntity);
-
-    const undelegateIx = createUndelegateInstruction({
-        payer: engine.getSessionPayer(),
-        delegatedAccount: myplayerComponent,
-        componentPda: COMPONENT_PLAYER_ID,
-    });
-
-    let undeltx = new anchor.web3.Transaction().add(undelegateIx);
-    undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
-    undeltx.feePayer = engine.getSessionPayer();
-    const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); //providerEphemeralRollup.current.sendAndConfirm(undeltx, [], { skipPreflight: false });
-    console.log('undelegate', playerundelsignature);
 
     const anteComponentPda = FindComponentPda({
         componentId: COMPONENT_ANTEROOM_ID,

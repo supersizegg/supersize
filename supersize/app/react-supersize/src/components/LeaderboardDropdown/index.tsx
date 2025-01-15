@@ -127,7 +127,7 @@ const LeaderboardDropdown = () => {
 
     return (
         <div
-            className="relative inline-block cursor-pointer font-['Terminus'] select-none mt-[3vh] mx-[2vw] w-fit"
+            className="relative inline-block cursor-pointer font-['Terminus'] select-none"
             onClick={() => {
                 setToggle(!toggle);
                 if (leaderBoardOptions.current.length > 1) {

@@ -48,7 +48,7 @@ export async function gameSystemBuyIn(
     let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
     let referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
     const combinedTx = new Transaction();
-  
+    console.log('anteParsedData', anteParsedData);
     if (anteParsedData && anteParsedData.vaultTokenAccount && anteParsedData.token) {
         vault_token_account = anteParsedData.vaultTokenAccount;
         mint_of_token_being_sent = anteParsedData.token;
@@ -81,7 +81,7 @@ export async function gameSystemBuyIn(
             [Buffer.from("subsidize"), buddyMemberPdaAccount.toBuffer(), mint_of_token_being_sent.toBuffer()],
             referral_vault_program_id
         );
-  
+        console.log('vault_token_account', vault_token_account.toString());
         const extraAccounts = [
             {
                 pubkey: vault_token_account,
@@ -173,9 +173,9 @@ export async function gameSystemBuyIn(
             });
             combinedTx.add(playerdelegateIx);
             const playerdelsignature = await engine.processWalletTransaction("playerdelegate", combinedTx);
-            console.log(`Delegation signature: ${playerdelsignature}`);
+            console.log(`buy in signature: ${playerdelsignature}`);
         } catch (error) {
-            console.log('Error delegating:', error);
+            console.log('Error buying in:', error);
             //setTransactionError("Buy in failed, please retry");
             //setIsSubmitting(false);
             //setIsJoining(false);

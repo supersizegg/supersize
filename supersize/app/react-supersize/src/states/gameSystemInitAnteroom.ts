@@ -22,7 +22,7 @@ export async function gameSystemInitAnteroom(
   owner_token_account: PublicKey,
 ) {
     const initAnteroom = await ApplySystem({
-        authority: engine.getWalletPayer(),
+        authority: engine.getSessionPayer(),
         world: worldPda,
         entities: [
             {
@@ -44,7 +44,7 @@ export async function gameSystemInitAnteroom(
     });
 
     
-    return await engine.processWalletTransaction(
+    return await engine.processSessionChainTransaction(
       "initanteroom:" + newanteentityPda,
       initAnteroom.transaction
     );

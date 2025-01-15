@@ -21,7 +21,7 @@ export async function gameSystemInitMap(
   min_multiple: number,
 ) {
     const initGame = await ApplySystem({
-        authority: engine.getWalletPayer(),
+        authority: engine.getSessionPayer(),
         world: worldPda,
         entities: [
             {
@@ -41,7 +41,7 @@ export async function gameSystemInitMap(
     });
 
     
-    return await engine.processWalletTransaction(
+    return await engine.processSessionChainTransaction(
       "initmap:" + newmapentityPda,
       initGame.transaction
     );

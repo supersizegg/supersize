@@ -30,6 +30,8 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import axios from "axios";
 import { getMemberPDA } from "buddy.link";
 
+import { stringToUint8Array } from "@utils/helper";
+
 export async function gameExecuteJoin(
   engine: MagicBlockEngine,
   selectGameId: ActiveGame,
@@ -46,7 +48,7 @@ export async function gameExecuteJoin(
   const mapEntityPda = FindEntityPda({
       worldId: gameInfo.worldId,
       entityId: new anchor.BN(0),
-      seed: mapseed
+      seed: stringToUint8Array(mapseed)
   });
 
   const mapComponentPda = FindComponentPda({
@@ -79,7 +81,7 @@ export async function gameExecuteJoin(
       const foodEntityPda = FindEntityPda({
           worldId: gameInfo.worldId,
           entityId: new anchor.BN(0),
-          seed: foodseed
+          seed: stringToUint8Array(foodseed)
       });
       foodEntityPdas.push(foodEntityPda);
   }
@@ -95,7 +97,7 @@ export async function gameExecuteJoin(
       const playerEntityPda = FindEntityPda({
           worldId: gameInfo.worldId,
           entityId: new anchor.BN(0),
-          seed: playerentityseed
+          seed: stringToUint8Array(playerentityseed)
       });
       playerEntityPdas.push(playerEntityPda);
       const playersComponentPda = FindComponentPda({
@@ -220,7 +222,7 @@ export async function gameExecuteJoin(
   const anteEntityPda = FindEntityPda({
       worldId: gameInfo.worldId,
       entityId: new anchor.BN(0),
-      seed: anteseed
+      seed: stringToUint8Array(anteseed)
   });
 
   const anteComponentPda = FindComponentPda({
@@ -229,9 +231,9 @@ export async function gameExecuteJoin(
   });
 
   const anteParsedData = await anteroomFetchOnChain(engine, anteComponentPda);
-
+  let mint_of_token_being_sent = new PublicKey(0);
   if (anteParsedData && anteParsedData.vaultTokenAccount && anteParsedData.token) {
-      let mint_of_token_being_sent = anteParsedData.token;
+      mint_of_token_being_sent = anteParsedData.token;
 
       const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
       console.log("token", name, mint_of_token_being_sent.toString());

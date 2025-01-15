@@ -18,7 +18,7 @@ export async function gameSystemInitPlayer(
   newmapentityPda: PublicKey,
 ) {
     const initPlayer = await ApplySystem({
-        authority: engine.getWalletPayer(),
+        authority: engine.getSessionPayer(),
         world: worldPda,
         entities: [
             {
@@ -34,7 +34,7 @@ export async function gameSystemInitPlayer(
     });
 
     
-    return await engine.processWalletTransaction(
+    return await engine.processSessionChainTransaction(
       "initplayer:" + newplayerPda,
       initPlayer.transaction
     );

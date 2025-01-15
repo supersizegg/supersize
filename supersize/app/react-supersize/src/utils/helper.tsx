@@ -5,6 +5,10 @@ import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import * as crypto from "crypto-js";
 import * as anchor from "@coral-xyz/anchor";
 
+export const stringToUint8Array = (str: string): Uint8Array => {
+    return new TextEncoder().encode(str);
+};
+
 export const deriveSeedFromPublicKey = (
     userPublicKey: PublicKey,
 ): Uint8Array => {

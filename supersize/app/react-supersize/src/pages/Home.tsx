@@ -9,7 +9,7 @@ import { ActiveGame } from "@utils/types";
 import { activeGamesList } from "@utils/constants";
 
 import { fetchTokenMetadata } from "@utils/helper";
-import { FindEntityPda, FindComponentPda } from "@magicblock-labs/bolt-sdk";
+import { FindEntityPda, FindComponentPda, FindWorldPda } from "@magicblock-labs/bolt-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
@@ -22,6 +22,8 @@ import {
 } from "../states/gamePrograms";
 import { anteroomFetchOnChain, mapFetchOnChain, mapFetchOnEphem, playerFetchOnChain } from "../states/gameFetch";
 import { useMagicBlockEngine } from "../engine/MagicBlockEngineProvider";
+import {endpoints } from "@utils/constants";
+import { stringToUint8Array } from "@utils/helper";
 
 interface GameRow {
     server: string;
@@ -38,13 +40,19 @@ function getPingColor(ping: number) {
     return "red";
 }
 
-const Home = () => {
+type homeProps = {
+    selectedGame: ActiveGame | null;
+    setSelectedGame: (game: ActiveGame | null) => void;
+}
+
+const Home = ({selectedGame, setSelectedGame}: homeProps) => {
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
+    const [inputValue, setInputValue] = useState<string>('');  
     const [isBuyInModalOpen, setIsBuyInModalOpen] = useState(false);
-    const [selectedGame, setSelectedGame] = useState<ActiveGame | null>(null);
     const [gameInfo, setGameInfo] = useState<ActiveGame[]>([]);
+    //set selected game to 0
     const [activeGames, setActiveGames] = useState<ActiveGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => ({
         worldId: world.worldId,
         worldPda: world.worldPda,
@@ -60,6 +68,93 @@ const Home = () => {
         endpoint: world.endpoint,
         ping: 0
     })));
+
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(event.target.value);
+    };
+    const handleEnterKeyPress = async () => {
+        if (inputValue.trim() !== '') {
+            try {
+                const worldId = {worldId: new anchor.BN(inputValue.trim())};
+                const worldPda = await FindWorldPda( worldId);
+                const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:"", base_buyin: 0, min_buyin: 0, max_buyin: 0, endpoint: "", ping: 0}
+                for (const endpoint of endpoints) {
+                    engine.setEndpointEphemRpc(endpoint);
+                    try {
+                        const mapEntityPda = FindEntityPda({
+                            worldId: worldId.worldId,
+                            entityId: new anchor.BN(0),
+                            seed: stringToUint8Array("origin"),
+                        });
+                        const mapComponentPda = FindComponentPda({
+                            componentId: COMPONENT_MAP_ID,
+                            entity: mapEntityPda,
+                        });
+                        const mapParsedData = await mapFetchOnEphem(engine, mapComponentPda);
+                        if (mapParsedData) {
+                            console.log('mapdata', mapParsedData, endpoint)
+                            newGameInfo.endpoint = endpoint;
+                            newGameInfo.name = mapParsedData.name;
+                            newGameInfo.max_players = mapParsedData.maxPlayers;
+                            newGameInfo.size = mapParsedData.width;
+                            newGameInfo.base_buyin = mapParsedData.baseBuyin;
+                            newGameInfo.min_buyin = mapParsedData.minBuyin;
+                            newGameInfo.max_buyin = mapParsedData.maxBuyin;
+
+                            const pingTime = await pingEndpoint(endpoint);
+                            newGameInfo.ping = pingTime;
+
+                            const anteseed = "ante";
+                            const anteEntityPda = FindEntityPda({
+                                worldId: worldId.worldId,
+                                entityId: new anchor.BN(0),
+                                seed: stringToUint8Array(anteseed),
+                            });
+                            const anteComponentPda = FindComponentPda({
+                                componentId: COMPONENT_ANTEROOM_ID,
+                                entity: anteEntityPda,
+                            });
+                            const anteParsedData = await anteroomFetchOnChain(engine, anteComponentPda);
+                            let mint_of_token_being_sent = new PublicKey(0);
+                            if (anteParsedData && anteParsedData.token) {
+                                mint_of_token_being_sent = anteParsedData.token;
+                                if (
+                                    mint_of_token_being_sent.toString() ===
+                                    "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
+                                ) {
+                                    newGameInfo.image = `${process.env.PUBLIC_URL}/agld.jpg`;
+                                    newGameInfo.token = "AGLD";
+                                } else {
+                                    try {
+                                        const { name, image } = await fetchTokenMetadata(
+                                            mint_of_token_being_sent.toString(),
+                                        );
+                                        newGameInfo.image = image;
+                                        newGameInfo.token = name;
+                                    } catch (error) {
+                                        console.error("Error fetching token data:", error);
+                                    }
+                                }
+                            }
+                            console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
+                            setSelectedGame(newGameInfo);
+                            setActiveGames([newGameInfo, ...activeGames]);
+                            break;
+                        }
+                    } catch (error) {
+                        console.error("Error fetching map data:", error);
+                    }
+                }
+            } catch (error) {
+                console.error("Invalid PublicKey:", error);
+            }
+        }
+    };        
+    const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            handleEnterKeyPress();
+        }
+      };
 
     const pingEndpoint = async (url: string): Promise<number> => {
         const startTime = performance.now();
@@ -86,7 +181,7 @@ const Home = () => {
             const mapEntityPda = FindEntityPda({
                 worldId: activeGamesList[i].worldId,
                 entityId: new anchor.BN(0),
-                seed: mapseed,
+                seed: stringToUint8Array(mapseed),
             });
             const mapComponentPda = FindComponentPda({
                 componentId: COMPONENT_MAP_ID,
@@ -103,7 +198,7 @@ const Home = () => {
                 const anteEntityPda = FindEntityPda({
                     worldId: activeGamesList[i].worldId,
                     entityId: new anchor.BN(0),
-                    seed: anteseed,
+                    seed: stringToUint8Array(anteseed),
                 });
                 const anteComponentPda = FindComponentPda({
                     componentId: COMPONENT_ANTEROOM_ID,
@@ -147,7 +242,7 @@ const Home = () => {
                         const playerEntityPda = FindEntityPda({
                             worldId: activeGamesList[i].worldId,
                             entityId: new anchor.BN(0),
-                            seed: playerentityseed,
+                            seed: stringToUint8Array(playerentityseed),
                         });
                         const playersComponentPda = FindComponentPda({
                             componentId: COMPONENT_PLAYER_ID,
@@ -216,10 +311,15 @@ const Home = () => {
             )}
             <div className="home-container">
                 <div className="home-header">
-                    <input className="search-game-input" type="text" placeholder="Search Game" />
+                    <input type="text" className="search-game-input" placeholder="Search Game"
+                                value={inputValue}
+                                onChange={handleInputChange}
+                                onKeyDown={handleKeyPress}
+                    >          
+                    </input>
                     <div className="header-buttons">
-                        <button className="btn-outlined btn-orange" disabled>How to Play</button>
-                        <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
+                        <button className="btn-outlined btn-orange" style={{ backgroundColor: "black" }} disabled>How to Play</button>
+                        <button className="btn-outlined btn-green"  style={{ backgroundColor: "black" }}  onClick={() => navigate("/create-game")}>
                             + Create Game
                         </button>
                     </div>
@@ -243,7 +343,7 @@ const Home = () => {
                             {activeGames.map((row, idx) => (
                                 <tr key={idx}>
                                     <td>{row.name}</td>
-                                    <td>{getRegion(activeGamesList[idx].endpoint)}</td>
+                                    <td>{getRegion(activeGames[idx].endpoint)}</td>
                                     <td>{row.worldId.toString()}</td>
                                     <td>{row.token}</td>
                                     <td>{row.min_buyin} - {row.max_buyin}</td>
@@ -258,7 +358,7 @@ const Home = () => {
                                         <button
                                             className="btn-play"
                                             onClick={() => {
-                                                engine.setEndpointEphemRpc(activeGamesList[idx].endpoint);
+                                                engine.setEndpointEphemRpc(activeGames[idx].endpoint);
                                                 setSelectedGame(row);
                                                 setIsBuyInModalOpen(true);
                                             }}

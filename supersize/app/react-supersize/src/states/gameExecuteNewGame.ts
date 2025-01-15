@@ -1,73 +1,106 @@
-import { ComputeBudgetProgram, LAMPORTS_PER_SOL, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js";
-import { ApplySystem, createAddEntityInstruction, createDelegateInstruction, createUndelegateInstruction, FindComponentPda, FindEntityPda, InitializeComponent, InitializeNewWorld } from "@magicblock-labs/bolt-sdk";
-
-import { ActiveGame } from "@utils/types";
-import { fetchTokenMetadata, getTopLeftCorner } from "@utils/helper";
-
-import { MagicBlockEngine } from "../engine/MagicBlockEngine";
-import { gameSystemInitMap } from "./gameSystemInitMap";
-import { gameSystemInitAnteroom } from "./gameSystemInitAnteroom";
-import { gameSystemInitPlayer } from "./gameSystemInitPlayer";
-import { gameSystemInitSection } from "./gameSystemInitSection";
-
 import {
-  COMPONENT_PLAYER_ID,
-  COMPONENT_ANTEROOM_ID,
-  COMPONENT_MAP_ID,
-  COMPONENT_SECTION_ID,
+    ComputeBudgetProgram,
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    SystemProgram,
+    Transaction,
+} from "@solana/web3.js";
+import {
+    ApplySystem,
+    createAddEntityInstruction,
+    createDelegateInstruction,
+    FindComponentPda,
+    FindEntityPda,
+    InitializeComponent,
+    InitializeNewWorld,
+} from "@magicblock-labs/bolt-sdk";
+import { ActiveGame } from "@utils/types";
+import {
+    fetchTokenMetadata,
+    getTopLeftCorner,
+    stringToUint8Array,
+} from "@utils/helper";
+import { MagicBlockEngine } from "../engine/MagicBlockEngine";
+import {
+    COMPONENT_PLAYER_ID,
+    COMPONENT_ANTEROOM_ID,
+    COMPONENT_MAP_ID,
+    COMPONENT_SECTION_ID,
 } from "./gamePrograms";
-
 import * as anchor from "@coral-xyz/anchor";
-import {anteroomFetchOnChain, 
-  mapFetchOnChain, 
-  playerFetchOnChain} 
-from "./gameFetch";
-import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token";
+import {
+    createAssociatedTokenAccountInstruction,
+    getAssociatedTokenAddress,
+} from "@solana/spl-token";
 import { connection } from "@utils/constants";
+import React from "react";
+import { gameSystemInitMap } from "./gameSystemInitMap";
+import { gameSystemInitPlayer } from "./gameSystemInitPlayer";
+import { gameSystemInitAnteroom } from "./gameSystemInitAnteroom";
+import { gameSystemInitSection } from "./gameSystemInitSection";
+import { m } from "framer-motion";
+
+const CONFIG = {
+    computeUnitLimit: 200_000,
+    computeUnitPrice: 1_000_002,
+    reclaimLamportBuffer: 10_000, // Minimum buffer to avoid zero balance errors
+    defaultBatchSize: 8,
+};
+
+async function addTransaction(
+    setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>,
+    id: string,
+    status: string
+) {
+    setTransactions((prev) => [...prev, { id, status }]);
+}
+
+async function updateTransaction(
+    setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>,
+    id: string,
+    status: string
+) {
+    setTransactions((prev) =>
+        prev.map((txn) => (txn.id === id ? { ...txn, status } : txn))
+    );
+}
 
 export async function gameExecuteNewGame(
-  engine: MagicBlockEngine,
-  game_size: number,
-  max_buyin: number,
-  min_buyin: number,
-  game_owner_wallet_string: string,
-  game_token_string: string,
-  game_name: string,
-  activeGames: ActiveGame[],
-  setActiveGames: (games: ActiveGame[]) => void
+    engine: any,
+    game_size: number,
+    max_buyin: number,
+    min_buyin: number,
+    game_owner_wallet_string: string,
+    game_token_string: string,
+    game_name: string,
+    activeGames: any[],
+    setActiveGames: (prev: any[]) => void,
+    setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>
 ) {
-
     const base_buyin = Math.sqrt(max_buyin * min_buyin);
     const max_multiple = max_buyin / base_buyin;
     const min_multiple = base_buyin / min_buyin;
     if (max_multiple > 10 || min_multiple > 10) {
-        throw new Error("Min-Max buy-in spread too large (max 100x).");
+        throw new Error("Min-Max buy-in spread too large (max 10x).");
     }
 
-    let maxplayer = 20;
-    let foodcomponents = 16;
-    let cost = 1.0;
-    if (game_size == 4000) {
-        maxplayer = 20;
-        foodcomponents = 16 * 5;
-        cost = 1.0;
+    const gameParams = {
+        4000: { maxplayer: 20, foodcomponents: 80, cost: 1.0 },
+        6000: { maxplayer: 40, foodcomponents: 180, cost: 2.5 },
+        10000: { maxplayer: 100, foodcomponents: 500, cost: 4.0 },
+    }[game_size];
+
+    if (!gameParams) {
+        throw new Error("Invalid game size.");
     }
-    if (game_size == 6000) {
-        maxplayer = 40;
-        foodcomponents = 36 * 5;
-        cost = 2.5;
-    }
-    if (game_size == 10000) {
-        maxplayer = 100;
-        foodcomponents = 100 * 5;
-        cost = 4.0;
-    }
+
+    const { maxplayer, foodcomponents, cost } = gameParams;
 
     const gameOwnerWallet = new PublicKey(game_owner_wallet_string);
     const mint_of_token = new PublicKey(game_token_string);
     const owner_token_account = await getAssociatedTokenAddress(
         mint_of_token,
-        gameOwnerWallet,
+        gameOwnerWallet
     );
 
     let decimals = 9;
@@ -75,448 +108,506 @@ export async function gameExecuteNewGame(
     if (mintInfo.value && "parsed" in mintInfo.value.data) {
         decimals = mintInfo.value.data.parsed.info.decimals;
     } else {
-        throw new Error("Mint information could not be retrieved or is invalid.");
+        throw new Error("Invalid token mint info.");
     }
 
-    const supersize_wallet = new PublicKey("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB");
-    const supersizeAssociatedTokenAccount = await getAssociatedTokenAddress(
-        mint_of_token,
-        supersize_wallet,
-    );
-
-    // Transfer SOL to cover costs
-    const soltransfertx = SystemProgram.transfer({
-        fromPubkey: engine.getWalletPayer(),
-        toPubkey: engine.getSessionPayer(),
-        lamports: cost * LAMPORTS_PER_SOL,
-    });
-    const sendsoltx = new Transaction().add(soltransfertx);
-    const sendsolsig = await engine.processWalletTransaction("create-game", sendsoltx);
-    console.log(`Load wallet with SOL: ${sendsolsig}`);
-
-    // Create token accounts if needed
-    const createTokenAccountsTx = new Transaction();
-    const accountInfoCreator = await connection.getAccountInfo(owner_token_account);
-    if (accountInfoCreator === null) {
-        createTokenAccountsTx.add(
-            createAssociatedTokenAccountInstruction(
-                engine.getSessionPayer(),
-                owner_token_account,
-                gameOwnerWallet,
-                mint_of_token,
-            )
-        );
+    const solTxnId = "transfer-sol";
+    await addTransaction(setTransactions, solTxnId, "pending");
+    try {
+        const solTransfer = SystemProgram.transfer({
+            fromPubkey: engine.getWalletPayer(),
+            toPubkey: engine.getSessionPayer(),
+            lamports: cost * LAMPORTS_PER_SOL,
+        });
+        const solTx = new Transaction().add(solTransfer);
+        await engine.processWalletTransaction(solTxnId, solTx);
+        await updateTransaction(setTransactions, solTxnId, "confirmed");
+    } catch (err: any) {
+        await updateTransaction(setTransactions, solTxnId, "failed");
+        throw new Error(`Failed to transfer SOL: ${err.message}`);
     }
 
-    const accountInfoSupersize = await connection.getAccountInfo(supersizeAssociatedTokenAccount);
-    if (accountInfoSupersize === null) {
-        createTokenAccountsTx.add(
-            createAssociatedTokenAccountInstruction(
-                engine.getSessionPayer(),
-                supersizeAssociatedTokenAccount,
-                supersize_wallet,
-                mint_of_token,
-            )
-        );
-    }
-
-    if (createTokenAccountsTx.instructions.length > 0) {
-        const createwalletsig = await engine.processSessionChainTransaction("createTokenAccounts", createTokenAccountsTx);
-        console.log(`Created wallet: ${createwalletsig}`);
-    }
-
-    // Initialize new world
-    const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
-        microLamports: 1000002,
-    });
-
-    const initNewWorld = await InitializeNewWorld({
-        payer: engine.getSessionPayer(),
-        connection: connection,
-    });
-
-    const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 30_000,
-    });
-
-    initNewWorld.transaction.add(computePriceIx).add(computeLimitIx);
-    const txSign = await engine.processSessionChainTransaction("initNewWorld", initNewWorld.transaction);
-    console.log(`World entity signature: ${txSign}`);
-
-    const worldPda = initNewWorld.worldPda;
-
-    // Create map entity
-    const mapseed = "origin";
-    const newmapentityPda = FindEntityPda({
-        worldId: initNewWorld.worldId,
-        entityId: new anchor.BN(0),
-        seed: mapseed
-    });
-
-    const addMapEntityIx = await createAddEntityInstruction(
-        {
+    const worldTxnId = "init-world";
+    await addTransaction(setTransactions, worldTxnId, "pending");
+    let initNewWorld;
+    try {
+        initNewWorld = await InitializeNewWorld({
             payer: engine.getSessionPayer(),
-            world: worldPda,
-            entity: newmapentityPda,
-        },
-        { extraSeed: mapseed },
-    );
-
-    const computeLimitIxMap = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 30_000,
-    });
-
-    const transaction = new anchor.web3.Transaction()
-        .add(addMapEntityIx)
-        .add(computeLimitIxMap)
-        .add(computePriceIx);
-
-    const signaturemap = await engine.processSessionChainTransaction("addMapEntity", transaction);
-    console.log(`Map entity signature: ${signaturemap}`);
-
-    // Create food entities
-    let transactionfood = new anchor.web3.Transaction();
-    const totalEntities = foodcomponents;
-    const batchSize = 8;
-    const newfoodEntityPdas: PublicKey[] = [];
-    const newfoodComponentPdas: PublicKey[] = [];
-
-    for (let i = 1; i <= totalEntities; i++) {
-        const seed = "food" + i.toString();
-        const newfoodEntityPda = FindEntityPda({
-            worldId: initNewWorld.worldId,
-            entityId: new anchor.BN(0),
-            seed: seed,
+            connection,
         });
 
-        newfoodEntityPdas.push(newfoodEntityPda);
-
-        const addEntityIx = await createAddEntityInstruction(
-            {
-                payer: engine.getSessionPayer(),
-                world: worldPda,
-                entity: newfoodEntityPda,
-            },
-            { extraSeed: seed },
-        );
-
-        transactionfood.add(addEntityIx);
-        if (i % batchSize === 0 || i === totalEntities) {
-            const computeLimitIxFood = ComputeBudgetProgram.setComputeUnitLimit({
-                units: 200_000,
-            });
-            transactionfood.add(computeLimitIxFood).add(computePriceIx);
-            const signaturefood = await engine.processSessionChainTransaction("addFoodEntity", transactionfood);
-            console.log(`Food entity batch signature: ${signaturefood}`);
-            transactionfood = new Transaction();
-        }
-    }
-
-    // Create player entities
-    let playercomponentstransaction = new anchor.web3.Transaction();
-    const totalPlayers = maxplayer + 1;
-    const playerBatchSize = 8;
-    const newplayerEntityPdas: PublicKey[] = [];
-    const newplayerComponentPdas: PublicKey[] = [];
-
-    for (let i = 1; i <= totalPlayers; i++) {
-        const seed = "player" + i.toString();
-        const newplayerEntityPda = FindEntityPda({
-            worldId: initNewWorld.worldId,
-            entityId: new anchor.BN(0),
-            seed: seed,
+        const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
+            units: CONFIG.computeUnitLimit,
         });
-
-        newplayerEntityPdas.push(newplayerEntityPda);
-
-        const addEntityIx = await createAddEntityInstruction(
-            {
-                payer: engine.getSessionPayer(),
-                world: worldPda,
-                entity: newplayerEntityPda,
-            },
-            { extraSeed: seed },
-        );
-
-        playercomponentstransaction.add(addEntityIx);
-        if (i % playerBatchSize === 0 || i === totalPlayers) {
-            const computeLimitIxPlayer = ComputeBudgetProgram.setComputeUnitLimit({
-                units: 200_000,
-            });
-            playercomponentstransaction.add(computeLimitIxPlayer).add(computePriceIx);
-            const signatureplayerscomponents = await engine.processSessionChainTransaction("addPlayerEntity", playercomponentstransaction);
-            console.log(`Player entity batch signature: ${signatureplayerscomponents}`);
-            playercomponentstransaction = new anchor.web3.Transaction();
-        }
+        initNewWorld.transaction.add(computeIx);
+        await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
+        await updateTransaction(setTransactions, worldTxnId, "confirmed");
+    } catch (err: any) {
+        await updateTransaction(setTransactions, worldTxnId, "failed");
+        throw new Error(`Failed to initialize new world: ${err.message}`);
     }
 
-    // Create anteroom entity
-    const anteroomcomponenttransaction = new anchor.web3.Transaction();
-    const anteroomseed = "ante";
-    const newanteentityPda = FindEntityPda({
+    const mapTxnId = "create-map";
+    await addTransaction(setTransactions, mapTxnId, "pending");
+
+    const mapSeed = "origin";
+    const mapEntityPda = FindEntityPda({
         worldId: initNewWorld.worldId,
         entityId: new anchor.BN(0),
-        seed: anteroomseed
+        seed: stringToUint8Array(mapSeed),
     });
 
-    const addAnteEntityIx = await createAddEntityInstruction(
-        {
+    try {
+        const mapAddIx = await createAddEntityInstruction({
             payer: engine.getSessionPayer(),
-            world: worldPda,
-            entity: newanteentityPda,
-        },
-        { extraSeed: anteroomseed },
+            world: initNewWorld.worldPda,
+            entity: mapEntityPda,
+        }, { extraSeed: stringToUint8Array(mapSeed) });
+
+        const mapTx = new Transaction().add(mapAddIx).add(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: CONFIG.computeUnitLimit })
+        );
+
+        await engine.processSessionChainTransaction(mapTxnId, mapTx);
+        await updateTransaction(setTransactions, mapTxnId, "confirmed");
+    } catch (err: any) {
+        await updateTransaction(setTransactions, mapTxnId, "failed");
+        throw new Error(`Failed to create map: ${err.message}`);
+    }
+
+    const foodEntityPdas = Array.from({ length: foodcomponents }, (_, i) =>
+        FindEntityPda({
+            worldId: initNewWorld.worldId,
+            entityId: new anchor.BN(0),
+            seed: stringToUint8Array(`food${i + 1}`),
+        })
     );
 
-    anteroomcomponenttransaction.add(addAnteEntityIx);
-    const computeLimitIxAnteroom = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 30_000,
-    });
+    const foodTxnId = "create-food-entities";
+    await addTransaction(setTransactions, foodTxnId, "pending");
+    try {
+        for (let i = 0; i < foodEntityPdas.length; i += CONFIG.defaultBatchSize) {
+            const batch = foodEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
+            const tx = new Transaction();
+            batch.forEach(async (foodPda, index) => {
+                const addEntityIx = await createAddEntityInstruction({
+                    payer: engine.getSessionPayer(),
+                    world: initNewWorld.worldPda,
+                    entity: foodPda,
+                }, { extraSeed: stringToUint8Array(`food${i + index + 1}`) });
+                tx.add(addEntityIx);
+            });
+            tx.add(
+                ComputeBudgetProgram.setComputeUnitLimit({
+                    units: CONFIG.computeUnitLimit,
+                })
+            );
+            await engine.processSessionChainTransaction(foodTxnId, tx);
+            console.log(`FoodEntityCreation batch ${i / CONFIG.defaultBatchSize + 1} completed.`);
+        }
+        await updateTransaction(setTransactions, foodTxnId, "confirmed");
+    } catch (err) {
+        console.error("FoodEntityCreation failed:", err);
+        await updateTransaction(setTransactions, foodTxnId, "failed");
+    }
 
-    anteroomcomponenttransaction.add(computeLimitIxAnteroom).add(computePriceIx);
-    const signatureanteroomcomponents = await engine.processSessionChainTransaction("addAnteroomEntity", anteroomcomponenttransaction);
-    console.log(`Anteroom entity signature: ${signatureanteroomcomponents}`);
+    const playerEntityPdas = Array.from({ length: maxplayer + 1 }, (_, i) =>
+        FindEntityPda({
+            worldId: initNewWorld.worldId,
+            entityId: new anchor.BN(0),
+            seed: stringToUint8Array(`player${i + 1}`),
+        })
+    );
+
+    const playerTxnId = "create-player-entities";
+    await addTransaction(setTransactions, playerTxnId, "pending");
+    try {
+        for (let i = 0; i < playerEntityPdas.length; i += CONFIG.defaultBatchSize) {
+            const batch = playerEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
+            const tx = new Transaction();
+            batch.forEach(async (playerPda, index) => {
+                const addEntityIx = await createAddEntityInstruction({
+                    payer: engine.getSessionPayer(),
+                    world: initNewWorld.worldPda,
+                    entity: playerPda,
+                }, { extraSeed: stringToUint8Array(`player${i + index + 1}`) });
+                tx.add(addEntityIx);
+            });
+            tx.add(
+                ComputeBudgetProgram.setComputeUnitLimit({
+                    units: CONFIG.computeUnitLimit,
+                })
+            );
+            await engine.processSessionChainTransaction(playerTxnId, tx);
+            console.log(`PlayerEntityCreation batch ${i / CONFIG.defaultBatchSize + 1} completed.`);
+        }
+        await updateTransaction(setTransactions, playerTxnId, "confirmed");
+    } catch (err) {
+        console.error("PlayerEntityCreation failed:", err);
+        await updateTransaction(setTransactions, playerTxnId, "failed");
+    }
+
+    const anteroomTxnId = "create-anteroom";
+    await addTransaction(setTransactions, anteroomTxnId, "pending");
+    const anteroomSeed = "ante";
+    const anteroomEntityPda = FindEntityPda({
+        worldId: initNewWorld.worldId,
+        entityId: new anchor.BN(0),
+        seed: stringToUint8Array(anteroomSeed),
+    });
+    try {
+
+        const anteroomAddIx = await createAddEntityInstruction({
+            payer: engine.getSessionPayer(),
+            world: initNewWorld.worldPda,
+            entity: anteroomEntityPda,
+        }, { extraSeed: stringToUint8Array(anteroomSeed) });
+
+        const anteroomTx = new Transaction().add(anteroomAddIx).add(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: CONFIG.computeUnitLimit })
+        );
+
+        await engine.processSessionChainTransaction(anteroomTxnId, anteroomTx);
+        await updateTransaction(setTransactions, anteroomTxnId, "confirmed");
+    } catch (err: any) {
+        await updateTransaction(setTransactions, anteroomTxnId, "failed");
+        throw new Error(`Failed to create anteroom: ${err.message}`);
+    }
+
 
     // Initialize map component
-    const initmapomponenttransaction = new anchor.web3.Transaction();
-    const initMapIx = await InitializeComponent({
-        payer: engine.getSessionPayer(),
-        entity: newmapentityPda,
-        componentId: COMPONENT_MAP_ID,
-    });
+    const initMapComponentTxnId = "init-map-component";
+    await addTransaction(setTransactions, initMapComponentTxnId, "pending");
+    try {
+        const initMapIx = await InitializeComponent({
+            payer: engine.getSessionPayer(),
+            entity: mapEntityPda,
+            componentId: COMPONENT_MAP_ID,
+        });
 
-    initmapomponenttransaction.add(initMapIx.transaction);
-    const computeLimitIxMapInit = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 50_000,
-    });
+        const initMapTx = new Transaction().add(initMapIx.transaction).add(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: 50_000 })
+        );
 
-    initmapomponenttransaction.add(computeLimitIxMapInit).add(computePriceIx);
-    const signature1map = await engine.processSessionChainTransaction("initMapComponent", initmapomponenttransaction);
-    console.log(`Init map component signature: ${signature1map}`);
+        await engine.processSessionChainTransaction(initMapComponentTxnId, initMapTx);
+        console.log(`Init map component signature: ${initMapIx.transaction}`);
+        await updateTransaction(setTransactions, initMapComponentTxnId, "confirmed");
+    } catch (err: any) {
+        console.error("Error initializing map component:", err);
+        await updateTransaction(setTransactions, initMapComponentTxnId, "failed");
+        throw err;
+    }
 
     // Initialize food components
-    const initbatchSize = 6;
-    for (let i = 0; i < newfoodEntityPdas.length; i += initbatchSize) {
-        const initfoodcomponenttransaction = new anchor.web3.Transaction();
-
-        const batch = newfoodEntityPdas.slice(i, i + initbatchSize);
-        for (const foodPda of batch) {
-            const initComponent = await InitializeComponent({
-                payer: engine.getSessionPayer(),
-                entity: foodPda,
-                componentId: COMPONENT_SECTION_ID,
-            });
-            initfoodcomponenttransaction.add(initComponent.transaction);
-            newfoodComponentPdas.push(initComponent.componentPda);
+    const initFoodComponentTxnId = "init-food-components";
+    await addTransaction(setTransactions, initFoodComponentTxnId, "pending");
+    let foodComponentPdas = [];
+    try {
+        for (let i = 0; i < foodEntityPdas.length; i += CONFIG.defaultBatchSize) {
+            const batch = foodEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
+            const tx = new Transaction();
+            for (const foodPda of batch) {
+                const initComponent = await InitializeComponent({
+                    payer: engine.getSessionPayer(),
+                    entity: foodPda,
+                    componentId: COMPONENT_SECTION_ID,
+                });
+                tx.add(initComponent.transaction);
+                foodComponentPdas.push(initComponent.componentPda);
+            }
+            tx.add(
+                ComputeBudgetProgram.setComputeUnitLimit({
+                    units: 200_000,
+                })
+            );
+            await engine.processSessionChainTransaction(initFoodComponentTxnId, tx);
+            console.log(`Init food component signature for batch: ${tx}`);
         }
-
-        const computeLimitIxFoodInit = ComputeBudgetProgram.setComputeUnitLimit({
-            units: 200_000,
-        });
-        initfoodcomponenttransaction.add(computeLimitIxFoodInit).add(computePriceIx);
-        const signature1food = await engine.processSessionChainTransaction("initFoodComponent", initfoodcomponenttransaction);
-        console.log(`Init food component signature for batch: ${signature1food}`);
+        await updateTransaction(setTransactions, initFoodComponentTxnId, "confirmed");
+    } catch (err: any) {
+        console.error("Error initializing food components:", err);
+        await updateTransaction(setTransactions, initFoodComponentTxnId, "failed");
+        throw err;
     }
 
     // Initialize player components
-    for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSize) {
-        const initplayerscomponenttransaction = new anchor.web3.Transaction();
-
-        const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSize);
-        for (const playerPda of playerBatch) {
-            const initPlayerComponent = await InitializeComponent({
-                payer: engine.getSessionPayer(),
-                entity: playerPda,
-                componentId: COMPONENT_PLAYER_ID,
-            });
-            initplayerscomponenttransaction.add(initPlayerComponent.transaction);
-            newplayerComponentPdas.push(initPlayerComponent.componentPda);
+    const initPlayerComponentTxnId = "init-player-components";
+    await addTransaction(setTransactions, initPlayerComponentTxnId, "pending");
+    try {
+        for (let i = 0; i < playerEntityPdas.length; i += CONFIG.defaultBatchSize) {
+            const batch = playerEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
+            const tx = new Transaction();
+            for (const playerPda of batch) {
+                const initPlayerComponent = await InitializeComponent({
+                    payer: engine.getSessionPayer(),
+                    entity: playerPda,
+                    componentId: COMPONENT_PLAYER_ID,
+                });
+                tx.add(initPlayerComponent.transaction);
+            }
+            tx.add(
+                ComputeBudgetProgram.setComputeUnitLimit({
+                    units: 200_000,
+                })
+            );
+            await engine.processSessionChainTransaction(initPlayerComponentTxnId, tx);
+            console.log(`Init player component signature for batch: ${tx}`);
         }
-
-        const computeLimitIxPlayersInit = ComputeBudgetProgram.setComputeUnitLimit({
-            units: 200_000,
-        });
-        initplayerscomponenttransaction.add(computeLimitIxPlayersInit).add(computePriceIx);
-        const signature1players = await engine.processSessionChainTransaction("initPlayerComponent", initplayerscomponenttransaction);
-        console.log(`Init players component signature for batch: ${signature1players}`);
+        await updateTransaction(setTransactions, initPlayerComponentTxnId, "confirmed");
+    } catch (err: any) {
+        console.error("Error initializing player components:", err);
+        await updateTransaction(setTransactions, initPlayerComponentTxnId, "failed");
+        throw err;
     }
 
     // Initialize anteroom component
-    const initantecomponenttransaction = new anchor.web3.Transaction();
-    const initAnteIx = await InitializeComponent({
-        payer: engine.getSessionPayer(),
-        entity: newanteentityPda,
-        componentId: COMPONENT_ANTEROOM_ID,
+    const initAnteroomComponentTxnId = "init-anteroom-component";
+    await addTransaction(setTransactions, initAnteroomComponentTxnId, "pending");
+    try {
+        const initAnteIx = await InitializeComponent({
+            payer: engine.getSessionPayer(),
+            entity: anteroomEntityPda,
+            componentId: COMPONENT_ANTEROOM_ID,
+        });
+
+        const initAnteTx = new Transaction().add(initAnteIx.transaction).add(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: 50_000 })
+        );
+
+        await engine.processSessionChainTransaction(initAnteroomComponentTxnId, initAnteTx);
+        console.log(`Init anteroom component signature: ${initAnteIx.transaction}`);
+        await updateTransaction(setTransactions, initAnteroomComponentTxnId, "confirmed");
+    } catch (err: any) {
+        console.error("Error initializing anteroom component:", err);
+        await updateTransaction(setTransactions, initAnteroomComponentTxnId, "failed");
+        throw err;
+    }
+
+    const vaultTxnId = "setup-vault";
+    await addTransaction(setTransactions, vaultTxnId, "pending");
+
+    const mapComponentPda = FindComponentPda({
+        componentId: COMPONENT_MAP_ID,
+        entity: mapEntityPda,
     });
 
-    initantecomponenttransaction.add(initAnteIx.transaction);
-    const computeLimitIxAnteInit = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 50_000,
-    });
-
-    initantecomponenttransaction.add(computeLimitIxAnteInit).add(computePriceIx);
-    const signature1ante = await engine.processSessionChainTransaction("initAnteroomComponent", initantecomponenttransaction);
-    console.log(`Init anteroom component signature: ${signature1ante}`);
-
-    // Setup vault
-    let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
-    let map_component_id = initMapIx.componentPda;
-    console.log("map component", map_component_id);
-
-    let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("token_account_owner_pda"), map_component_id.toBuffer()],
-        vault_program_id
+    const [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("token_account_owner_pda"), mapComponentPda.toBuffer()],
+        new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr")
     );
 
     const tokenVault = await getAssociatedTokenAddress(
         mint_of_token,
         tokenAccountOwnerPda,
-        true,
+        true
     );
+    try {
+        const vaultCreateIx = createAssociatedTokenAccountInstruction(
+            engine.getSessionPayer(),
+            tokenVault,
+            tokenAccountOwnerPda,
+            mint_of_token
+        );
 
-    console.log('game wallet', tokenAccountOwnerPda.toString());
+        const vaultTx = new Transaction().add(vaultCreateIx).add(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: CONFIG.computeUnitLimit })
+        );
 
-    const createTokenAccountTx = createAssociatedTokenAccountInstruction(
-        engine.getSessionPayer(),
-        tokenVault,
-        tokenAccountOwnerPda,
-        mint_of_token,
-    );
+        await engine.processSessionChainTransaction(vaultTxnId, vaultTx);
+        await updateTransaction(setTransactions, vaultTxnId, "confirmed");
+    } catch (err: any) {
+        await updateTransaction(setTransactions, vaultTxnId, "failed");
+        throw new Error(`Failed to setup vault: ${err.message}`);
+    }
 
-    const combinedTx = new Transaction().add(createTokenAccountTx);
-    const computeLimitIxVault = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 200_000,
-    });
-
-    combinedTx.add(computeLimitIxVault).add(computePriceIx);
-    const createvaultsig = await engine.processSessionChainTransaction("createTokenAccount", combinedTx);
-    console.log(`Created pda + vault signature: ${createvaultsig}`);
-
-    const signatureinitgame = await gameSystemInitMap(engine, worldPda, newmapentityPda, game_name, game_size, base_buyin, max_multiple, min_multiple);
-    console.log(`Init func game signature: ${signatureinitgame}`);
+    const initGameTxnId = "initialize-game";
+    await addTransaction(setTransactions, initGameTxnId, "pending");
+    try {
+        const initGameSig = await gameSystemInitMap(
+            engine,
+            initNewWorld.worldPda,
+            mapEntityPda,
+            game_name,
+            game_size,
+            base_buyin,
+            max_multiple,
+            min_multiple
+        );
+        console.log(`Game initialized with signature: ${initGameSig}`);
+        await updateTransaction(setTransactions, initGameTxnId, "confirmed");
+    } catch (err: any) {
+        await updateTransaction(setTransactions, initGameTxnId, "failed");
+        throw new Error(`Failed to initialize game: ${err.message}`);
+    }
 
     // Initialize players
-    const initbatchSizePlayers = 1;
-    for (let i = 0; i < newplayerEntityPdas.length; i += initbatchSizePlayers) {
-        const initplayertransaction = new anchor.web3.Transaction();
-        const playerBatch = newplayerEntityPdas.slice(i, i + initbatchSizePlayers);
-        
-        for (const playerPda of playerBatch) {
-            const initPlayer = await gameSystemInitPlayer(engine, worldPda, playerPda, newmapentityPda);
-            console.log(`Init func players signature for batch: ${initPlayer}`);
+    const initPlayersTxnId = "init-players";
+    await addTransaction(setTransactions, initPlayersTxnId, "pending");
+    try {
+        const initbatchSizePlayers = 1;
+        for (let i = 0; i < playerEntityPdas.length; i += initbatchSizePlayers) {
+            const initplayertransaction = new anchor.web3.Transaction();
+            const playerBatch = playerEntityPdas.slice(i, i + initbatchSizePlayers);
+            
+            for (const playerPda of playerBatch) {
+                const initPlayer = await gameSystemInitPlayer(engine, initNewWorld.worldPda, playerPda, mapEntityPda);
+                console.log(`Init func players signature for batch: ${initPlayer}`);
+            }
         }
+        await updateTransaction(setTransactions, initPlayersTxnId, "confirmed");
+    } catch (err: any) {
+        console.error("Error initializing players:", err);
+        await updateTransaction(setTransactions, initPlayersTxnId, "failed");
+        throw err;
     }
 
     // Initialize anteroom with token info
-    const initAnteroom = gameSystemInitAnteroom(engine, worldPda, newanteentityPda, newmapentityPda, mint_of_token, tokenVault, decimals, owner_token_account);
-    console.log(`Init func anteroom signature: ${initAnteroom}`);
+    const initAnteroomTxnId = "init-anteroom";
+    await addTransaction(setTransactions, initAnteroomTxnId, "pending");
+    try {
+        const initAnteroom = await gameSystemInitAnteroom(engine, initNewWorld.worldPda, anteroomEntityPda, mapEntityPda, mint_of_token, tokenVault, decimals, owner_token_account);
+        console.log(`Init func anteroom signature: ${initAnteroom}`);
+        await updateTransaction(setTransactions, initAnteroomTxnId, "confirmed");
+    } catch (err: any) {
+        console.error("Error initializing anteroom:", err);
+        await updateTransaction(setTransactions, initAnteroomTxnId, "failed");
+        throw err;
+    }
 
     // Delegate map component
-    const mapdelegateIx = createDelegateInstruction({
-        entity: newmapentityPda,
-        account: initMapIx.componentPda,
-        ownerProgram: COMPONENT_MAP_ID,
-        payer: engine.getSessionPayer(),
-    });
+    const delegateMapTxnId = "delegate-map";
+    await addTransaction(setTransactions, delegateMapTxnId, "pending");
+    try {
+        const mapdelegateIx = createDelegateInstruction({
+            entity: mapEntityPda,
+            account: mapComponentPda,
+            ownerProgram: COMPONENT_MAP_ID,
+            payer: engine.getSessionPayer(),
+        });
 
-    const maptx = new anchor.web3.Transaction().add(mapdelegateIx);
-    const computeLimitIxMapDel = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 80_000,
-    });
+        const maptx = new anchor.web3.Transaction().add(mapdelegateIx);
+        const computeLimitIxMapDel = ComputeBudgetProgram.setComputeUnitLimit({
+            units: 80_000,
+        });
 
-    maptx.add(computeLimitIxMapDel).add(computePriceIx);
-    const delsignature = await engine.processSessionChainTransaction("delegateMapComponent", maptx);
-    console.log(`Delegation signature map: ${delsignature}`);
+        maptx.add(computeLimitIxMapDel);
+        const delsignature = await engine.processSessionChainTransaction(delegateMapTxnId, maptx);
+        console.log(`Delegation signature map: ${delsignature}`);
+        await updateTransaction(setTransactions, delegateMapTxnId, "confirmed");
+    } catch (err) {
+        console.error("Error delegating map component:", err);
+        await updateTransaction(setTransactions, delegateMapTxnId, "failed");
+        throw err;
+    }
 
     // Delegate food components
-    let delbatchSize = 3;
-    for (let i = 0; i < newfoodEntityPdas.length; i += delbatchSize) {
-        const playertx = new anchor.web3.Transaction();
+    const delegateFoodTxnId = "delegate-food";
+    await addTransaction(setTransactions, delegateFoodTxnId, "pending");
+    try {
+        let delbatchSize = 3;
+        for (let i = 0; i < foodEntityPdas.length; i += delbatchSize) {
+            const playertx = new anchor.web3.Transaction();
 
-        const batch = newfoodEntityPdas.slice(i, i + delbatchSize);
-        batch.forEach((foodEntityPda, index) => {
-            const fooddelegateIx = createDelegateInstruction({
-                entity: foodEntityPda,
-                account: newfoodComponentPdas[i + index],
-                ownerProgram: COMPONENT_SECTION_ID,
-                payer: engine.getSessionPayer(),
+            const batch = foodEntityPdas.slice(i, i + delbatchSize);
+            batch.forEach((foodEntityPda, index) => {
+                const fooddelegateIx = createDelegateInstruction({
+                    entity: foodEntityPda,
+                    account: foodComponentPdas[i + index],
+                    ownerProgram: COMPONENT_SECTION_ID,
+                    payer: engine.getSessionPayer(),
+                });
+                playertx.add(fooddelegateIx);
             });
-            playertx.add(fooddelegateIx);
-        });
 
-        const computeLimitIxPlayerDel = ComputeBudgetProgram.setComputeUnitLimit({
-            units: 200_000,
-        });
-        playertx.add(computeLimitIxPlayerDel).add(computePriceIx);
-        const delsignature2 = await engine.processSessionChainTransaction("delegateFoodComponent", playertx);
-        console.log(`Delegation signature food for batch: ${delsignature2}`);
+            const computeLimitIxPlayerDel = ComputeBudgetProgram.setComputeUnitLimit({
+                units: 200_000,
+            });
+            playertx.add(computeLimitIxPlayerDel);
+            const delsignature2 = await engine.processSessionChainTransaction(delegateFoodTxnId, playertx);
+            console.log(`Delegation signature food for batch: ${delsignature2}`);
+        }
+        await updateTransaction(setTransactions, delegateFoodTxnId, "confirmed");
+    } catch (err) {
+        console.error("Error delegating food components:", err);
+        await updateTransaction(setTransactions, delegateFoodTxnId, "failed");
+        throw err;
     }
 
     // Initialize food positions
-    let overallIndex = 0;
-    let initFoodBatchSize = 1;
-    for (let i = 0; i < newfoodEntityPdas.length; i += initFoodBatchSize) {
-        const initfoodtransaction = new anchor.web3.Transaction();
-        const foodBatch = newfoodEntityPdas.slice(i, i + initFoodBatchSize);
-        
-        for (const foodPda of foodBatch) {
-            const { x, y } = getTopLeftCorner(overallIndex, game_size);
-            console.log(`Coordinates for foodPda at index ${overallIndex}: (${x}, ${y})`);
+    const initFoodTxnId = "init-food";
+    await addTransaction(setTransactions, initFoodTxnId, "pending");
+    try {
+        let overallIndex = 0;
+        let initFoodBatchSize = 1;
+        for (let i = 0; i < foodEntityPdas.length; i += initFoodBatchSize) {
+            const initfoodtransaction = new anchor.web3.Transaction();
+            const foodBatch = foodEntityPdas.slice(i, i + initFoodBatchSize);
             
-            const signatureinitfood = await gameSystemInitSection(
-                engine,
-                worldPda,
-                foodPda,
-                newmapentityPda,
-                x,
-                y
-            );
-            console.log(`Init func food signature for batch: ${signatureinitfood}`);
-            overallIndex++;
+            for (const foodPda of foodBatch) {
+                try {
+                    const { x, y } = getTopLeftCorner(overallIndex, game_size);
+                    console.log(`Coordinates for foodPda at index ${overallIndex}: (${x}, ${y})`);
+                    
+                    const signatureinitfood = await gameSystemInitSection(
+                        engine,
+                        initNewWorld.worldPda,
+                        foodPda,
+                        mapEntityPda,
+                        x,
+                        y
+                    );
+                    console.log(`Init func food signature for batch: ${signatureinitfood}`);
+                } catch (err) {
+                    console.error(`Error processing foodPda at index ${overallIndex}:`, err);
+                }
+                overallIndex++;
+            }
         }
+        await updateTransaction(setTransactions, initFoodTxnId, "confirmed");
+    } catch (err) {
+        console.error("Error initializing food positions:", err);
+        await updateTransaction(setTransactions, initFoodTxnId, "failed");
+        throw err;
     }
 
-    // Update game state
-    let token_image = "";
-    let token_name = "";
-    if (mint_of_token.toString() === "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn") {
-        token_image = `${process.env.PUBLIC_URL}/agld.jpg`;
-        token_name = "AGLD";
-    } else {
-        token_image = `${process.env.PUBLIC_URL}/usdc.png`;
-        token_name = "USDC";
-    }
-
-    const newGameInfo: ActiveGame = {
+    // Finalize new game setup in active games
+    const tokenMetadata = await fetchTokenMetadata(mint_of_token.toString());
+    const newGame: ActiveGame = {
         worldId: initNewWorld.worldId,
         worldPda: initNewWorld.worldPda,
         name: game_name,
         active_players: 0,
         max_players: maxplayer,
         size: game_size,
-        image: token_image,
-        token: token_name,
-        base_buyin: base_buyin,
-        min_buyin: min_buyin,
-        max_buyin: max_buyin,
+        image: tokenMetadata.image || `${process.env.PUBLIC_URL}/default.png`,
+        token: tokenMetadata.name || "TOKEN",
+        base_buyin,
+        min_buyin,
+        max_buyin,
         endpoint: "https://api.supersize.gg/game",
         ping: 1000,
     };
 
-    console.log("new game info", newGameInfo.worldId, newGameInfo.worldPda.toString());
-    setActiveGames([...activeGames, newGameInfo]);
+    setActiveGames([...activeGames, newGame]);
 
     // Reclaim leftover SOL
-    const playerbalance = await connection.getBalance(engine.getSessionPayer(), "processed");
-    const reclaim_transaction = new Transaction();
-    const solTransferInstruction = SystemProgram.transfer({
-        fromPubkey: engine.getSessionPayer(),
-        toPubkey: engine.getWalletPayer(),
-        lamports: playerbalance - 5000,
-    });
+    const reclaimSolTxnId = "reclaim-sol";
+    await addTransaction(setTransactions, reclaimSolTxnId, "pending");
+    try {
+        const reclaimSolTx = new Transaction().add(
+            SystemProgram.transfer({
+                fromPubkey: engine.getSessionPayer(),
+                toPubkey: gameOwnerWallet, // or another designated wallet
+                lamports: CONFIG.reclaimLamportBuffer, // Adjust this value as needed
+            })
+        );
 
-    reclaim_transaction.add(solTransferInstruction);
-    const reclaimsig = await engine.processSessionChainTransaction("reclaimLeftoverSOL", reclaim_transaction);
-    console.log(`Reclaim leftover SOL: ${reclaimsig}`);
-};
-
+        await engine.processSessionChainTransaction(reclaimSolTxnId, reclaimSolTx);
+        console.log(`Reclaimed leftover SOL.`);
+        await updateTransaction(setTransactions, reclaimSolTxnId, "confirmed");
+    } catch (err) {
+        console.error("Error reclaiming leftover SOL:", err);
+        await updateTransaction(setTransactions, reclaimSolTxnId, "failed");
+        throw err;
+    }
+}

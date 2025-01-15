@@ -1,7 +1,7 @@
 .home-container {
-  // background-color: #1b1b1b;
-  margin: 2rem auto;
-  padding: 2rem;
+  //background-color: #1b1b1b; 
+  margin: 5rem auto;
+  //padding: 2rem;
   border-radius: 8px;
   max-width: 1200px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -67,7 +67,7 @@
 }
 
 .table-container {
-  background-color: #1b1b1b;
+  background-color: #1b1b1b; //black; 
   padding: 2rem;
   border-radius: 8px;
   overflow-x: auto;
@@ -79,19 +79,20 @@
   min-width: 700px;
 
   thead {
-    background-color: #2f2f2f;
+    background-color: #2f2f2f; //black;
     th {
       text-align: left;
       padding: 0.75rem 1rem;
       font-weight: 600;
       border-bottom: 1px solid #444;
+      background-color: #2a2a2a;
     }
   }
 
   tbody {
     tr {
       &:nth-of-type(even) {
-        // background-color: #262626;
+         background-color: #262626; //
       }
       &:hover {
         background-color: #333;

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-
-import { gameExecuteNewGame } from "../../states/gameExecuteNewGame";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
 import { ActiveGame } from "@utils/types";
+import TxnModal from "@components/txnModal";
+import { gameExecuteNewGame } from "../../states/gameExecuteNewGame";
 
 type gameProps = {
     game_size: number;
@@ -23,6 +23,8 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
         "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp",
         "ffa",
     ]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [transactions, setTransactions] = useState<{ id: string; status: string }[]>([]);
 
     const handleChange =
         (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,10 +40,17 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log("Form Data Submitted:", formData);
+        setIsModalOpen(true); // Open the modal
+        gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGames, setActiveGames, setTransactions);
     };
 
     return (
+        <>
+        <TxnModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            transactions={transactions}
+        />
         <form
             className="flex flex-col h-fit w-[21vw] gap-2.5 p-5 border border-[#272B30] rounded-[10px] text-white bg-black shadow-[rgba(0,0,0,0.05)_0px_1px_2px_0px] font-[Terminus]"
             onSubmit={handleSubmit}
@@ -100,14 +109,13 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
                 />
             </label>
             <button
-                onClick={() => {
-                    gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGames, setActiveGames);
-                }}
+                type="submit"
                 className="px-4 py-2 text-[20px] font-[Terminus] rounded-[10px] cursor-pointer bg-[#000] text-white border-[1px] border-[#C4B5FD] shadow-[rgb(109,88,135)_0px_0px_10px_0px] transition-all duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#000] hover:border-[#755E92] hover:shadow-none"
             >
                 Create Game
             </button>
         </form>
+        </>
     );
 };
 

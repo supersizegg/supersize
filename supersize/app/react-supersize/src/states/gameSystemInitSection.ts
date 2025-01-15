@@ -25,7 +25,7 @@ export async function gameSystemInitSection(
   y: number,
 ) {
     const initSection = await ApplySystem({
-        authority: engine.getWalletPayer(),
+        authority: engine.getSessionPayer(),
         world: worldPda,
         entities: [
             {
