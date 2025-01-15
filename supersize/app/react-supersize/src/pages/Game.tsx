@@ -4,7 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import { useNavigate } from "react-router-dom";
 import { MAP_COMPONENT, scale } from "@utils/constants";
 import { ActiveGame, Blob, Food } from "@utils/types";
-import { ApplySystem, createUndelegateInstruction, FindComponentPda } from "@magicblock-labs/bolt-sdk";
+import { ApplySystem, createUndelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { COMPONENT_PLAYER_ID } from "../states/gamePrograms";
 import { BN } from "@coral-xyz/anchor";
 import { gameSystemExit } from "../states/gameSystemExit";
@@ -14,16 +14,17 @@ import { subscribeToGame, updateLeaderboard, updateMyPlayer } from "../states/ga
 import { gameSystemCashOut } from "../states/gameSystemCashOut";
 import { gameSystemMove } from "../states/gameSystemMove";
 import { gameSystemSpawnFood } from "../states/gameSystemSpawnFood";
-import { decodeFood, getSectionIndex } from "@utils/helper";
+import { decodeFood, getSectionIndex, stringToUint8Array } from "@utils/helper";
 import * as anchor from "@coral-xyz/anchor";
 
 type gameProps = {
     gameInfo: ActiveGame;
+    myPlayerEntityPda: PublicKey | null;
     screenSize: { width: number; height: number };
 };
 
 
-const Game = ({gameInfo, screenSize}: gameProps) => {
+const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
@@ -48,7 +49,7 @@ const Game = ({gameInfo, screenSize}: gameProps) => {
     const [cashoutTx, setCashoutTx] = useState<string | null>(null);
     
     const [leaderboard, setLeaderboard] = useState<Blob[]>([]);
-    const [allplayers, setAllplayers] = useState<Blob[]>([]);
+    const [allplayers, setAllPlayers] = useState<Blob[]>([]);
     const [players, setPlayers] = useState<Blob[]>([]);
     const [allFood, setAllFood] = useState<Food[]>([]);
     const [visibleFood, setVisibleFood] = useState<Food[]>([]);
@@ -160,12 +161,84 @@ const Game = ({gameInfo, screenSize}: gameProps) => {
     };
     
     useEffect(() => {
-        if (!entityMatch.current || !currentPlayerEntity.current || !currentPlayer) return;
+        console.log('subscribeToGame');
+        const mapEntityPda = FindEntityPda({
+            worldId: gameInfo.worldId,
+            entityId: new anchor.BN(0),
+            seed: stringToUint8Array("origin")
+        });
+        
+        const anteEntityPda = FindEntityPda({
+            worldId: gameInfo.worldId,
+            entityId: new anchor.BN(0),
+            seed: stringToUint8Array("ante")
+        });
+        const foodEntityPdas: PublicKey[] = [];
+        let maxplayer = 20;
+        let foodcomponents = 32;
+
+        if (gameInfo.size == 4000) {
+            maxplayer = 20;
+            foodcomponents = 16 * 5;
+        }
+        else if (gameInfo.size == 6000) {
+            maxplayer = 40;
+            foodcomponents = 36 * 5;
+        }
+        else if (gameInfo.size == 10000) {
+            maxplayer = 100;
+            foodcomponents = 100 * 5;
+        }
+        
+        for (let i = 1; i < foodcomponents + 1; i++) {
+            const foodseed = 'food' + i.toString();
+            const foodEntityPda = FindEntityPda({
+                worldId: gameInfo.worldId,
+                entityId: new anchor.BN(0),
+                seed: stringToUint8Array(foodseed)
+            });
+            foodEntityPdas.push(foodEntityPda);
+        }
+
+        const playerEntityPdas: PublicKey[] = [];
+        for (let i = 1; i < maxplayer + 1; i++) {
+            const playerentityseed = 'player' + i.toString();
+            const playerEntityPda = FindEntityPda({
+                worldId: gameInfo.worldId,
+                entityId: new anchor.BN(0),
+                seed: stringToUint8Array(playerentityseed)
+            });
+        }
+
+        entityMatch.current = mapEntityPda;
+        currentPlayerEntity.current = myPlayerEntityPda;
+        anteroomEntity.current = anteEntityPda;
+        foodEntities.current = foodEntityPdas;
+        playerEntities.current = playerEntityPdas;
+        const emptyPlayer: Blob = {
+            name: 'unnamed',
+            authority: null,
+            x: 50000,
+            y: 50000,
+            radius: 0,
+            mass: 0,
+            score: 0,
+            tax: 0,
+            speed: 0,
+            removal: new BN(0),
+            target_x: 0,
+            target_y: 0,
+            timestamp: 0,
+        }; 
+        setAllPlayers(new Array(playerEntityPdas.length).fill(emptyPlayer));
+        setAllFood(new Array(foodEntityPdas.length).fill([]));
+        setFoodListLen(new Array(foodEntityPdas.length).fill(0));
+        if (!entityMatch.current || !currentPlayerEntity.current) return;
         subscribeToGame(engine, 
             foodEntities.current, playerEntities.current, entityMatch.current, currentPlayerEntity.current, 
-            currentPlayer, nextFood, isJoining, 
+            emptyPlayer, nextFood, isJoining, 
             foodComponentSubscriptionId, playersComponentSubscriptionId, myplayerComponentSubscriptionId, mapComponentSubscriptionId, 
-            setAllplayers, setCurrentPlayer, setGameEnded, setAllFood, setFoodListLen, setNextFood);
+            setAllPlayers, setCurrentPlayer, setGameEnded, setAllFood, setFoodListLen, setNextFood);
     }, [engine, gameInfo]);
     
     const endGame = async () => {
@@ -365,7 +438,7 @@ const Game = ({gameInfo, screenSize}: gameProps) => {
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-            processNewFoodTransaction();
+            //processNewFoodTransaction();
         }, 200);
 
         return () => clearInterval(intervalId);
@@ -375,7 +448,9 @@ const Game = ({gameInfo, screenSize}: gameProps) => {
 
         const intervalId = setInterval(() => {
             if (currentPlayerEntity.current && currentPlayer && entityMatch.current  && foodEntities.current && playerEntities.current && players && foodListLen) {
+                console.log("move");
                 gameSystemMove(engine, gameInfo, currentPlayerEntity.current, currentPlayer, entityMatch.current, foodEntities.current, playerEntities.current, players, foodListLen, mousePosition.x, mousePosition.y, isMouseDown, screenSize);
+            
             }  
         }, 30);
 

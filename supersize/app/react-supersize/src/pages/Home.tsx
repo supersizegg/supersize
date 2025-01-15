@@ -43,9 +43,10 @@ function getPingColor(ping: number) {
 type homeProps = {
     selectedGame: ActiveGame | null;
     setSelectedGame: (game: ActiveGame | null) => void;
+    setMyPlayerEntityPda: (pda: PublicKey | null) => void;
 }
 
-const Home = ({selectedGame, setSelectedGame}: homeProps) => {
+const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) => {
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
@@ -307,7 +308,8 @@ const Home = ({selectedGame, setSelectedGame}: homeProps) => {
                 isBuyInModalOpen={isBuyInModalOpen}
                 setIsBuyInModalOpen={setIsBuyInModalOpen}
                 activeGame={selectedGame}
-            />
+                setMyPlayerEntityPda={setMyPlayerEntityPda}
+            /> 
             )}
             <div className="home-container">
                 <div className="home-header">

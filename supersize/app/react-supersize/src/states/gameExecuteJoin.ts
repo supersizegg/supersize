@@ -36,7 +36,8 @@ export async function gameExecuteJoin(
   engine: MagicBlockEngine,
   selectGameId: ActiveGame,
   buyIn: number,
-  playerName: string
+  playerName: string,
+  setMyPlayerEntityPda: (pda: PublicKey | null) => void,
 ) {
 
   if (selectGameId.name == "loading") return;
@@ -266,6 +267,16 @@ export async function gameExecuteJoin(
       return;
   }
 
-  await gameSystemBuyIn(engine, selectGameId,newplayerEntityPda, anteEntityPda, myPlayerStatus, buyIn);
-  return await gameSystemJoin(engine, selectGameId, newplayerEntityPda, mapEntityPda, playerName);
+  const buyinsig = await gameSystemBuyIn(engine, selectGameId,newplayerEntityPda, anteEntityPda, myPlayerStatus, buyIn);
+  try {
+    const joinsig = await gameSystemJoin(engine, selectGameId, newplayerEntityPda, mapEntityPda, playerName);
+    setMyPlayerEntityPda(newplayerEntityPda);
+    return joinsig;
+  } catch (error) {
+    console.log('error', error);
+    if (myPlayerStatus == "resume_session") {
+        setMyPlayerEntityPda(newplayerEntityPda);
+        return "resume_session";
+      }
+  }
 }

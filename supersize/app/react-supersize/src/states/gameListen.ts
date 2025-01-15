@@ -14,6 +14,7 @@ export function updateFoodList(
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
   currentPlayer: Blob,
 ) {
+  console.log("updateFoodList", section);
   const foodArray = section.food as any[];  
   const visibleFood: Food[] = [];
   const foodData: Food[] = [];
@@ -79,6 +80,7 @@ export function updateMyPlayer(
   setGameEnded: (gameEnded: number) => void,
   isJoining: boolean,
 ) {
+    console.log("updateMyPlayer", player);
       if (
           Math.sqrt(player.mass) == 0 &&
           player.score == 0.0 &&
@@ -91,9 +93,6 @@ export function updateMyPlayer(
               setGameEnded(1);
           }
       }
-      //if (playerBuyIn.current == 0) {
-          //playerBuyIn.current = player.buyIn;
-      //}
       setCurrentPlayer({
           name: player.name,
           authority: player.authority,
@@ -124,6 +123,7 @@ export function updateMap(
   nextFood: { x: number; y: number },
   setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
+  console.log("updateMap", map);
   const playerArray = map.players as any[];
   if(map.nextFood){
       const foodDataArray = new Uint8Array(map.nextFood.data);
@@ -143,6 +143,7 @@ export function updatePlayers(
   player_index: number,
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
 ) {
+  console.log("updatePlayers", player);
   if (player) {
     setAllPlayers((prevPlayers: Blob[]) => {
       const newPlayer: Blob = {
@@ -236,7 +237,7 @@ export function subscribeToGame(
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
   setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
-
+  console.log("foodEntities", foodEntities);
   for (let i = 0; i < foodEntities.length; i++) {
       const foodComponenti = FindComponentPda({
           componentId: COMPONENT_SECTION_ID,
@@ -249,7 +250,7 @@ export function subscribeToGame(
                   return;
                 }
                 const coder = getComponentSectionOnEphem(engine).coder;
-                handleFoodComponentChange(coder.accounts.decode("section", accountInfo.data), i, engine, setAllFood, setFoodListLen, currentPlayer);
+                handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
               }),
           ];
       } else {
@@ -260,12 +261,12 @@ export function subscribeToGame(
                   return;
                 }
                 const coder = getComponentSectionOnEphem(engine).coder;
-                handleFoodComponentChange(coder.accounts.decode("section", accountInfo.data), i, engine, setAllFood, setFoodListLen, currentPlayer);
+                handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
               }),
           ];
       }
   }
-
+  console.log("playerEntities", playerEntities);
   for (let i = 0; i < playerEntities.length; i++) {
       const playersComponenti = FindComponentPda({
           componentId: COMPONENT_PLAYER_ID,
@@ -278,7 +279,7 @@ export function subscribeToGame(
                   return;
                 }
                 const coder = getComponentPlayerOnEphem(engine).coder;
-                handlePlayersComponentChange(coder.accounts.decode("player", accountInfo.data), i, engine, setAllPlayers);
+                handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
               }),
           ];
       } else {
@@ -289,7 +290,7 @@ export function subscribeToGame(
                   return;
                 }
                 const coder = getComponentPlayerOnEphem(engine).coder;
-                handlePlayersComponentChange(coder.accounts.decode("player", accountInfo.data), i, engine, setAllPlayers);
+                handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
               }),
           ];
       }
@@ -299,13 +300,13 @@ export function subscribeToGame(
       componentId: COMPONENT_PLAYER_ID,
       entity: currentPlayerEntity,
   });
-
-  myplayerComponentSubscriptionId = engine.subscribeToEphemAccountInfo(myplayerComponent, (accountInfo) => {
+  myplayerComponentSubscriptionId.current = engine.subscribeToEphemAccountInfo(myplayerComponent, (accountInfo) => {
+    console.log("myplayerComponentSubscriptionId", accountInfo);
     if (!accountInfo) {
       return;
     }
     const coder = getComponentPlayerOnEphem(engine).coder;
-    handleMyPlayerComponentChange(coder.accounts.decode("player", accountInfo.data), engine, setCurrentPlayer, setGameEnded, isJoining);
+    handleMyPlayerComponentChange(accountInfo, engine, setCurrentPlayer, setGameEnded, isJoining);
   });
 
   const mapComponent = FindComponentPda({
@@ -313,12 +314,12 @@ export function subscribeToGame(
       entity: entityMatch,
   });
 
-  mapComponentSubscriptionId = engine.subscribeToEphemAccountInfo(mapComponent, (accountInfo) => {
+  mapComponentSubscriptionId.current = engine.subscribeToEphemAccountInfo(mapComponent, (accountInfo) => {
     if (!accountInfo) {
       return;
     }
     const coder = getComponentMapOnEphem(engine).coder;
-    handleMapComponentChange(coder.accounts.decode("map", accountInfo.data), engine, nextFood, setNextFood);
+    handleMapComponentChange(accountInfo, engine, nextFood, setNextFood);
   });
 
 };

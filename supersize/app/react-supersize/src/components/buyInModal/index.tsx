@@ -2,21 +2,25 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { ActiveGame } from "@utils/types";
 import { useEffect, useState } from "react";
 import "./BuyInModal.css";
-
+import { useNavigate } from "react-router-dom";
 import { gameExecuteJoin } from "../../states/gameExecuteJoin";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
+import { PublicKey } from "@solana/web3.js";
 
 type buyInModalProps = {
     isBuyInModalOpen: boolean;
     setIsBuyInModalOpen: (isOpen: boolean) => void;
     activeGame: ActiveGame;
+    setMyPlayerEntityPda: (pda: PublicKey | null) => void;
 };
 
 const BuyInModal: React.FC<buyInModalProps> = ({
     isBuyInModalOpen, 
     setIsBuyInModalOpen, 
     activeGame,
+    setMyPlayerEntityPda,
 }) => {
+    const navigate = useNavigate();
     const {publicKey} = useWallet();
     const [buyIn, setBuyIn] = useState(0);
     const engine = useMagicBlockEngine();
@@ -132,7 +136,20 @@ const BuyInModal: React.FC<buyInModalProps> = ({
                 </div>
                 <div className="flex justify-between w-[100%] m-2 pl-10 pr-10">
                     <button className="w-[40%] bg-black border border-[#c4b5fd] rounded-md shadow-[0_0_10px_0] shadow-[#6d5887] text-white cursor-pointer font-terminus text-lg sm:text-xl px-4 py-2 transition-colors duration-250 ease-in-out hover:bg-black hover:border-[#755e92] hover:shadow-none" onClick={() => {setIsBuyInModalOpen(false)}}>Cancel</button>
-                    <button className="w-[40%] bg-black border border-[#c4b5fd] rounded-md shadow-[0_0_10px_0] shadow-[#6d5887] text-white cursor-pointer font-terminus text-lg sm:text-xl px-4 py-2 transition-colors duration-250 ease-in-out hover:bg-black hover:border-[#755e92] hover:shadow-none" onClick={() => {gameExecuteJoin(engine, activeGame, buyIn, "unnamed")}}>Buy In</button>
+                    <button className="w-[40%] bg-black border border-[#c4b5fd] rounded-md shadow-[0_0_10px_0] shadow-[#6d5887] text-white cursor-pointer font-terminus text-lg sm:text-xl px-4 py-2 transition-colors duration-250 ease-in-out hover:bg-black hover:border-[#755e92] hover:shadow-none" 
+                    onClick={async () => {
+                        try {
+                            const transaction = await gameExecuteJoin(engine, activeGame, buyIn, "unnamed", setMyPlayerEntityPda);
+                            if (transaction) {
+                                navigate('/game');
+                            } else {
+                                alert("Failed to join the game. Please try again.");
+                            }
+                        } catch (error) {
+                            console.error("Error executing join:", error);
+                            alert("An error occurred. Please try again.");
+                        }
+                    }}>Buy In</button>
                 </div>
             </div>
         </div>
