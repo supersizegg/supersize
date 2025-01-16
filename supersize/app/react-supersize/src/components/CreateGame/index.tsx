@@ -9,11 +9,12 @@ type gameProps = {
     userKey: string;
     activeGames: ActiveGame[];
     setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
+    selectedServer: string[];
 };
 
 type FormData = [number, number, number, string, string, string];
 
-const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setActiveGames }) => {
+const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setActiveGames, selectedServer }) => {
     const engine = useMagicBlockEngine();
     const [formData, setFormData] = useState<FormData>([
         game_size,
@@ -38,9 +39,17 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
             setFormData(updatedFormData);
         };
 
+    const handleRetry = (transactionId: string) => {
+        const transactionFn = async () => {
+            console.log(`Retrying transaction: ${transactionId}`);
+        };
+    };
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsModalOpen(true); // Open the modal
+        console.log(selectedServer[0]);
+        engine.setEndpointEphemRpc(selectedServer[0]);
         gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGames, setActiveGames, setTransactions);
     };
 
@@ -50,6 +59,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             transactions={transactions}
+            onRetry={handleRetry}
         />
         <form
             className="flex flex-col h-fit w-[21vw] gap-2.5 p-5 border border-[#272B30] rounded-[10px] text-white bg-black shadow-[rgba(0,0,0,0.05)_0px_1px_2px_0px] font-[Terminus]"

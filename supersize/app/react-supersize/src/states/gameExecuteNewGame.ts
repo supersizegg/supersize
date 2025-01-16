@@ -65,16 +65,34 @@ async function updateTransaction(
     );
 }
 
+async function retryTransaction(
+    transactionId: string,
+    transactionFn: () => Promise<void>,
+    setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>
+) {
+    let retry = true;
+    while (retry) {
+        try {
+            await transactionFn();
+            await updateTransaction(setTransactions, transactionId, "confirmed");
+            retry = false;
+        } catch (err: any) {
+            await updateTransaction(setTransactions, transactionId, "failed");
+            retry = window.confirm(`Transaction ${transactionId} failed: ${err.message}. Would you like to retry?`);
+        }
+    }
+}
+
 export async function gameExecuteNewGame(
-    engine: any,
+    engine: MagicBlockEngine,
     game_size: number,
     max_buyin: number,
     min_buyin: number,
     game_owner_wallet_string: string,
     game_token_string: string,
     game_name: string,
-    activeGames: any[],
-    setActiveGames: (prev: any[]) => void,
+    activeGames: ActiveGame[],
+    setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>,
     setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>
 ) {
     const base_buyin = Math.sqrt(max_buyin * min_buyin);
@@ -113,7 +131,7 @@ export async function gameExecuteNewGame(
 
     const solTxnId = "transfer-sol";
     await addTransaction(setTransactions, solTxnId, "pending");
-    try {
+    await retryTransaction(solTxnId, async () => {
         const solTransfer = SystemProgram.transfer({
             fromPubkey: engine.getWalletPayer(),
             toPubkey: engine.getSessionPayer(),
@@ -121,16 +139,12 @@ export async function gameExecuteNewGame(
         });
         const solTx = new Transaction().add(solTransfer);
         await engine.processWalletTransaction(solTxnId, solTx);
-        await updateTransaction(setTransactions, solTxnId, "confirmed");
-    } catch (err: any) {
-        await updateTransaction(setTransactions, solTxnId, "failed");
-        throw new Error(`Failed to transfer SOL: ${err.message}`);
-    }
+    }, setTransactions);
 
     const worldTxnId = "init-world";
     await addTransaction(setTransactions, worldTxnId, "pending");
-    let initNewWorld;
-    try {
+    let initNewWorld: any;
+    await retryTransaction(worldTxnId, async () => {
         initNewWorld = await InitializeNewWorld({
             payer: engine.getSessionPayer(),
             connection,
@@ -141,11 +155,7 @@ export async function gameExecuteNewGame(
         });
         initNewWorld.transaction.add(computeIx);
         await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
-        await updateTransaction(setTransactions, worldTxnId, "confirmed");
-    } catch (err: any) {
-        await updateTransaction(setTransactions, worldTxnId, "failed");
-        throw new Error(`Failed to initialize new world: ${err.message}`);
-    }
+    }, setTransactions);
 
     const mapTxnId = "create-map";
     await addTransaction(setTransactions, mapTxnId, "pending");
@@ -157,7 +167,7 @@ export async function gameExecuteNewGame(
         seed: stringToUint8Array(mapSeed),
     });
 
-    try {
+    await retryTransaction(mapTxnId, async () => {
         const mapAddIx = await createAddEntityInstruction({
             payer: engine.getSessionPayer(),
             world: initNewWorld.worldPda,
@@ -169,11 +179,7 @@ export async function gameExecuteNewGame(
         );
 
         await engine.processSessionChainTransaction(mapTxnId, mapTx);
-        await updateTransaction(setTransactions, mapTxnId, "confirmed");
-    } catch (err: any) {
-        await updateTransaction(setTransactions, mapTxnId, "failed");
-        throw new Error(`Failed to create map: ${err.message}`);
-    }
+    }, setTransactions);
 
     const foodEntityPdas = Array.from({ length: foodcomponents }, (_, i) =>
         FindEntityPda({
@@ -185,11 +191,11 @@ export async function gameExecuteNewGame(
 
     const foodTxnId = "create-food-entities";
     await addTransaction(setTransactions, foodTxnId, "pending");
-    try {
+    await retryTransaction(foodTxnId, async () => {
         for (let i = 0; i < foodEntityPdas.length; i += CONFIG.defaultBatchSize) {
             const batch = foodEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
             const tx = new Transaction();
-            batch.forEach(async (foodPda, index) => {
+            const addEntityPromises = batch.map(async (foodPda, index) => {
                 const addEntityIx = await createAddEntityInstruction({
                     payer: engine.getSessionPayer(),
                     world: initNewWorld.worldPda,
@@ -197,6 +203,12 @@ export async function gameExecuteNewGame(
                 }, { extraSeed: stringToUint8Array(`food${i + index + 1}`) });
                 tx.add(addEntityIx);
             });
+
+            await Promise.all(addEntityPromises).catch((error) => {
+                console.error("Error in batch processing:", error);
+                throw new Error("Batch processing failed, retrying...");
+            });
+
             tx.add(
                 ComputeBudgetProgram.setComputeUnitLimit({
                     units: CONFIG.computeUnitLimit,
@@ -205,11 +217,7 @@ export async function gameExecuteNewGame(
             await engine.processSessionChainTransaction(foodTxnId, tx);
             console.log(`FoodEntityCreation batch ${i / CONFIG.defaultBatchSize + 1} completed.`);
         }
-        await updateTransaction(setTransactions, foodTxnId, "confirmed");
-    } catch (err) {
-        console.error("FoodEntityCreation failed:", err);
-        await updateTransaction(setTransactions, foodTxnId, "failed");
-    }
+    }, setTransactions);
 
     const playerEntityPdas = Array.from({ length: maxplayer + 1 }, (_, i) =>
         FindEntityPda({
@@ -221,11 +229,11 @@ export async function gameExecuteNewGame(
 
     const playerTxnId = "create-player-entities";
     await addTransaction(setTransactions, playerTxnId, "pending");
-    try {
+    await retryTransaction(playerTxnId, async () => {
         for (let i = 0; i < playerEntityPdas.length; i += CONFIG.defaultBatchSize) {
             const batch = playerEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
             const tx = new Transaction();
-            batch.forEach(async (playerPda, index) => {
+            const addEntityPromises = batch.map(async (playerPda, index) => {
                 const addEntityIx = await createAddEntityInstruction({
                     payer: engine.getSessionPayer(),
                     world: initNewWorld.worldPda,
@@ -233,6 +241,12 @@ export async function gameExecuteNewGame(
                 }, { extraSeed: stringToUint8Array(`player${i + index + 1}`) });
                 tx.add(addEntityIx);
             });
+
+            await Promise.all(addEntityPromises).catch((error) => {
+                console.error("Error in batch processing:", error);
+                throw new Error("Batch processing failed, retrying...");
+            });
+
             tx.add(
                 ComputeBudgetProgram.setComputeUnitLimit({
                     units: CONFIG.computeUnitLimit,
@@ -241,11 +255,7 @@ export async function gameExecuteNewGame(
             await engine.processSessionChainTransaction(playerTxnId, tx);
             console.log(`PlayerEntityCreation batch ${i / CONFIG.defaultBatchSize + 1} completed.`);
         }
-        await updateTransaction(setTransactions, playerTxnId, "confirmed");
-    } catch (err) {
-        console.error("PlayerEntityCreation failed:", err);
-        await updateTransaction(setTransactions, playerTxnId, "failed");
-    }
+    }, setTransactions);
 
     const anteroomTxnId = "create-anteroom";
     await addTransaction(setTransactions, anteroomTxnId, "pending");
@@ -255,8 +265,8 @@ export async function gameExecuteNewGame(
         entityId: new anchor.BN(0),
         seed: stringToUint8Array(anteroomSeed),
     });
-    try {
 
+    await retryTransaction(anteroomTxnId, async () => {
         const anteroomAddIx = await createAddEntityInstruction({
             payer: engine.getSessionPayer(),
             world: initNewWorld.worldPda,
@@ -268,17 +278,13 @@ export async function gameExecuteNewGame(
         );
 
         await engine.processSessionChainTransaction(anteroomTxnId, anteroomTx);
-        await updateTransaction(setTransactions, anteroomTxnId, "confirmed");
-    } catch (err: any) {
-        await updateTransaction(setTransactions, anteroomTxnId, "failed");
-        throw new Error(`Failed to create anteroom: ${err.message}`);
-    }
-
+    }, setTransactions);
 
     // Initialize map component
     const initMapComponentTxnId = "init-map-component";
     await addTransaction(setTransactions, initMapComponentTxnId, "pending");
-    try {
+
+    await retryTransaction(initMapComponentTxnId, async () => {
         const initMapIx = await InitializeComponent({
             payer: engine.getSessionPayer(),
             entity: mapEntityPda,
@@ -291,22 +297,17 @@ export async function gameExecuteNewGame(
 
         await engine.processSessionChainTransaction(initMapComponentTxnId, initMapTx);
         console.log(`Init map component signature: ${initMapIx.transaction}`);
-        await updateTransaction(setTransactions, initMapComponentTxnId, "confirmed");
-    } catch (err: any) {
-        console.error("Error initializing map component:", err);
-        await updateTransaction(setTransactions, initMapComponentTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Initialize food components
     const initFoodComponentTxnId = "init-food-components";
     await addTransaction(setTransactions, initFoodComponentTxnId, "pending");
-    let foodComponentPdas = [];
-    try {
+    let foodComponentPdas: PublicKey[] = [];
+    await retryTransaction(initFoodComponentTxnId, async () => {
         for (let i = 0; i < foodEntityPdas.length; i += CONFIG.defaultBatchSize) {
             const batch = foodEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
             const tx = new Transaction();
-            for (const foodPda of batch) {
+            const initComponentPromises = batch.map(async (foodPda) => {
                 const initComponent = await InitializeComponent({
                     payer: engine.getSessionPayer(),
                     entity: foodPda,
@@ -314,7 +315,13 @@ export async function gameExecuteNewGame(
                 });
                 tx.add(initComponent.transaction);
                 foodComponentPdas.push(initComponent.componentPda);
-            }
+            });
+
+            await Promise.all(initComponentPromises).catch((error) => {
+                console.error("Error in batch processing:", error);
+                throw new Error("Batch processing failed, retrying...");
+            });
+
             tx.add(
                 ComputeBudgetProgram.setComputeUnitLimit({
                     units: 200_000,
@@ -323,28 +330,31 @@ export async function gameExecuteNewGame(
             await engine.processSessionChainTransaction(initFoodComponentTxnId, tx);
             console.log(`Init food component signature for batch: ${tx}`);
         }
-        await updateTransaction(setTransactions, initFoodComponentTxnId, "confirmed");
-    } catch (err: any) {
-        console.error("Error initializing food components:", err);
-        await updateTransaction(setTransactions, initFoodComponentTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Initialize player components
     const initPlayerComponentTxnId = "init-player-components";
     await addTransaction(setTransactions, initPlayerComponentTxnId, "pending");
-    try {
+
+    await retryTransaction(initPlayerComponentTxnId, async () => {
         for (let i = 0; i < playerEntityPdas.length; i += CONFIG.defaultBatchSize) {
             const batch = playerEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
             const tx = new Transaction();
-            for (const playerPda of batch) {
+            const initComponentPromises = batch.map(async (playerPda) => {
                 const initPlayerComponent = await InitializeComponent({
                     payer: engine.getSessionPayer(),
                     entity: playerPda,
                     componentId: COMPONENT_PLAYER_ID,
                 });
                 tx.add(initPlayerComponent.transaction);
-            }
+            });
+
+            // Wait for all promises to resolve and catch any errors
+            await Promise.all(initComponentPromises).catch((error) => {
+                console.error("Error in batch processing:", error);
+                throw new Error("Batch processing failed, retrying...");
+            });
+
             tx.add(
                 ComputeBudgetProgram.setComputeUnitLimit({
                     units: 200_000,
@@ -353,17 +363,13 @@ export async function gameExecuteNewGame(
             await engine.processSessionChainTransaction(initPlayerComponentTxnId, tx);
             console.log(`Init player component signature for batch: ${tx}`);
         }
-        await updateTransaction(setTransactions, initPlayerComponentTxnId, "confirmed");
-    } catch (err: any) {
-        console.error("Error initializing player components:", err);
-        await updateTransaction(setTransactions, initPlayerComponentTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Initialize anteroom component
     const initAnteroomComponentTxnId = "init-anteroom-component";
     await addTransaction(setTransactions, initAnteroomComponentTxnId, "pending");
-    try {
+
+    await retryTransaction(initAnteroomComponentTxnId, async () => {
         const initAnteIx = await InitializeComponent({
             payer: engine.getSessionPayer(),
             entity: anteroomEntityPda,
@@ -376,12 +382,7 @@ export async function gameExecuteNewGame(
 
         await engine.processSessionChainTransaction(initAnteroomComponentTxnId, initAnteTx);
         console.log(`Init anteroom component signature: ${initAnteIx.transaction}`);
-        await updateTransaction(setTransactions, initAnteroomComponentTxnId, "confirmed");
-    } catch (err: any) {
-        console.error("Error initializing anteroom component:", err);
-        await updateTransaction(setTransactions, initAnteroomComponentTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     const vaultTxnId = "setup-vault";
     await addTransaction(setTransactions, vaultTxnId, "pending");
@@ -401,7 +402,8 @@ export async function gameExecuteNewGame(
         tokenAccountOwnerPda,
         true
     );
-    try {
+
+    await retryTransaction(vaultTxnId, async () => {
         const vaultCreateIx = createAssociatedTokenAccountInstruction(
             engine.getSessionPayer(),
             tokenVault,
@@ -414,15 +416,12 @@ export async function gameExecuteNewGame(
         );
 
         await engine.processSessionChainTransaction(vaultTxnId, vaultTx);
-        await updateTransaction(setTransactions, vaultTxnId, "confirmed");
-    } catch (err: any) {
-        await updateTransaction(setTransactions, vaultTxnId, "failed");
-        throw new Error(`Failed to setup vault: ${err.message}`);
-    }
+    }, setTransactions);
 
     const initGameTxnId = "initialize-game";
     await addTransaction(setTransactions, initGameTxnId, "pending");
-    try {
+
+    await retryTransaction(initGameTxnId, async () => {
         const initGameSig = await gameSystemInitMap(
             engine,
             initNewWorld.worldPda,
@@ -434,50 +433,54 @@ export async function gameExecuteNewGame(
             min_multiple
         );
         console.log(`Game initialized with signature: ${initGameSig}`);
-        await updateTransaction(setTransactions, initGameTxnId, "confirmed");
-    } catch (err: any) {
-        await updateTransaction(setTransactions, initGameTxnId, "failed");
-        throw new Error(`Failed to initialize game: ${err.message}`);
-    }
+    }, setTransactions);
 
     // Initialize players
     const initPlayersTxnId = "init-players";
     await addTransaction(setTransactions, initPlayersTxnId, "pending");
-    try {
+
+    await retryTransaction(initPlayersTxnId, async () => {
         const initbatchSizePlayers = 1;
         for (let i = 0; i < playerEntityPdas.length; i += initbatchSizePlayers) {
             const initplayertransaction = new anchor.web3.Transaction();
             const playerBatch = playerEntityPdas.slice(i, i + initbatchSizePlayers);
-            
-            for (const playerPda of playerBatch) {
+
+            const initPlayerPromises = playerBatch.map(async (playerPda) => {
                 const initPlayer = await gameSystemInitPlayer(engine, initNewWorld.worldPda, playerPda, mapEntityPda);
                 console.log(`Init func players signature for batch: ${initPlayer}`);
-            }
+            });
+
+            // Wait for all promises to resolve and catch any errors
+            await Promise.all(initPlayerPromises).catch((error) => {
+                console.error("Error initializing players:", error);
+                throw new Error("Batch processing failed, retrying...");
+            });
         }
-        await updateTransaction(setTransactions, initPlayersTxnId, "confirmed");
-    } catch (err: any) {
-        console.error("Error initializing players:", err);
-        await updateTransaction(setTransactions, initPlayersTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Initialize anteroom with token info
     const initAnteroomTxnId = "init-anteroom";
     await addTransaction(setTransactions, initAnteroomTxnId, "pending");
-    try {
-        const initAnteroom = await gameSystemInitAnteroom(engine, initNewWorld.worldPda, anteroomEntityPda, mapEntityPda, mint_of_token, tokenVault, decimals, owner_token_account);
+
+    await retryTransaction(initAnteroomTxnId, async () => {
+        const initAnteroom = await gameSystemInitAnteroom(
+            engine,
+            initNewWorld.worldPda,
+            anteroomEntityPda,
+            mapEntityPda,
+            mint_of_token,
+            tokenVault,
+            decimals,
+            owner_token_account
+        );
         console.log(`Init func anteroom signature: ${initAnteroom}`);
-        await updateTransaction(setTransactions, initAnteroomTxnId, "confirmed");
-    } catch (err: any) {
-        console.error("Error initializing anteroom:", err);
-        await updateTransaction(setTransactions, initAnteroomTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Delegate map component
     const delegateMapTxnId = "delegate-map";
     await addTransaction(setTransactions, delegateMapTxnId, "pending");
-    try {
+
+    await retryTransaction(delegateMapTxnId, async () => {
         const mapdelegateIx = createDelegateInstruction({
             entity: mapEntityPda,
             account: mapComponentPda,
@@ -493,31 +496,34 @@ export async function gameExecuteNewGame(
         maptx.add(computeLimitIxMapDel);
         const delsignature = await engine.processSessionChainTransaction(delegateMapTxnId, maptx);
         console.log(`Delegation signature map: ${delsignature}`);
-        await updateTransaction(setTransactions, delegateMapTxnId, "confirmed");
-    } catch (err) {
-        console.error("Error delegating map component:", err);
-        await updateTransaction(setTransactions, delegateMapTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Delegate food components
     const delegateFoodTxnId = "delegate-food";
     await addTransaction(setTransactions, delegateFoodTxnId, "pending");
-    try {
+
+    await retryTransaction(delegateFoodTxnId, async () => {
         let delbatchSize = 3;
         for (let i = 0; i < foodEntityPdas.length; i += delbatchSize) {
             const playertx = new anchor.web3.Transaction();
 
             const batch = foodEntityPdas.slice(i, i + delbatchSize);
-            batch.forEach((foodEntityPda, index) => {
-                const fooddelegateIx = createDelegateInstruction({
+            const delegatePromises = batch.map((foodEntityPda, index) => {
+                return createDelegateInstruction({
                     entity: foodEntityPda,
                     account: foodComponentPdas[i + index],
                     ownerProgram: COMPONENT_SECTION_ID,
                     payer: engine.getSessionPayer(),
                 });
-                playertx.add(fooddelegateIx);
             });
+
+            // Wait for all promises to resolve and catch any errors
+            const instructions = await Promise.all(delegatePromises).catch((error) => {
+                console.error("Error in batch processing:", error);
+                throw new Error("Batch processing failed, retrying...");
+            });
+
+            instructions.forEach(instruction => playertx.add(instruction));
 
             const computeLimitIxPlayerDel = ComputeBudgetProgram.setComputeUnitLimit({
                 units: 200_000,
@@ -526,49 +532,42 @@ export async function gameExecuteNewGame(
             const delsignature2 = await engine.processSessionChainTransaction(delegateFoodTxnId, playertx);
             console.log(`Delegation signature food for batch: ${delsignature2}`);
         }
-        await updateTransaction(setTransactions, delegateFoodTxnId, "confirmed");
-    } catch (err) {
-        console.error("Error delegating food components:", err);
-        await updateTransaction(setTransactions, delegateFoodTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Initialize food positions
     const initFoodTxnId = "init-food";
     await addTransaction(setTransactions, initFoodTxnId, "pending");
-    try {
+
+    await retryTransaction(initFoodTxnId, async () => {
         let overallIndex = 0;
         let initFoodBatchSize = 1;
         for (let i = 0; i < foodEntityPdas.length; i += initFoodBatchSize) {
             const initfoodtransaction = new anchor.web3.Transaction();
             const foodBatch = foodEntityPdas.slice(i, i + initFoodBatchSize);
-            
-            for (const foodPda of foodBatch) {
-                try {
-                    const { x, y } = getTopLeftCorner(overallIndex, game_size);
-                    console.log(`Coordinates for foodPda at index ${overallIndex}: (${x}, ${y})`);
-                    
-                    const signatureinitfood = await gameSystemInitSection(
-                        engine,
-                        initNewWorld.worldPda,
-                        foodPda,
-                        mapEntityPda,
-                        x,
-                        y
-                    );
-                    console.log(`Init func food signature for batch: ${signatureinitfood}`);
-                } catch (err) {
-                    console.error(`Error processing foodPda at index ${overallIndex}:`, err);
-                }
+
+            const initFoodPromises = foodBatch.map(async (foodPda) => {
+                const { x, y } = getTopLeftCorner(overallIndex, game_size);
+                console.log(`Coordinates for foodPda at index ${overallIndex}: (${x}, ${y})`);
+
+                const signatureinitfood = await gameSystemInitSection(
+                    engine,
+                    initNewWorld.worldPda,
+                    foodPda,
+                    mapEntityPda,
+                    x,
+                    y
+                );
+                console.log(`Init func food signature for batch: ${signatureinitfood}`);
                 overallIndex++;
-            }
+            });
+
+            // Wait for all promises to resolve and catch any errors
+            await Promise.all(initFoodPromises).catch((error) => {
+                console.error("Error processing food batch:", error);
+                throw new Error("Batch processing failed, retrying...");
+            });
         }
-        await updateTransaction(setTransactions, initFoodTxnId, "confirmed");
-    } catch (err) {
-        console.error("Error initializing food positions:", err);
-        await updateTransaction(setTransactions, initFoodTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 
     // Finalize new game setup in active games
     const tokenMetadata = await fetchTokenMetadata(mint_of_token.toString());
@@ -593,7 +592,7 @@ export async function gameExecuteNewGame(
     // Reclaim leftover SOL
     const reclaimSolTxnId = "reclaim-sol";
     await addTransaction(setTransactions, reclaimSolTxnId, "pending");
-    try {
+    await retryTransaction(reclaimSolTxnId, async () => {
         const reclaimSolTx = new Transaction().add(
             SystemProgram.transfer({
                 fromPubkey: engine.getSessionPayer(),
@@ -604,10 +603,5 @@ export async function gameExecuteNewGame(
 
         await engine.processSessionChainTransaction(reclaimSolTxnId, reclaimSolTx);
         console.log(`Reclaimed leftover SOL.`);
-        await updateTransaction(setTransactions, reclaimSolTxnId, "confirmed");
-    } catch (err) {
-        console.error("Error reclaiming leftover SOL:", err);
-        await updateTransaction(setTransactions, reclaimSolTxnId, "failed");
-        throw err;
-    }
+    }, setTransactions);
 }

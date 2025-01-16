@@ -286,7 +286,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                 undeltx.feePayer = engine.getSessionPayer();
                 const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
                 console.log('undelegate', playerundelsignature);
-                
+
                 playersComponentSubscriptionId.current = [];
                 currentPlayerEntity.current = null;
                 entityMatch.current = null;
@@ -469,7 +469,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-            //processNewFoodTransaction();
+            processNewFoodTransaction();
         }, 200);
 
         return () => clearInterval(intervalId);

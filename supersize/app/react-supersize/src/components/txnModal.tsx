@@ -4,10 +4,13 @@ type TxnModalProps = {
     isOpen: boolean;
     onClose: () => void;
     transactions: { id: string; status: string }[];
+    onRetry: (transactionId: string) => void;
 };
 
-const TxnModal: React.FC<TxnModalProps> = ({ isOpen, onClose, transactions }) => {
+const TxnModal: React.FC<TxnModalProps> = ({ isOpen, onClose, transactions, onRetry }) => {
     if (!isOpen) return null;
+
+    const hasFailedTransactions = transactions.some(txn => txn.status === 'failed');
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 w-full h-full">
@@ -56,12 +59,26 @@ const TxnModal: React.FC<TxnModalProps> = ({ isOpen, onClose, transactions }) =>
                 </div>
 
                 <footer className="p-4 border-t">
-                    <button
-                        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-                        onClick={onClose}
-                    >
-                        Close
-                    </button>
+                    {hasFailedTransactions ? (
+                        <button
+                            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                            onClick={() => {
+                                const failedTxn = transactions.find(txn => txn.status === 'failed');
+                                if (failedTxn) {
+                                    onRetry(failedTxn.id);
+                                }
+                            }}
+                        >
+                            Retry and Resume
+                        </button>
+                    ) : (
+                        <button
+                            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                            onClick={onClose}
+                        >
+                            Close
+                        </button>
+                    )}
                 </footer>
             </div>
         </div>

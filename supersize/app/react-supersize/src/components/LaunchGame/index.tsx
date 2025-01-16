@@ -1,9 +1,9 @@
 import CreateGame from "@components/CreateGame";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ActiveGame } from "@utils/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Dropdown from "@components/Dropdown";
-
+import { endpoints } from "@utils/constants";
 type launchProps = {
     activeGames: ActiveGame[];
     setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
@@ -19,6 +19,19 @@ const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
     const [selectedOption, setSelectedOption] = useState(0);
     const { publicKey } = useWallet();
     const [selectedServer, setSelectedServer] = useState<string[]>([]);
+    const [selectedEndpoint, setSelectedEndpoint] = useState<string[]>([]);
+
+    useEffect(() => {
+        if(selectedServer[0] === "Europe"){
+            setSelectedEndpoint([endpoints[0]]);
+        }   
+        if(selectedServer[0] === "America"){
+            setSelectedEndpoint([endpoints[1]]);
+        }
+        if(selectedServer[0] === "Asia"){
+            setSelectedEndpoint([endpoints[2]]);
+        }
+    }, [selectedServer]);
 
     return (
         <div className="flex justify-center w-full h-full text-white">
@@ -71,6 +84,7 @@ const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
                             ? publicKey.toString()
                             : "Connect Wallet"
                     }
+                    selectedServer={selectedEndpoint}
                 />
             </div>
         </div>
