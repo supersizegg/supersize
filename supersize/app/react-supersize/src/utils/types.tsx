@@ -16,6 +16,8 @@ export interface Blob {
     mass: number;
     score: number;
     tax: number;
+    buyIn: number;
+    payoutTokenAccount: PublicKey | null;
     speed: number;
     removal: BN;
     target_x: number;

@@ -177,6 +177,19 @@ export class MagicBlockEngine {
     return signature;
   }
 
+  async processSessionEphemTransactionNoConfirm(
+    name: string,
+    transaction: Transaction
+  ): Promise<string> {
+    transaction.compileMessage;
+    const signature = await connectionEphem.sendTransaction(
+      transaction,
+      [this.sessionKey],
+      { skipPreflight: true }
+    );
+    return signature;
+  }
+
   async waitSignatureConfirmation(
     name: string,
     signature: string,

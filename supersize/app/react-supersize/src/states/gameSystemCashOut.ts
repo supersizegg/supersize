@@ -14,10 +14,10 @@ import {
   } from "./gamePrograms";
 
   
-import { ActiveGame } from "@utils/types";
+import { ActiveGame, Blob } from "@utils/types";
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getMemberPDA } from "buddy.link";
-import { anteroomFetchOnEphem, playerFetchOnChain, playerFetchOnEphem } from "./gameFetch";
+import { anteroomFetchOnChain, anteroomFetchOnEphem, playerFetchOnChain, playerFetchOnEphem } from "./gameFetch";
 import { fetchTokenMetadata } from "@utils/helper";
 import axios from "axios";
 
@@ -28,25 +28,42 @@ export async function gameSystemCashOut(
   gameInfo: ActiveGame,
   anteroomEntity: PublicKey,
   currentPlayerEntity: PublicKey,
+  currentPlayer: Blob,
 ) {
     console.log('cashing out');
+    const myplayerComponent = FindComponentPda({
+        componentId: COMPONENT_PLAYER_ID,
+        entity: currentPlayerEntity,
+    });
 
-    const playerAccount = await playerFetchOnEphem(engine, currentPlayerEntity);
-    const playerCashoutAddy = playerAccount?.payoutTokenAccount;
-    const playerCashout = playerAccount?.score ?? 0;
-    const playerBuyIn = playerAccount?.buyIn ?? 0;
-    const playerTax = playerAccount?.tax ?? 0;
-    const playerMass = playerAccount?.mass ?? 0;
-    //const myReferrer = playerAccount?.referrerTokenAccount;
+    const undelegateIx = createUndelegateInstruction({
+        payer: engine.getSessionPayer(),
+        delegatedAccount: myplayerComponent,
+        componentPda: COMPONENT_PLAYER_ID,
+    });
 
-    const anteAccount = await anteroomFetchOnEphem(engine, anteroomEntity);
+    let undeltx = new anchor.web3.Transaction().add(undelegateIx);
+    undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
+    undeltx.feePayer = engine.getSessionPayer();
+    const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
+    console.log('undelegate', playerundelsignature);
 
+    const playerCashoutAddy = currentPlayer?.payoutTokenAccount ?? null;
+    const playerCashout = currentPlayer?.score ?? 0;
+    const playerBuyIn = currentPlayer?.buyIn ?? 0;
+    const playerTax = currentPlayer?.tax ?? 0;
+    const playerMass = currentPlayer?.mass ?? 0;
+    //const myReferrer = currentPlayer?.referrerTokenAccount;
+    
     const anteComponentPda = FindComponentPda({
         componentId: COMPONENT_ANTEROOM_ID,
         entity: anteroomEntity,
     });
+    const anteAccount = await anteroomFetchOnChain(engine, anteComponentPda);
 
+    console.log("anteAccount", anteAccount, playerMass == 0 && playerCashout > 0);
     if (anteAccount && playerMass == 0 && playerCashout > 0) {
+        console.log("anteAccount", anteAccount);
         const vault_token_account = anteAccount.vaultTokenAccount;
         const mint_of_token_being_sent = anteAccount.token;
         const owner_token_account = anteAccount.gamemasterTokenAccount;

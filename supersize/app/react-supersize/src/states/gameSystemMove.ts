@@ -152,7 +152,7 @@ export async function gameSystemMove(
 
             alltransaction.add(makeMove.transaction);
 
-            let signature = await engine.processSessionEphemTransaction("txn:" +performance.now(), alltransaction).catch((error) => {
+            let signature = await engine.processSessionEphemTransactionNoConfirm("txn:" +performance.now(), alltransaction).catch((error) => {
                 console.log(error);
             });
 

@@ -2,6 +2,7 @@ import CreateGame from "@components/CreateGame";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ActiveGame } from "@utils/types";
 import { useState } from "react";
+import Dropdown from "@components/Dropdown";
 
 type launchProps = {
     activeGames: ActiveGame[];
@@ -17,16 +18,17 @@ const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
 
     const [selectedOption, setSelectedOption] = useState(0);
     const { publicKey } = useWallet();
+    const [selectedServer, setSelectedServer] = useState<string[]>([]);
 
     return (
         <div className="flex justify-center w-full h-full text-white">
+
             <div className="mt-0 w-[60%]">
                 <h1 className="mt-[2vw] mb-[2vw] ml-[1.5vw] text-[36px] font-[Conthrax]">
                     Launch Your Game
                 </h1>
                 <p className="ml-[1.5vw] font-[Terminus] text-[20px] w-[80%]">
-                    Deploy and customize your own Supersize game. <br />
-                    <br />
+                    Select game size: 
                     <div className="flex justify-around bg-black w-full text-[16px]">
                         {options.map((option) => (
                             <div
@@ -47,12 +49,14 @@ const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
                         ))}
                     </div>
                     <br />
+                    Select server:
+                    <Dropdown items={["Europe", "America", "Asia"]} onSelect={setSelectedServer} />
+
+                    <br />
                     <span className="opacity-70">
                         Deploying a game generates a new Supersize world that
-                        lives forever and is owned by you. 100% of tokens sent
-                        to your game wallet fund player incentives.
+                        lives forever and is owned by you. 
                     </span>
-                    <br />
                     <br />
                     {/* <span className="free-play" style={{display:newGameCreated?'flex':'none', width: 'fit-content', padding:"10px", fontSize:"15px", marginTop:"1vh"}}>New Game ID: {newGameCreated?.worldId.toString()}, Game Wallet: {gamewallet}</span> */}
                 </p>

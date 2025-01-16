@@ -242,16 +242,6 @@ body {
     background-color: #333;
 }
 
-.dropdown-container {
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-    font-family: "Terminus", sans-serif;
-    user-select: none;
-    margin-top: 4vh;
-    margin-left: 2vw;
-    width: 120px;
-}
 .selected-option {
     padding: 10px;
     width: 120px;

@@ -10,11 +10,10 @@ import { FindComponentPda } from "@magicblock-labs/bolt-sdk";
 export function updateFoodList(
   section: any, 
   food_index: number,
-  setAllFood: (callback: (prevAllFood: any[]) => any[]) => void,
+  setAllFood: (callback: (prevAllFood: any[][]) => any[][]) => void,
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
   currentPlayer: Blob,
 ) {
-  console.log("updateFoodList", section);
   const foodArray = section.food as any[];  
   const visibleFood: Food[] = [];
   const foodData: Food[] = [];
@@ -28,16 +27,16 @@ export function updateFoodList(
       });
   });
   if(foodData.length>0){
-      setAllFood((prevAllFood) => {
-          return prevAllFood.map((foodArray, index) =>
-          food_index === index ? foodData : foodArray
-          );
+    setAllFood((prevAllFood) => {
+        return prevAllFood.map((foodArray, index) =>
+        food_index === index ? foodData : foodArray
+        );
+    });
+    setFoodListLen((prevFoodListLen) => {
+        const updatedFoodListLen = [...prevFoodListLen];
+        updatedFoodListLen[food_index] = foodData.length;
+        return updatedFoodListLen;
       });
-      setFoodListLen((prevFoodListLen) => {
-          const updatedFoodListLen = [...prevFoodListLen];
-          updatedFoodListLen[food_index] = foodData.length;
-          return updatedFoodListLen;
-        });
   }
 };
 
@@ -57,6 +56,8 @@ export function updateLeaderboard(
               radius: 4 + Math.sqrt(player.mass / 10) * 6,
               mass: player.mass,
               score: player.score,
+              buyIn: player.buyIn,
+              payoutTokenAccount: player.payoutTokenAccount,
               tax: player.tax,
               speed: player.speed,
               removal: player.scheduledRemovalTime,
@@ -80,7 +81,7 @@ export function updateMyPlayer(
   setGameEnded: (gameEnded: number) => void,
   isJoining: boolean,
 ) {
-    console.log("updateMyPlayer", player);
+  //console.log("updateMyPlayer", player); 
       if (
           Math.sqrt(player.mass) == 0 &&
           player.score == 0.0 &&
@@ -123,7 +124,6 @@ export function updateMap(
   nextFood: { x: number; y: number },
   setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
-  console.log("updateMap", map);
   const playerArray = map.players as any[];
   if(map.nextFood){
       const foodDataArray = new Uint8Array(map.nextFood.data);
@@ -143,7 +143,6 @@ export function updatePlayers(
   player_index: number,
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
 ) {
-  console.log("updatePlayers", player);
   if (player) {
     setAllPlayers((prevPlayers: Blob[]) => {
       const newPlayer: Blob = {
@@ -155,6 +154,8 @@ export function updatePlayers(
         mass: player.mass,
         score: player.score,
         tax: player.tax,
+        buyIn: player.buyIn,
+        payoutTokenAccount: player.payoutTokenAccount,
         speed: player.speed,
         removal: player.scheduledRemovalTime,
         target_x: player.targetX,
@@ -175,6 +176,7 @@ export function handlePlayersComponentChange(
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
 
 ) {
+  console.log("handlePlayersComponentChange", accountInfo);
   const coder = getComponentPlayerOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("player", accountInfo.data);
   updatePlayers(parsedData, index, setAllPlayers);
@@ -184,13 +186,13 @@ export function handleFoodComponentChange(
   accountInfo: AccountInfo<Buffer>,
   index: number,
   engine: MagicBlockEngine,
-  setAllFood: (callback: (prevAllFood: any[]) => any[]) => void,
+  setAllFood: (callback: (prevAllFood: any[][]) => any[][]) => void,
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
   currentPlayer: Blob,
 ) {
   const coder = getComponentSectionOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("section", accountInfo.data);
-  updateFoodList(parsedData, index, setFoodListLen, setAllFood, currentPlayer);
+  updateFoodList(parsedData, index, setAllFood, setFoodListLen, currentPlayer);
 };
 
 export function handleMyPlayerComponentChange(
@@ -233,11 +235,10 @@ export function subscribeToGame(
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
   setCurrentPlayer: (player: Blob) => void,
   setGameEnded: (gameEnded: number) => void,
-  setAllFood: (callback: (prevAllFood: any[]) => any[]) => void,
+  setAllFood: (callback: (prevAllFood: any[][]) => any[][]) => void,
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
   setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
-  console.log("foodEntities", foodEntities);
   for (let i = 0; i < foodEntities.length; i++) {
       const foodComponenti = FindComponentPda({
           componentId: COMPONENT_SECTION_ID,
@@ -266,7 +267,6 @@ export function subscribeToGame(
           ];
       }
   }
-  console.log("playerEntities", playerEntities);
   for (let i = 0; i < playerEntities.length; i++) {
       const playersComponenti = FindComponentPda({
           componentId: COMPONENT_PLAYER_ID,
@@ -301,7 +301,6 @@ export function subscribeToGame(
       entity: currentPlayerEntity,
   });
   myplayerComponentSubscriptionId.current = engine.subscribeToEphemAccountInfo(myplayerComponent, (accountInfo) => {
-    console.log("myplayerComponentSubscriptionId", accountInfo);
     if (!accountInfo) {
       return;
     }

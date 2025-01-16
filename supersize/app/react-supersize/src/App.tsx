@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import AppRoutes from "./routes";
 import {
     ConnectionProvider,
@@ -62,8 +62,8 @@ function App() {
                  {/*<WebGLBackground /> */}
                  <BrowserRouter>
                     <MagicBlockEngineProvider>
-                            <MenuBar />
-                            <AppRoutes />
+                        <ConditionalMenuBar />
+                        <AppRoutes />
                         <InitBuddyLinkWrapper />
                     </MagicBlockEngineProvider>
                 </BrowserRouter>
@@ -73,6 +73,11 @@ function App() {
         </ConnectionProvider> */}
         </>
     );
+}
+
+function ConditionalMenuBar() {
+    const location = useLocation();
+    return location.pathname !== "/game" ? <MenuBar /> : null;
 }
 
 export default App;
