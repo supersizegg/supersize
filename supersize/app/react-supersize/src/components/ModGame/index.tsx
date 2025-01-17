@@ -1,3 +1,5 @@
+import React from "react";
+
 const ModGame = () => {
     return (
         <div className="flex w-full h-full text-white flex-col">

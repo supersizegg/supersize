@@ -3,9 +3,7 @@ import { ApplySystem } from "@magicblock-labs/bolt-sdk";
 
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import {
-    COMPONENT_PLAYER_ID,
     COMPONENT_MAP_ID,
-    SYSTEM_SPAWN_PLAYER_ID,
     SYSTEM_SPAWN_FOOD_ID,
     COMPONENT_SECTION_ID,
   } from "./gamePrograms";
@@ -23,13 +21,13 @@ export async function gameSystemSpawnFood(
   entityMatch: PublicKey,
   foodEntities: PublicKey[],
 ) {
-    let currentSection = getSectionIndex(
+    const currentSection = getSectionIndex(
         foodX,
         foodY,
         gameInfo.size,
         2,
     );
-    let selectedSection = currentSection.reduce(
+    const selectedSection = currentSection.reduce(
         (minIndex, currentIndex) =>
             foodListLen[currentIndex] < foodListLen[minIndex]
                 ? currentIndex

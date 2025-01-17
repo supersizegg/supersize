@@ -8,9 +8,6 @@ import {
     SYSTEM_INIT_PLAYER_ID,
   } from "./gamePrograms";
 
-import { ActiveGame } from "@utils/types";
-
-
 export async function gameSystemInitPlayer(
   engine: MagicBlockEngine,
   worldPda: PublicKey,

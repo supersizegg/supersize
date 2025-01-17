@@ -8,9 +8,6 @@ import {
     COMPONENT_ANTEROOM_ID,
   } from "./gamePrograms";
 
-import { ActiveGame } from "@utils/types";
-
-
 export async function gameSystemInitAnteroom(
   engine: MagicBlockEngine,
   worldPda: PublicKey,

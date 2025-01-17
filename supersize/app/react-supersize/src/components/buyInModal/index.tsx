@@ -1,6 +1,5 @@
-import { useWallet } from "@solana/wallet-adapter-react";
+import React, { useEffect, useState } from "react";
 import { ActiveGame } from "@utils/types";
-import { useEffect, useState } from "react";
 import "./BuyInModal.css";
 import { useNavigate } from "react-router-dom";
 import { gameExecuteJoin } from "../../states/gameExecuteJoin";
@@ -8,24 +7,21 @@ import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
 import { PublicKey } from "@solana/web3.js";
 
 type buyInModalProps = {
-    isBuyInModalOpen: boolean;
     setIsBuyInModalOpen: (isOpen: boolean) => void;
     activeGame: ActiveGame;
     setMyPlayerEntityPda: (pda: PublicKey | null) => void;
 };
 
 const BuyInModal: React.FC<buyInModalProps> = ({
-    isBuyInModalOpen, 
     setIsBuyInModalOpen, 
     activeGame,
     setMyPlayerEntityPda,
 }) => {
     const navigate = useNavigate();
-    const {publicKey} = useWallet();
     const [buyIn, setBuyIn] = useState(0);
     const engine = useMagicBlockEngine();
 
-    const handleSliderChange = (event: any) => {
+    const handleSliderChange = (event: { target: { value: string; }; }) => {
         let value = parseFloat(event.target.value);
         if(activeGame.max_buyin){
             value = value > activeGame.max_buyin ? activeGame.max_buyin : value;

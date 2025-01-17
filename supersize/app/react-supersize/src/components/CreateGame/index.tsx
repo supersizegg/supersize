@@ -29,7 +29,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
 
     const handleChange =
         (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-            const { type, checked, value } = e.target;
+            const { value } = e.target;
             const updatedFormData = [...formData] as FormData;
             if (index > 2) {
                 updatedFormData[index] = value as string;
@@ -43,6 +43,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
         const transactionFn = async () => {
             console.log(`Retrying transaction: ${transactionId}`);
         };
+        transactionFn();
     };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

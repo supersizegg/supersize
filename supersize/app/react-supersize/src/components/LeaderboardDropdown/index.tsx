@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const LeaderboardDropdown = () => {
     const network = "devnet"; //"mainnet";

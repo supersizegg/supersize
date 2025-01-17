@@ -49,7 +49,7 @@ export async function gameSystemMove(
 
             const alltransaction = new anchor.web3.Transaction();
 
-            let currentSection = getSectionIndex(currentPlayer.x, currentPlayer.y, gameInfo.size , 2);
+            const currentSection = getSectionIndex(currentPlayer.x, currentPlayer.y, gameInfo.size , 2);
             for (const section_index of currentSection) { 
                 const eatFoodTx = await ApplySystem({
                     authority: engine.getSessionPayer(),
@@ -76,9 +76,9 @@ export async function gameSystemMove(
                 alltransaction.add(eatFoodTx.transaction);   
             }
 
-            let playerstoeat = checkPlayerDistances(players, currentPlayer, screenSize);
+            const playerstoeat = checkPlayerDistances(players, currentPlayer);
             if (playerstoeat) {
-                let playersListIndex = findListIndex(playerstoeat, players);
+                const playersListIndex = findListIndex(playerstoeat, players);
                 if (playersListIndex != null) {
                     const eatPlayerTx = await ApplySystem({ 
                         authority: engine.getSessionPayer(),
@@ -107,7 +107,7 @@ export async function gameSystemMove(
                 }
             }
 
-            let {food_x, food_y} = getClampedFoodPosition(
+            const {food_x, food_y} = getClampedFoodPosition(
                 currentPlayer.x, 
                 currentPlayer.y, 
                 newX, 
@@ -117,8 +117,8 @@ export async function gameSystemMove(
                 gameInfo.size
             );
 
-            let targetSectionBoosting = getSectionIndex(food_x, food_y, gameInfo.size, 2);
-            let selectedSection = targetSectionBoosting.reduce(
+            const targetSectionBoosting = getSectionIndex(food_x, food_y, gameInfo.size, 2);
+            const selectedSection = targetSectionBoosting.reduce(
                 (minIndex: number, currentIndex: number) =>
                     foodListLen[currentIndex] < foodListLen[minIndex] ? currentIndex : minIndex,
                 targetSectionBoosting[0]
@@ -152,11 +152,12 @@ export async function gameSystemMove(
 
             alltransaction.add(makeMove.transaction);
 
-            let signature = await engine.processSessionEphemTransactionNoConfirm("txn:" +performance.now(), alltransaction).catch((error) => {
+            await engine.processSessionEphemTransactionNoConfirm("txn:" +performance.now(), alltransaction).catch((error) => {
                 console.log(error);
             });
 
         } catch (error) {
+            console.log(error);
             //setIsSubmitting(false);
         }
 }

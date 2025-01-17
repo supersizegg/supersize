@@ -5,7 +5,6 @@ import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import {
     COMPONENT_PLAYER_ID,
     COMPONENT_MAP_ID,
-    SYSTEM_SPAWN_PLAYER_ID,
     SYSTEM_EXIT_GAME_ID,
   } from "./gamePrograms";
 

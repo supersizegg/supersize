@@ -1,5 +1,5 @@
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js";
-import { ApplySystem, createDelegateInstruction, createUndelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
+import { PublicKey } from "@solana/web3.js";
+import { createUndelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 
 import { ActiveGame } from "@utils/types";
 import { fetchTokenMetadata } from "@utils/helper";
@@ -11,9 +11,7 @@ import {
   COMPONENT_PLAYER_ID,
   COMPONENT_ANTEROOM_ID,
   COMPONENT_MAP_ID,
-  COMPONENT_SECTION_ID,
-  SYSTEM_SPAWN_PLAYER_ID,
-  SYSTEM_BUY_IN_ID,
+
 } from "./gamePrograms";
 
 import * as anchor from "@coral-xyz/anchor";
@@ -21,14 +19,9 @@ import {anteroomFetchOnChain,
   mapFetchOnChain, 
   playerFetchOnChain, 
   playerFetchOnEphem, 
-  sectionFetchOnChain, 
-  sectionFetchOnEphem, 
-  anteroomFetchOnEphem, 
-  mapFetchOnEphem} 
+} 
 from "./gameFetch";
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import axios from "axios";
-import { getMemberPDA } from "buddy.link";
 
 import { stringToUint8Array } from "@utils/helper";
 
@@ -209,7 +202,7 @@ export async function gameExecuteJoin(
               delegatedAccount: playerComponentPda,
               componentPda: COMPONENT_PLAYER_ID,
           });
-          let undeltx = new anchor.web3.Transaction().add(undelegateIx);
+          const undeltx = new anchor.web3.Transaction().add(undelegateIx);
           undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
           undeltx.feePayer = engine.getSessionPayer();
           const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + playerComponentPda.toString(), undeltx); //providerEphemeralRollup.current.sendAndConfirm(undeltx, [], { skipPreflight: false });
@@ -236,11 +229,11 @@ export async function gameExecuteJoin(
   if (anteParsedData && anteParsedData.vaultTokenAccount && anteParsedData.token) {
       mint_of_token_being_sent = anteParsedData.token;
 
-      const { name, image } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
+      const { name } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
       console.log("token", name, mint_of_token_being_sent.toString());
 
       try {
-          let response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-contest", {
+          const response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-contest", {
               name: name,
               tokenAddress: mint_of_token_being_sent.toString()
           });
@@ -254,7 +247,7 @@ export async function gameExecuteJoin(
           if (mint_of_token_being_sent.toString() != "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v") {
               username = engine.getWalletPayer().toString() + "_" + name;
           }
-          let response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-user", {
+          const response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-user", {
               walletAddress: engine.getWalletPayer().toString(),
               name: username,
               contestId: name,
@@ -267,7 +260,7 @@ export async function gameExecuteJoin(
       return;
   }
 
-  const buyinsig = await gameSystemBuyIn(engine, selectGameId,newplayerEntityPda, anteEntityPda, myPlayerStatus, buyIn);
+  await gameSystemBuyIn(engine, selectGameId,newplayerEntityPda, anteEntityPda, myPlayerStatus, buyIn);
   try {
     const joinsig = await gameSystemJoin(engine, selectGameId, newplayerEntityPda, mapEntityPda, playerName);
     setMyPlayerEntityPda(newplayerEntityPda);

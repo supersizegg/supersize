@@ -1,6 +1,5 @@
 import { useBuddyState, BUDDY_MEMBER } from 'buddy.link'
 import React, { useCallback, useMemo, useState } from 'react'
-import Invite from './buddyInvite'
 
 interface ShareProps {
   baseUrl?: string
@@ -15,7 +14,7 @@ const TweetLink: React.FC<ShareProps> = React.memo(
     message = 'Try%20out%20onchain%20gamin%20with%20me%20on%20Supersize!',
     buttonLabel = 'Share on X',
     forceShareState = false
-  }) => {
+  }: ShareProps) => {
     const [member] = useBuddyState(BUDDY_MEMBER)
     const [isTweeting, setIsTweeting] = useState(false) //Control loading state, prevent duplicate clicks
     const [isHovered, setIsHovered] = useState(false);

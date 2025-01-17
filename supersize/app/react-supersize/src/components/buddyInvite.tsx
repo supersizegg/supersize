@@ -1,17 +1,14 @@
 import { useBuddyLink } from 'buddy.link'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { PublicKey } from '@solana/web3.js'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { useCallback, useState, useRef } from 'react'
 import React from 'react'
 
-const Invite = ({textContent = "Sign Up"}) => {
+const Invite = ({ textContent = "Sign Up" }: { textContent?: string; }) => {
   const [isCreating, setIsCreating] = useState(false) //Control loading state, prevent duplicate clicks
   const wallet = useWallet()
-  const { connection } = useConnection()
 
   const retrievedUser = localStorage.getItem('user');
-  let myUsername = wallet.toString().slice(0,12);
-  const retrievedRefferal = localStorage.getItem('referrer');
+  const myUsername = wallet.toString().slice(0,12);
 
   const username = useRef(myUsername);
 
@@ -32,7 +29,7 @@ const Invite = ({textContent = "Sign Up"}) => {
     setIsCreating(true)
     try {
       console.log('created with',  username.current);
-      const results = await create({overrideMemberName: username.current})
+      await create({overrideMemberName: username.current})
       //console.log(`buddy.init results`, results);
       return true
     } catch (e) {

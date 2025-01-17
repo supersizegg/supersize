@@ -32,11 +32,11 @@ const WebGLBackground: React.FC = () => {
         // Constants
         const WIDTH = 300;
         const HEIGHT = 180;
-        const GRID_SIZE = 1.0;
+        // const GRID_SIZE = 1.0;
         const DEPTH_SCALING = 10.0;
 
-        const LARGE_SPHERES = 2;
-        const SMALL_SPHERES = 8;
+        // const LARGE_SPHERES = 2;
+        // const SMALL_SPHERES = 8;
         const SPHERE_CONFIG = [
             { radius: 30, height: 10 }, // Large sphere
             { radius: 20, height: 8 },  // Large sphere

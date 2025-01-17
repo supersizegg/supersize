@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "@utils/constants";
 import {Blob } from "@utils/types";
 
-import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
+import { PublicKey, Keypair } from "@solana/web3.js";
 import * as crypto from "crypto-js";
 import * as anchor from "@coral-xyz/anchor";
 
@@ -244,8 +244,8 @@ export const getSectionIndex = (
     const adjustedY = Math.min(y, mapSize - 1);
     const row = Math.floor(adjustedY / sectionSize);
     const col = Math.floor(adjustedX / sectionSize);
-    let baseIndex = row * sectionsPerRow + col;
-    let food_indices: number[] = [];
+    const baseIndex = row * sectionsPerRow + col;
+    const food_indices: number[] = [];
     for (let i = 0; i < duplicateEncodings; i++) {
         food_indices.push(baseIndex + i * mapSectionCount);
     }
@@ -280,7 +280,7 @@ export const getClampedFoodPosition = (
 export const checkPlayerDistances = (
     visiblePlayers: Blob[],
     currentPlayer: Blob,
-    screenSize: { width: number; height: number },
+    // screenSize: { width: number; height: number },
 ) => {
     if (currentPlayer?.radius) {
         for (const player of visiblePlayers) {

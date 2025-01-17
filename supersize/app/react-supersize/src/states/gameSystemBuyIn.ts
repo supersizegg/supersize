@@ -1,12 +1,9 @@
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js";
 import { ApplySystem, createDelegateInstruction, FindComponentPda } from "@magicblock-labs/bolt-sdk";
-import * as anchor from "@coral-xyz/anchor";
 
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import {
     COMPONENT_PLAYER_ID,
-    COMPONENT_MAP_ID,
-    SYSTEM_SPAWN_PLAYER_ID,
     SYSTEM_BUY_IN_ID,
     COMPONENT_ANTEROOM_ID,
   } from "./gamePrograms";
@@ -14,10 +11,7 @@ import {
 import { ActiveGame } from "@utils/types";
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getMemberPDA } from "buddy.link";
-import { fetchTokenMetadata } from "@utils/helper";
 import { anteroomFetchOnChain } from "./gameFetch";
-
-const referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
 
 export async function gameSystemBuyIn(
   engine: MagicBlockEngine,
@@ -39,20 +33,16 @@ export async function gameSystemBuyIn(
   
     const anteParsedData = await anteroomFetchOnChain(engine, anteComponentPda);
   
-  
-    let token_account_owner_pda = new PublicKey(0);
     let vault_token_account = new PublicKey(0);
     let mint_of_token_being_sent = new PublicKey(0);
-    let sender_token_account = new PublicKey(0);
     let payout_token_account = new PublicKey(0);
-    let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
-    let referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
+    const referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
     const combinedTx = new Transaction();
     console.log('anteParsedData', anteParsedData);
     if (anteParsedData && anteParsedData.vaultTokenAccount && anteParsedData.token) {
         vault_token_account = anteParsedData.vaultTokenAccount;
         mint_of_token_being_sent = anteParsedData.token;
-        let usertokenAccountInfo = await getAssociatedTokenAddress(
+        const usertokenAccountInfo = await getAssociatedTokenAddress(
             mint_of_token_being_sent,
             engine.getWalletPayer(),
         );
@@ -61,7 +51,7 @@ export async function gameSystemBuyIn(
 
     if (myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session") {
 
-        let [referralTokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+        const [referralTokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
             [Buffer.from("token_account_owner_pda"), mint_of_token_being_sent.toBuffer()],
             referral_vault_program_id
         );
@@ -73,11 +63,10 @@ export async function gameSystemBuyIn(
   
         const BUDDY_LINK_PROGRAM_ID = new PublicKey("BUDDYtQp7Di1xfojiCSVDksiYLQx511DPdj2nbtG9Yu5");
   
-        let buddyMemberPdaAccount: PublicKey;
-        let memberName = "notmembersalt";
-        buddyMemberPdaAccount = getMemberPDA(BUDDY_LINK_PROGRAM_ID, "supersize", memberName);
+        const memberName = "notmembersalt";
+        const buddyMemberPdaAccount = getMemberPDA(BUDDY_LINK_PROGRAM_ID, "supersize", memberName);
   
-        let [refferalPdaAccount] = PublicKey.findProgramAddressSync(
+        const [refferalPdaAccount] = PublicKey.findProgramAddressSync(
             [Buffer.from("subsidize"), buddyMemberPdaAccount.toBuffer(), mint_of_token_being_sent.toBuffer()],
             referral_vault_program_id
         );
@@ -164,7 +153,6 @@ export async function gameSystemBuyIn(
     }
     if (myPlayerStatus !== "resume_session") {
         try {
-            const playerdeltx = new anchor.web3.Transaction();
             const playerdelegateIx = createDelegateInstruction({
                 entity: newplayerEntityPda,
                 account: playerComponentPda,

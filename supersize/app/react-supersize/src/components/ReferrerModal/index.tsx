@@ -1,6 +1,5 @@
-import { useWallet } from "@solana/wallet-adapter-react";
+import React, { useState } from "react";
 import Invite from "../buddyInvite";
-import { useState } from "react";
 
 type ReferrerModalProps = {
     handleCloseModal: () => void;
@@ -11,25 +10,14 @@ type ReferrerModalProps = {
 const ReferrerModal: React.FC<ReferrerModalProps> = ({
     handleCloseModal,
     referrer,
-    isReferrerModalOpen, 
-    setIsReferrerModalOpen, 
 }) => {
-    const {publicKey} = useWallet();
 
-
-    const [referrerInput, setReferrerInput] = useState<string>("");
     const [username, setUsername] = useState<string>("");
 
-    const setInputUsername = (inputUsername: any) => {
+    const setInputUsername = (inputUsername: string) => {
         const user = { name: inputUsername, referrer: referrer, referral_done: false};
         localStorage.setItem('user', JSON.stringify(user));
     };
-
-    /*const handleCancel = () => {
-        setReferrerInput(""); 
-        setIsReferrerModalOpen(false);
-    }
-    console.log(isReferrerModalOpen, username)*/
 
     return (
         <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 pointer-events-auto transition-opacity duration-300 ease-in-out z-[99999]"

@@ -1,27 +1,20 @@
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js";
-import { ApplySystem, createDelegateInstruction, createUndelegateInstruction, FindComponentPda } from "@magicblock-labs/bolt-sdk";
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import { ApplySystem, createUndelegateInstruction, FindComponentPda } from "@magicblock-labs/bolt-sdk";
 import * as anchor from "@coral-xyz/anchor";
 
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import {
     COMPONENT_PLAYER_ID,
-    COMPONENT_MAP_ID,
-    SYSTEM_SPAWN_PLAYER_ID,
-    SYSTEM_BUY_IN_ID,
     COMPONENT_ANTEROOM_ID,
-    getComponentAnteroomOnChain,
     SYSTEM_CASH_OUT_ID,
   } from "./gamePrograms";
 
   
 import { ActiveGame, Blob } from "@utils/types";
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { getMemberPDA } from "buddy.link";
-import { anteroomFetchOnChain, anteroomFetchOnEphem, playerFetchOnChain, playerFetchOnEphem } from "./gameFetch";
+import { anteroomFetchOnChain } from "./gameFetch";
 import { fetchTokenMetadata } from "@utils/helper";
 import axios from "axios";
-
-const referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
 
 export async function gameSystemCashOut(
   engine: MagicBlockEngine,
@@ -42,16 +35,14 @@ export async function gameSystemCashOut(
         componentPda: COMPONENT_PLAYER_ID,
     });
 
-    let undeltx = new anchor.web3.Transaction().add(undelegateIx);
+    const undeltx = new anchor.web3.Transaction().add(undelegateIx);
     undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
     undeltx.feePayer = engine.getSessionPayer();
     const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
     console.log('undelegate', playerundelsignature);
 
-    const playerCashoutAddy = currentPlayer?.payoutTokenAccount ?? null;
     const playerCashout = currentPlayer?.score ?? 0;
     const playerBuyIn = currentPlayer?.buyIn ?? 0;
-    const playerTax = currentPlayer?.tax ?? 0;
     const playerMass = currentPlayer?.mass ?? 0;
     //const myReferrer = currentPlayer?.referrerTokenAccount;
     
@@ -87,7 +78,7 @@ export async function gameSystemCashOut(
             console.log('error', error);
         }
 
-        let usertokenAccountInfo = await getAssociatedTokenAddress(
+        const usertokenAccountInfo = await getAssociatedTokenAddress(
             mint_of_token_being_sent,
             engine.getWalletPayer()
         );

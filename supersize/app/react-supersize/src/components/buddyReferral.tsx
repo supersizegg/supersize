@@ -1,7 +1,5 @@
 import { useBuddyState, BUDDY_MEMBER } from 'buddy.link'
 import React, { useCallback, useMemo, useState } from 'react'
-import Invite from './buddyInvite'
-import { Copy } from 'lucide-react'
 import { useWallet } from "@solana/wallet-adapter-react";
 
 interface ShareProps {
@@ -9,9 +7,9 @@ interface ShareProps {
   handleCreateClick: () => void;
 }
 
-const CopyLink: React.FC<ShareProps> = React.memo(({ baseUrl = 'https://supersize.gg', handleCreateClick}) => {
+const CopyLink: React.FC<ShareProps> = React.memo(({ baseUrl = 'https://supersize.gg', handleCreateClick}: ShareProps) => {
   const [member] = useBuddyState(BUDDY_MEMBER);
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey } = useWallet();
 
   const [isCopying, setIsCopying] = useState(false) //Control loading state, prevent duplicate clicks
   const [textContet, setTextContent] = useState("Copy referral link")
@@ -42,7 +40,7 @@ const CopyLink: React.FC<ShareProps> = React.memo(({ baseUrl = 'https://supersiz
             console.log('URL copied to clipboard')
           })
           .catch((err) => {
-            console.error('Failed to copy URL')
+            console.error('Failed to copy URL', err)
           })
       }
     } catch {

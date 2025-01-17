@@ -1,23 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AccountInfo, PublicKey } from "@solana/web3.js";
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { decodeFood } from "@utils/helper";
 import { Food, Blob } from "@utils/types";
 import { COMPONENT_MAP_ID, COMPONENT_PLAYER_ID, COMPONENT_SECTION_ID, getComponentMapOnEphem, getComponentPlayerOnEphem, getComponentSectionOnEphem } from "./gamePrograms";
-import { useCallback } from "react";
 import { FindComponentPda } from "@magicblock-labs/bolt-sdk";
 
 
 export function updateFoodList(
-  section: any, 
+  section: {food: []}, 
   food_index: number,
   setAllFood: (callback: (prevAllFood: any[][]) => any[][]) => void,
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
-  currentPlayer: Blob,
+  // currentPlayer: Blob,
 ) {
-  const foodArray = section.food as any[];  
-  const visibleFood: Food[] = [];
+  const foodArray = section.food;  
+  // const visibleFood: Food[] = [];
   const foodData: Food[] = [];
-  foodArray.forEach((foodItem, index) => {
+  foodArray.forEach((foodItem: {data: Uint8Array}) => {
       const foodDataArray = new Uint8Array(foodItem.data);
       const decodedFood = decodeFood(foodDataArray); 
       foodData.push({ 
@@ -43,7 +43,7 @@ export function updateFoodList(
 export function updateLeaderboard(
   players: any[],
   setLeaderboard: (leaderboard: any[]) => void,
-  currentPlayer: Blob,
+  // currentPlayer: Blob,
 ) {
   const top10Players = players
     .sort((a, b) => b.score - a.score)
@@ -66,13 +66,6 @@ export function updateLeaderboard(
               timestamp: performance.now(),
           }));
       setLeaderboard(top10Players);
-
-      if (currentPlayer) {
-          const sortedPlayers = players.sort((a, b) => b.score - a.score);
-          const currentPlayerRank = sortedPlayers.findIndex((player) =>
-              player.authority.equals(currentPlayer.authority),
-          );
-      }
 };
 
 export function updateMyPlayer(
@@ -124,7 +117,7 @@ export function updateMap(
   nextFood: { x: number; y: number },
   setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
-  const playerArray = map.players as any[];
+  // const playerArray = map.players as any[];
   if(map.nextFood){
       const foodDataArray = new Uint8Array(map.nextFood.data);
       const decodedFood = decodeFood(foodDataArray); 
@@ -250,7 +243,7 @@ export function subscribeToGame(
                 if (!accountInfo) {
                   return;
                 }
-                const coder = getComponentSectionOnEphem(engine).coder;
+                //const coder = getComponentSectionOnEphem(engine).coder;
                 handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
               }),
           ];
@@ -261,7 +254,7 @@ export function subscribeToGame(
                 if (!accountInfo) {
                   return;
                 }
-                const coder = getComponentSectionOnEphem(engine).coder;
+                //const coder = getComponentSectionOnEphem(engine).coder;
                 handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
               }),
           ];
@@ -278,7 +271,7 @@ export function subscribeToGame(
                 if (!accountInfo) {
                   return;
                 }
-                const coder = getComponentPlayerOnEphem(engine).coder;
+                //const coder = getComponentPlayerOnEphem(engine).coder;
                 handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
               }),
           ];
@@ -289,7 +282,7 @@ export function subscribeToGame(
                 if (!accountInfo) {
                   return;
                 }
-                const coder = getComponentPlayerOnEphem(engine).coder;
+                //const coder = getComponentPlayerOnEphem(engine).coder;
                 handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
               }),
           ];
@@ -304,7 +297,7 @@ export function subscribeToGame(
     if (!accountInfo) {
       return;
     }
-    const coder = getComponentPlayerOnEphem(engine).coder;
+    //const coder = getComponentPlayerOnEphem(engine).coder;
     handleMyPlayerComponentChange(accountInfo, engine, setCurrentPlayer, setGameEnded, isJoining);
   });
 
@@ -317,7 +310,7 @@ export function subscribeToGame(
     if (!accountInfo) {
       return;
     }
-    const coder = getComponentMapOnEphem(engine).coder;
+    //const coder = getComponentMapOnEphem(engine).coder;
     handleMapComponentChange(accountInfo, engine, nextFood, setNextFood);
   });
 

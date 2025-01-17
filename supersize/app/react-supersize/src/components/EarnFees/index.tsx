@@ -1,3 +1,5 @@
+import React from "react";
+
 const EarnFees = () => {
     return (
         <div className="flex justify-center w-full h-full text-white">

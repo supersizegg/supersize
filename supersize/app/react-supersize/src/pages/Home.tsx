@@ -25,6 +25,7 @@ import { useMagicBlockEngine } from "../engine/MagicBlockEngineProvider";
 import {endpoints } from "@utils/constants";
 import { stringToUint8Array } from "@utils/helper";
 
+/*
 interface GameRow {
     server: string;
     gameId: string;
@@ -33,6 +34,7 @@ interface GameRow {
     players: string;
     ping: number;
 }
+*/
 
 function getPingColor(ping: number) {
     if (ping <= 100) return "green";
@@ -52,7 +54,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
 
     const [inputValue, setInputValue] = useState<string>('');  
     const [isBuyInModalOpen, setIsBuyInModalOpen] = useState(false);
-    const [gameInfo, setGameInfo] = useState<ActiveGame[]>([]);
+
     //set selected game to 0
     const [activeGames, setActiveGames] = useState<ActiveGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => ({
         worldId: world.worldId,
@@ -255,7 +257,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                                 activeplayers = activeplayers + 1;
                             }
                         } catch (error) {
-                            //skip
+                            console.log(error);
                         }
                     }
 

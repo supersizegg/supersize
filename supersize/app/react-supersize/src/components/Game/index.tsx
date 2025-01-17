@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {PublicKey} from "@solana/web3.js";
 import BN from 'bn.js';
 
@@ -111,14 +111,12 @@ interface GameComponentProps {
 
 const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, currentPlayer, screenSize, scale }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [lastTime, setLastTime] = useState<number>(0);
   const playersRef = useRef(players);
   const foodRef = useRef(visibleFood);
 
   const timeStep = 30.0;  //1000.0 / 60.0;  
 
   const previousTime = useRef(0.0);
-  const delta = useRef(0.0);
   const accumulator = useRef(0.0);
   
   const currentPlayerRef = useRef(currentPlayer);
@@ -135,12 +133,6 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
       playersRef.current = players;
     }
   }, [players]);
-  
-  const restartTimer = () => {
-    //previousTime.current = performance.now();  
-    delta.current = 0.0;
-    accumulator.current = 0.0;  
-  };
   
   useEffect(() => {
     currentPlayerRef.current = currentPlayer;
@@ -242,6 +234,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
       currentPlayerPos.current = updatePlayerPosition(currentPlayerPos.current, currentPlayerPos.current.target_x, currentPlayerPos.current.target_y, timeStep);
   }*/
 
+  /*
   const updatePlayerPosition = (
     player: Blob,
     target_x: number,
@@ -280,6 +273,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
   
     return player;
   };
+  */
   
   /*useEffect(() => {
     if (gameId !== null) {
@@ -433,6 +427,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
     }
   };
 
+  /*
   const drawPlayer = (ctx: CanvasRenderingContext2D, blob: Blob, scale: number) => {
     let glowSize = 0;
     let glowIntensity = 'rgba(19, 241, 149, 0)'; 
@@ -463,6 +458,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
     ctx.fill();
     ctx.stroke();
   };
+  */
 
   const drawFood3 = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
     const diameter = 20 * scale; // Adjust size dynamically
@@ -488,6 +484,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
     }
   };
 
+  /*
   const drawFood2 = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
     const diameter = 20 * scale; 
     if (foodImage.complete) {
@@ -506,6 +503,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
       ctx.stroke();
     }
   };
+  */
 
   const drawBorder = (ctx: CanvasRenderingContext2D, currentPlayer: Blob, screenSize: { width: number; height: number }, scale: number) => {
     const gameSize = screenSize.width;

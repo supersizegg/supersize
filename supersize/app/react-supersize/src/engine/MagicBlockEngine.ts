@@ -1,4 +1,4 @@
-import { Idl, Program, AnchorProvider, Wallet } from "@coral-xyz/anchor";
+import { Idl, Program, AnchorProvider } from "@coral-xyz/anchor";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import {
   AccountInfo,
@@ -16,12 +16,12 @@ import * as anchor from "@coral-xyz/anchor";
 const ENDPOINT_CHAIN_RPC = "https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
 const ENDPOINT_CHAIN_WS = "wss://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
 
-const _ENDPOINT_CHAIN_RPC = "http://127.0.0.1:7899";
-const _ENDPOINT_CHAIN_WS = "ws://127.0.0.1:7900";
+// const _ENDPOINT_CHAIN_RPC = "http://127.0.0.1:7899";
+// const _ENDPOINT_CHAIN_WS = "ws://127.0.0.1:7900";
 
 const TRANSACTION_COST_LAMPORTS = 5000;
 
-let connectionChain = new Connection(ENDPOINT_CHAIN_RPC, {
+const connectionChain = new Connection(ENDPOINT_CHAIN_RPC, {
   wsEndpoint: ENDPOINT_CHAIN_WS,
 });
 let connectionEphem = new Connection("https://supersize-sin.magicblock.app", {
@@ -88,10 +88,10 @@ export class MagicBlockEngine {
     return this.endpointEphemRpc;
   }
 
-  getProgramOnChain<T extends Idl>(idl: {}): Program<T> {
+  getProgramOnChain<T extends Idl>(idl: object): Program<T> {
     return new Program<T>(idl as T, this.provider);
   }
-  getProgramOnEphem<T extends Idl>(idl: {}): Program<T> {
+  getProgramOnEphem<T extends Idl>(idl: object): Program<T> {
     return new Program<T>(idl as T, this.providerEphemeralRollup);
   }
 
@@ -162,7 +162,7 @@ export class MagicBlockEngine {
     transaction: Transaction
   ): Promise<string> {
     console.log(name, "sending");
-    transaction.compileMessage;
+    // transaction.compileMessage;
     const signature = await connectionEphem.sendTransaction(
       transaction,
       [this.sessionKey],
@@ -181,7 +181,7 @@ export class MagicBlockEngine {
     name: string,
     transaction: Transaction
   ): Promise<string> {
-    transaction.compileMessage;
+    // transaction.compileMessage;
     const signature = await connectionEphem.sendTransaction(
       transaction,
       [this.sessionKey],

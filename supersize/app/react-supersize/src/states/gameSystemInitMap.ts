@@ -7,9 +7,6 @@ import {
     SYSTEM_INIT_MAP_ID,
   } from "./gamePrograms";
 
-import { ActiveGame } from "@utils/types";
-
-
 export async function gameSystemInitMap(
   engine: MagicBlockEngine,
   worldPda: PublicKey,

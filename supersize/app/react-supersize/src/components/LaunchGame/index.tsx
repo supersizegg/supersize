@@ -1,7 +1,7 @@
+import React, { useEffect, useState } from "react";
 import CreateGame from "@components/CreateGame";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ActiveGame } from "@utils/types";
-import { useEffect, useState } from "react";
 import Dropdown from "@components/Dropdown";
 import { endpoints } from "@utils/constants";
 type launchProps = {

@@ -26,6 +26,7 @@ export class MagicBlockQueue {
         if (last !== undefined) {
           await last;
         }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         // The error should be handled by another awaiter (from the return)
       }

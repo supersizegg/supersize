@@ -1,20 +1,20 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import GameComponent from "@components/Game";
 import { PublicKey } from "@solana/web3.js";
 import { useNavigate } from "react-router-dom";
 import { MAP_COMPONENT, scale } from "@utils/constants";
 import { ActiveGame, Blob, Food } from "@utils/types";
-import { ApplySystem, createUndelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
+import { createUndelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { COMPONENT_PLAYER_ID } from "../states/gamePrograms";
 import { BN } from "@coral-xyz/anchor";
 import { gameSystemExit } from "../states/gameSystemExit";
 import { useMagicBlockEngine } from "../engine/MagicBlockEngineProvider";
-import { mapFetchOnChain, mapFetchOnEphem, playerFetchOnEphem } from "../states/gameFetch";
+import { mapFetchOnEphem, playerFetchOnEphem } from "../states/gameFetch";
 import { subscribeToGame, updateLeaderboard, updateMyPlayer } from "../states/gameListen";
 import { gameSystemCashOut } from "../states/gameSystemCashOut";
 import { gameSystemMove } from "../states/gameSystemMove";
 import { gameSystemSpawnFood } from "../states/gameSystemSpawnFood";
-import { decodeFood, getSectionIndex, stringToUint8Array } from "@utils/helper";
+import { decodeFood, stringToUint8Array } from "@utils/helper";
 import * as anchor from "@coral-xyz/anchor";
 import "./game.scss";
 
@@ -42,11 +42,12 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
 
 
     const countdown = useRef(5);
-    const [exitHovered, setExitHovered] = useState(false);
+    // const [exitHovered, setExitHovered] = useState(false);
     const playerRemovalTimeRef = useRef<BN | null>(null);
     const [playerExiting, setPlayerExiting] = useState(false);
     const [gameEnded, setGameEnded] = useState(0);
-    const [isJoining, setIsJoining] = useState(false);
+    //const [isJoining, setIsJoining] = useState(false);
+    const isJoining = false;
     const [cashoutTx, setCashoutTx] = useState<string | null>(null);
     
     const [leaderboard, setLeaderboard] = useState<Blob[]>([]);
@@ -57,10 +58,10 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
     const [foodListLen, setFoodListLen] = useState<number[]>([]);
     const [nextFood, setNextFood] = useState<{x: number, y: number}>({x: 0, y: 0});
 
-    let playersComponentSubscriptionId = useRef<number[] | null>([]);
-    let foodComponentSubscriptionId = useRef<number[] | null>([]);
-    let myplayerComponentSubscriptionId = useRef<number | null>(null);
-    let mapComponentSubscriptionId= useRef<number | null>(null);
+    const playersComponentSubscriptionId = useRef<number[] | null>([]);
+    const foodComponentSubscriptionId = useRef<number[] | null>([]);
+    const myplayerComponentSubscriptionId = useRef<number | null>(null);
+    const mapComponentSubscriptionId= useRef<number | null>(null);
 
     const handleExitClick = () => {
         if (!currentPlayerEntity.current) {
@@ -158,7 +159,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
 
             await gameSystemSpawnFood(engine, gameInfo, newFood.x, newFood.y, foodListLen, entityMatch.current, foodEntities.current);
         } catch (error) {
-            //console.log("Transaction failed", error);
+            console.log("Transaction failed", error);
         }
     };
     
@@ -255,7 +256,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
         ) {
             
             if(gameEnded == 2){
-                let cashoutTx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current, currentPlayer);
+                const cashoutTx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current, currentPlayer);
                 if (cashoutTx){
                     setCashoutTx(cashoutTx);
                     playersComponentSubscriptionId.current = [];
@@ -281,7 +282,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                     componentPda: COMPONENT_PLAYER_ID,
                 });
             
-                let undeltx = new anchor.web3.Transaction().add(undelegateIx);
+                const undeltx = new anchor.web3.Transaction().add(undelegateIx);
                 undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
                 undeltx.feePayer = engine.getSessionPayer();
                 const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
@@ -329,7 +330,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
             setMousePosition({ x: event.clientX, y: event.clientY });
         };
 
-        const handleMouseDown = (event: MouseEvent) => {
+        const handleMouseDown = () => {
             setIsMouseDown(true);
         };
 
@@ -501,10 +502,10 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                 className={`block flex items-center fixed top-0 left-0 m-2.5 z-[9999]`}
                 style={{ zIndex: 9999 }}
                 onMouseEnter={() => {
-                    setExitHovered(true);
+                    // setExitHovered(true);
                 }}
                 onMouseLeave={() => {
-                    setExitHovered(false);
+                    // setExitHovered(false);
                 }}
             >
                 <button

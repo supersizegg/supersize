@@ -4,9 +4,9 @@ import {
     PublicKey,
     SystemProgram,
     Transaction,
+    TransactionInstruction,
 } from "@solana/web3.js";
 import {
-    ApplySystem,
     createAddEntityInstruction,
     createDelegateInstruction,
     FindComponentPda,
@@ -38,7 +38,6 @@ import { gameSystemInitMap } from "./gameSystemInitMap";
 import { gameSystemInitPlayer } from "./gameSystemInitPlayer";
 import { gameSystemInitAnteroom } from "./gameSystemInitAnteroom";
 import { gameSystemInitSection } from "./gameSystemInitSection";
-import { m } from "framer-motion";
 
 const CONFIG = {
     computeUnitLimit: 200_000,
@@ -76,9 +75,11 @@ async function retryTransaction(
             await transactionFn();
             await updateTransaction(setTransactions, transactionId, "confirmed");
             retry = false;
-        } catch (err: any) {
+        } catch (error) {
             await updateTransaction(setTransactions, transactionId, "failed");
-            retry = window.confirm(`Transaction ${transactionId} failed: ${err.message}. Would you like to retry?`);
+            let message = 'Unknown Error';
+	        if (error instanceof Error) { message = error.message }
+            retry = window.confirm(`Transaction ${transactionId} failed: ${message}. Would you like to retry?`);
         }
     }
 }
@@ -143,7 +144,12 @@ export async function gameExecuteNewGame(
 
     const worldTxnId = "init-world";
     await addTransaction(setTransactions, worldTxnId, "pending");
-    let initNewWorld: any;
+    let initNewWorld: {
+        instruction: TransactionInstruction;
+        transaction: Transaction;
+        worldPda: PublicKey;
+        worldId: anchor.BN;
+    };
     await retryTransaction(worldTxnId, async () => {
         initNewWorld = await InitializeNewWorld({
             payer: engine.getSessionPayer(),
@@ -302,7 +308,7 @@ export async function gameExecuteNewGame(
     // Initialize food components
     const initFoodComponentTxnId = "init-food-components";
     await addTransaction(setTransactions, initFoodComponentTxnId, "pending");
-    let foodComponentPdas: PublicKey[] = [];
+    const foodComponentPdas: PublicKey[] = [];
     await retryTransaction(initFoodComponentTxnId, async () => {
         for (let i = 0; i < foodEntityPdas.length; i += CONFIG.defaultBatchSize) {
             const batch = foodEntityPdas.slice(i, i + CONFIG.defaultBatchSize);
@@ -442,7 +448,7 @@ export async function gameExecuteNewGame(
     await retryTransaction(initPlayersTxnId, async () => {
         const initbatchSizePlayers = 1;
         for (let i = 0; i < playerEntityPdas.length; i += initbatchSizePlayers) {
-            const initplayertransaction = new anchor.web3.Transaction();
+            // const initplayertransaction = new anchor.web3.Transaction();
             const playerBatch = playerEntityPdas.slice(i, i + initbatchSizePlayers);
 
             const initPlayerPromises = playerBatch.map(async (playerPda) => {
@@ -503,7 +509,7 @@ export async function gameExecuteNewGame(
     await addTransaction(setTransactions, delegateFoodTxnId, "pending");
 
     await retryTransaction(delegateFoodTxnId, async () => {
-        let delbatchSize = 3;
+        const delbatchSize = 3;
         for (let i = 0; i < foodEntityPdas.length; i += delbatchSize) {
             const playertx = new anchor.web3.Transaction();
 
@@ -540,9 +546,9 @@ export async function gameExecuteNewGame(
 
     await retryTransaction(initFoodTxnId, async () => {
         let overallIndex = 0;
-        let initFoodBatchSize = 1;
+        const initFoodBatchSize = 1;
         for (let i = 0; i < foodEntityPdas.length; i += initFoodBatchSize) {
-            const initfoodtransaction = new anchor.web3.Transaction();
+            // const initfoodtransaction = new anchor.web3.Transaction();
             const foodBatch = foodEntityPdas.slice(i, i + initFoodBatchSize);
 
             const initFoodPromises = foodBatch.map(async (foodPda) => {

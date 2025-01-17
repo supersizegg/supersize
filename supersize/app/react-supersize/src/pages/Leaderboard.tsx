@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react";
 import  LeaderboardDropdown from "@components/LeaderboardDropdown";
@@ -12,6 +12,7 @@ interface UserInfo {
     points: number;
 }
 
+/*
 interface Users {
     id: string;
     walletAddress: string;
@@ -25,6 +26,7 @@ interface Users {
         agld: number;
     }
 }
+*/
 
 const Leaderboard: React.FC = () => {
     const network = "devnet"; //"mainnet"; 
@@ -37,8 +39,6 @@ const Leaderboard: React.FC = () => {
 
     const [rank, setRank] = useState<number | null>(null);
     const { publicKey } = useWallet();
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [homeHover, setHomeHover] = useState(false);
 
     const tokens = [{network: "devnet", token: "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp"}, {network: "mainnet", token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"}, {network: "mainnet", token: "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"}]
     //const options = [{ icon: "/usdc.png", name: "Magical Gem" }, { icon: "/usdc.png", name: "USDC" }, { icon: "/Solana_logo.png", name: "SOL" }];
@@ -48,7 +48,6 @@ const Leaderboard: React.FC = () => {
         position: 0,
         points: 0
     });
-    const [toggle, setToggle] = useState(false);
 
     useEffect(() => {
         const loadTokenMetadata = async () => {
@@ -179,7 +178,7 @@ const Leaderboard: React.FC = () => {
                 }
                 console.log("topParticipants:::::", res.data.topParticipants, res.data.totalCandidates);
         
-                const participants = res.data.topParticipants.map((participant: any) => (
+                const participants = res.data.topParticipants.map((participant: {walletAddress: string; winAmount: number;}) => (
                     { 
                         name: participant.walletAddress, 
                         total: participant.winAmount
