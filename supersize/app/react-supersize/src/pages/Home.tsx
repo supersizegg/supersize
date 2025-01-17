@@ -14,6 +14,7 @@ import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
 import BuyInModal from "@components/buyInModal";
+import { Spinner } from "@components/util/Spinner";
 
 import {
     COMPONENT_MAP_ID,
@@ -57,6 +58,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
 
     //set selected game to 0
     const [activeGames, setActiveGames] = useState<ActiveGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => ({
+        isLoaded: false,
         worldId: world.worldId,
         worldPda: world.worldPda,
         name: "loading",
@@ -270,6 +272,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                                 activeGamesList[i].worldPda.toString()
                                 ? {
                                     ...game,
+                                    isLoaded: true,
                                     name: mapParsedData.name,
                                     active_players: activeplayers,
                                     max_players: mapParsedData.maxPlayers,
@@ -346,12 +349,12 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                         <tbody>
                             {activeGames.map((row, idx) => (
                                 <tr key={idx}>
-                                    <td>{row.name}</td>
+                                    <td>{row.isLoaded ? row.name : <Spinner />}</td>
                                     <td>{getRegion(activeGames[idx].endpoint)}</td>
                                     <td>{row.worldId.toString()}</td>
-                                    <td>{row.token}</td>
-                                    <td>{row.min_buyin} - {row.max_buyin}</td>
-                                    <td>{row.active_players}/{row.max_players}</td>
+                                    <td>{row.isLoaded ? row.token : <Spinner />}</td>
+                                    <td>{row.isLoaded ? row.min_buyin + " - " + row.max_buyin : <Spinner />}</td>
+                                    <td>{row.isLoaded ? row.active_players + "/" + row.max_players : <Spinner />}</td>
                                     <td>
                                         <div className="ping-cell">
                                             <span className="ping-circle" style={{ backgroundColor: getPingColor(row.ping) }} />
@@ -361,6 +364,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                                     <td>
                                         <button
                                             className="btn-play"
+                                            disabled={!row.isLoaded}
                                             onClick={() => {
                                                 engine.setEndpointEphemRpc(activeGames[idx].endpoint);
                                                 setSelectedGame(row);

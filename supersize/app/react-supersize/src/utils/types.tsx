@@ -26,6 +26,7 @@ export interface Blob {
 }
 
 export type ActiveGame = {
+    isLoaded: boolean;
     worldPda: PublicKey;
     worldId: BN;
     name: string;
