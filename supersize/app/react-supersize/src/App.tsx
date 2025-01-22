@@ -32,7 +32,7 @@ const InitBuddyLinkWrapper = () => {
     // Note: Devnet SDK has an error that Wagg is fixing, contact him to find out when this can be removed
     const organization = 'supersize';
 
-    useInitBuddyLink(connection, wallet, organization, { debug: true });
+    useInitBuddyLink(connection as any, wallet, organization, { debug: true });
 
     return null
 }

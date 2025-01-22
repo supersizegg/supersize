@@ -418,7 +418,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                     player.y !== 50000 &&
                     Math.sqrt(player.mass) !== 0,
             );
-            updateLeaderboard(playersWithAuthority, setLeaderboard, currentPlayer);
+            updateLeaderboard(playersWithAuthority, setLeaderboard);
             const newVisiblePlayers: Blob[] = playersWithAuthority.reduce(
                 (accumulator: Blob[], playerx) => {
                     if (

@@ -1,44 +1,47 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AccountInfo, PublicKey } from "@solana/web3.js";
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { decodeFood } from "@utils/helper";
 import { Food, Blob } from "@utils/types";
-import { COMPONENT_MAP_ID, COMPONENT_PLAYER_ID, COMPONENT_SECTION_ID, getComponentMapOnEphem, getComponentPlayerOnEphem, getComponentSectionOnEphem } from "./gamePrograms";
+import {
+  COMPONENT_MAP_ID,
+  COMPONENT_PLAYER_ID,
+  COMPONENT_SECTION_ID,
+  getComponentMapOnEphem,
+  getComponentPlayerOnEphem,
+  getComponentSectionOnEphem,
+} from "./gamePrograms";
 import { FindComponentPda } from "@magicblock-labs/bolt-sdk";
 
-
 export function updateFoodList(
-  section: {food: []}, 
+  section: { food: [] },
   food_index: number,
   setAllFood: (callback: (prevAllFood: any[][]) => any[][]) => void,
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
   // currentPlayer: Blob,
 ) {
-  const foodArray = section.food;  
+  const foodArray = section.food;
   // const visibleFood: Food[] = [];
   const foodData: Food[] = [];
-  foodArray.forEach((foodItem: {data: Uint8Array}) => {
-      const foodDataArray = new Uint8Array(foodItem.data);
-      const decodedFood = decodeFood(foodDataArray); 
-      foodData.push({ 
-          x: decodedFood.x, 
-          y: decodedFood.y, 
-          size: decodedFood.size
-      });
+  foodArray.forEach((foodItem: { data: Uint8Array }) => {
+    const foodDataArray = new Uint8Array(foodItem.data);
+    const decodedFood = decodeFood(foodDataArray);
+    foodData.push({
+      x: decodedFood.x,
+      y: decodedFood.y,
+      size: decodedFood.size,
+    });
   });
-  if(foodData.length>0){
+  if (foodData.length > 0) {
     setAllFood((prevAllFood) => {
-        return prevAllFood.map((foodArray, index) =>
-        food_index === index ? foodData : foodArray
-        );
+      return prevAllFood.map((foodArray, index) => (food_index === index ? foodData : foodArray));
     });
     setFoodListLen((prevFoodListLen) => {
-        const updatedFoodListLen = [...prevFoodListLen];
-        updatedFoodListLen[food_index] = foodData.length;
-        return updatedFoodListLen;
-      });
+      const updatedFoodListLen = [...prevFoodListLen];
+      updatedFoodListLen[food_index] = foodData.length;
+      return updatedFoodListLen;
+    });
   }
-};
+}
 
 export function updateLeaderboard(
   players: any[],
@@ -47,26 +50,26 @@ export function updateLeaderboard(
 ) {
   const top10Players = players
     .sort((a, b) => b.score - a.score)
-          .slice(0, 10)
-          .map((player) => ({
-              name: player.name,
-              authority: player.authority,
-              x: player.x,
-              y: player.y,
-              radius: 4 + Math.sqrt(player.mass / 10) * 6,
-              mass: player.mass,
-              score: player.score,
-              buyIn: player.buyIn,
-              payoutTokenAccount: player.payoutTokenAccount,
-              tax: player.tax,
-              speed: player.speed,
-              removal: player.scheduledRemovalTime,
-              target_x: player.target_x,
-              target_y: player.target_y,
-              timestamp: performance.now(),
-          }));
-      setLeaderboard(top10Players);
-};
+    .slice(0, 10)
+    .map((player) => ({
+      name: player.name,
+      authority: player.authority,
+      x: player.x,
+      y: player.y,
+      radius: 4 + Math.sqrt(player.mass / 10) * 6,
+      mass: player.mass,
+      score: player.score,
+      buyIn: player.buyIn,
+      payoutTokenAccount: player.payoutTokenAccount,
+      tax: player.tax,
+      speed: player.speed,
+      removal: player.scheduledRemovalTime,
+      target_x: player.target_x,
+      target_y: player.target_y,
+      timestamp: performance.now(),
+    }));
+  setLeaderboard(top10Players);
+}
 
 export function updateMyPlayer(
   player: any,
@@ -74,43 +77,35 @@ export function updateMyPlayer(
   setGameEnded: (gameEnded: number) => void,
   isJoining: boolean,
 ) {
-  //console.log("updateMyPlayer", player); 
-      if (
-          Math.sqrt(player.mass) == 0 &&
-          player.score == 0.0 &&
-          !isJoining
-      ) {
-          const startTime = player.joinTime.toNumber() * 1000;
-          const currentTime = Date.now();
-          const elapsedTime = currentTime - startTime;
-          if (elapsedTime >= 6000) {
-              setGameEnded(1);
-          }
-      }
-      setCurrentPlayer({
-          name: player.name,
-          authority: player.authority,
-          x: player.x,
-          y: player.y,
-          radius: 4 + Math.sqrt(player.mass / 10) * 6,
-          mass: player.mass,
-          score: player.score,
-          tax: player.tax,
-          speed: player.speed,
-          removal: player.scheduledRemovalTime,
-          target_x: player.targetX,
-          target_y: player.targetY,
-          timestamp: performance.now(),
-      } as Blob);
+  //console.log("updateMyPlayer", player);
+  if (Math.sqrt(player.mass) == 0 && player.score == 0.0 && !isJoining) {
+    const startTime = player.joinTime.toNumber() * 1000;
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - startTime;
+    if (elapsedTime >= 6000) {
+      setGameEnded(1);
+    }
+  }
+  setCurrentPlayer({
+    name: player.name,
+    authority: player.authority,
+    x: player.x,
+    y: player.y,
+    radius: 4 + Math.sqrt(player.mass / 10) * 6,
+    mass: player.mass,
+    score: player.score,
+    tax: player.tax,
+    speed: player.speed,
+    removal: player.scheduledRemovalTime,
+    target_x: player.targetX,
+    target_y: player.targetY,
+    timestamp: performance.now(),
+  } as Blob);
 
-      if (
-          Math.sqrt(player.mass) == 0 &&
-          player.score != 0.0 &&
-          !isJoining
-      ) {
-          setGameEnded(2);
-      }
-};
+  if (Math.sqrt(player.mass) == 0 && player.score != 0.0 && !isJoining) {
+    setGameEnded(2);
+  }
+}
 
 export function updateMap(
   map: any,
@@ -118,18 +113,18 @@ export function updateMap(
   setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
   // const playerArray = map.players as any[];
-  if(map.nextFood){
-      const foodDataArray = new Uint8Array(map.nextFood.data);
-      const decodedFood = decodeFood(foodDataArray); 
-      if(decodedFood.x !== nextFood.x || decodedFood.y !== nextFood.y){
-      nextFood = {x: decodedFood.x, y: decodedFood.y};
+  if (map.nextFood) {
+    const foodDataArray = new Uint8Array(map.nextFood.data);
+    const decodedFood = decodeFood(foodDataArray);
+    if (decodedFood.x !== nextFood.x || decodedFood.y !== nextFood.y) {
+      nextFood = { x: decodedFood.x, y: decodedFood.y };
       setNextFood(nextFood);
-      }
-  }else if(map.foodQueue > 0){
-      nextFood = {x: 0, y: 0};
-      setNextFood(nextFood);
+    }
+  } else if (map.foodQueue > 0) {
+    nextFood = { x: 0, y: 0 };
+    setNextFood(nextFood);
   }
-};
+}
 
 export function updatePlayers(
   player: any,
@@ -167,13 +162,12 @@ export function handlePlayersComponentChange(
   index: number,
   engine: MagicBlockEngine,
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
-
 ) {
   console.log("handlePlayersComponentChange", accountInfo);
   const coder = getComponentPlayerOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("player", accountInfo.data);
   updatePlayers(parsedData, index, setAllPlayers);
-};
+}
 
 export function handleFoodComponentChange(
   accountInfo: AccountInfo<Buffer>,
@@ -185,8 +179,8 @@ export function handleFoodComponentChange(
 ) {
   const coder = getComponentSectionOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("section", accountInfo.data);
-  updateFoodList(parsedData, index, setAllFood, setFoodListLen, currentPlayer);
-};
+  updateFoodList(parsedData, index, setAllFood, setFoodListLen);
+}
 
 export function handleMyPlayerComponentChange(
   accountInfo: AccountInfo<Buffer>,
@@ -198,7 +192,7 @@ export function handleMyPlayerComponentChange(
   const coder = getComponentPlayerOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("player", accountInfo.data);
   updateMyPlayer(parsedData, setCurrentPlayer, setGameEnded, isJoining);
-};
+}
 
 export function handleMapComponentChange(
   accountInfo: AccountInfo<Buffer>,
@@ -209,7 +203,7 @@ export function handleMapComponentChange(
   const coder = getComponentMapOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("map", accountInfo.data);
   updateMap(parsedData, nextFood, setNextFood);
-};
+}
 
 // Subscribe to the game state
 export function subscribeToGame(
@@ -233,65 +227,65 @@ export function subscribeToGame(
   setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
   for (let i = 0; i < foodEntities.length; i++) {
-      const foodComponenti = FindComponentPda({
-          componentId: COMPONENT_SECTION_ID,
-          entity: foodEntities[i],
-      });
-      if (foodComponentSubscriptionId.current === null) {
-          foodComponentSubscriptionId.current = [
-              engine.subscribeToEphemAccountInfo(foodComponenti, (accountInfo) => {
-                if (!accountInfo) {
-                  return;
-                }
-                //const coder = getComponentSectionOnEphem(engine).coder;
-                handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
-              }),
-          ];
-      } else {
-          foodComponentSubscriptionId.current = [
-              ...foodComponentSubscriptionId.current,
-              engine.subscribeToEphemAccountInfo(foodComponenti, (accountInfo) => {
-                if (!accountInfo) {
-                  return;
-                }
-                //const coder = getComponentSectionOnEphem(engine).coder;
-                handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
-              }),
-          ];
-      }
+    const foodComponenti = FindComponentPda({
+      componentId: COMPONENT_SECTION_ID,
+      entity: foodEntities[i],
+    });
+    if (foodComponentSubscriptionId.current === null) {
+      foodComponentSubscriptionId.current = [
+        engine.subscribeToEphemAccountInfo(foodComponenti, (accountInfo) => {
+          if (!accountInfo) {
+            return;
+          }
+          //const coder = getComponentSectionOnEphem(engine).coder;
+          handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
+        }),
+      ];
+    } else {
+      foodComponentSubscriptionId.current = [
+        ...foodComponentSubscriptionId.current,
+        engine.subscribeToEphemAccountInfo(foodComponenti, (accountInfo) => {
+          if (!accountInfo) {
+            return;
+          }
+          //const coder = getComponentSectionOnEphem(engine).coder;
+          handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
+        }),
+      ];
+    }
   }
   for (let i = 0; i < playerEntities.length; i++) {
-      const playersComponenti = FindComponentPda({
-          componentId: COMPONENT_PLAYER_ID,
-          entity: playerEntities[i],
-      });
-      if (playersComponentSubscriptionId.current === null) {
-          playersComponentSubscriptionId.current = [
-              engine.subscribeToEphemAccountInfo(playersComponenti, (accountInfo) => {
-                if (!accountInfo) {
-                  return;
-                }
-                //const coder = getComponentPlayerOnEphem(engine).coder;
-                handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
-              }),
-          ];
-      } else {
-          playersComponentSubscriptionId.current = [
-              ...playersComponentSubscriptionId.current,
-              engine.subscribeToEphemAccountInfo(playersComponenti, (accountInfo) => {
-                if (!accountInfo) {
-                  return;
-                }
-                //const coder = getComponentPlayerOnEphem(engine).coder;
-                handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
-              }),
-          ];
-      }
+    const playersComponenti = FindComponentPda({
+      componentId: COMPONENT_PLAYER_ID,
+      entity: playerEntities[i],
+    });
+    if (playersComponentSubscriptionId.current === null) {
+      playersComponentSubscriptionId.current = [
+        engine.subscribeToEphemAccountInfo(playersComponenti, (accountInfo) => {
+          if (!accountInfo) {
+            return;
+          }
+          //const coder = getComponentPlayerOnEphem(engine).coder;
+          handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
+        }),
+      ];
+    } else {
+      playersComponentSubscriptionId.current = [
+        ...playersComponentSubscriptionId.current,
+        engine.subscribeToEphemAccountInfo(playersComponenti, (accountInfo) => {
+          if (!accountInfo) {
+            return;
+          }
+          //const coder = getComponentPlayerOnEphem(engine).coder;
+          handlePlayersComponentChange(accountInfo, i, engine, setAllPlayers);
+        }),
+      ];
+    }
   }
 
   const myplayerComponent = FindComponentPda({
-      componentId: COMPONENT_PLAYER_ID,
-      entity: currentPlayerEntity,
+    componentId: COMPONENT_PLAYER_ID,
+    entity: currentPlayerEntity,
   });
   myplayerComponentSubscriptionId.current = engine.subscribeToEphemAccountInfo(myplayerComponent, (accountInfo) => {
     if (!accountInfo) {
@@ -302,8 +296,8 @@ export function subscribeToGame(
   });
 
   const mapComponent = FindComponentPda({
-      componentId: COMPONENT_MAP_ID,
-      entity: entityMatch,
+    componentId: COMPONENT_MAP_ID,
+    entity: entityMatch,
   });
 
   mapComponentSubscriptionId.current = engine.subscribeToEphemAccountInfo(mapComponent, (accountInfo) => {
@@ -313,5 +307,4 @@ export function subscribeToGame(
     //const coder = getComponentMapOnEphem(engine).coder;
     handleMapComponentChange(accountInfo, engine, nextFood, setNextFood);
   });
-
-};
+}
