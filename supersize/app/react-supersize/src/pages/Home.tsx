@@ -142,6 +142,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                                 }
                             }
                             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
+                            newGameInfo.isLoaded = true;
                             setSelectedGame(newGameInfo);
                             setActiveGames([newGameInfo, ...activeGames]);
                             break;
