@@ -56,7 +56,6 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
     const [allFood, setAllFood] = useState<Food[][]>([]);
     const [visibleFood, setVisibleFood] = useState<Food[][]>([]);
     const [foodListLen, setFoodListLen] = useState<number[]>([]);
-    const [nextFood, setNextFood] = useState<{x: number, y: number}>({x: 0, y: 0});
 
     const playersComponentSubscriptionId = useRef<number[] | null>([]);
     const foodComponentSubscriptionId = useRef<number[] | null>([]);
@@ -92,7 +91,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                 });
                 const playerData = await playerFetchOnEphem(engine, myplayerComponent);
                 if (playerData) {
-                    updateMyPlayer(playerData, setCurrentPlayer, setGameEnded, isJoining);
+                    updateMyPlayer(playerData, setCurrentPlayer, gameEnded, setGameEnded, isJoining);
                 }
             }
         });
@@ -106,7 +105,6 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
             if (playerRemovalTimeRef.current && !playerRemovalTimeRef.current.isZero()) {
                 startTime = playerRemovalTimeRef.current.toNumber() * 1000;
                 clearInterval(checkRemovalTime);
-
                 const timeoutinterval = setInterval(() => {
                     if (playerRemovalTimeRef.current) {
                         startTime = playerRemovalTimeRef.current.toNumber() * 1000;
@@ -147,16 +145,13 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
             if(mapParsedData && mapParsedData.nextFood){
                 const foodDataArray = new Uint8Array(mapParsedData.nextFood.data);
                 const decodedFood = decodeFood(foodDataArray); 
-                if(decodedFood.x !== nextFood.x || decodedFood.y !== nextFood.y){
-                    newFood = {x: decodedFood.x, y: decodedFood.y};
-                }
+                newFood = {x: decodedFood.x, y: decodedFood.y};
             }else if(mapParsedData && mapParsedData.foodQueue.gt(new BN(0))){
                 newFood = {x: 0, y: 0};
             }
             else{
                 return;
             }
-
             await gameSystemSpawnFood(engine, gameInfo, newFood.x, newFood.y, foodListLen, entityMatch.current, foodEntities.current);
         } catch (error) {
             console.log("Transaction failed", error);
@@ -242,9 +237,9 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
         if (!entityMatch.current || !currentPlayerEntity.current) return;
         subscribeToGame(engine, 
             foodEntities.current, playerEntities.current, entityMatch.current, currentPlayerEntity.current, 
-            emptyPlayer, nextFood, isJoining, 
-            foodComponentSubscriptionId, playersComponentSubscriptionId, myplayerComponentSubscriptionId, mapComponentSubscriptionId, 
-            setAllPlayers, setCurrentPlayer, setGameEnded, setAllFood, setFoodListLen, setNextFood);
+            emptyPlayer, isJoining, gameEnded,
+            foodComponentSubscriptionId, playersComponentSubscriptionId, myplayerComponentSubscriptionId, 
+            setAllPlayers, setCurrentPlayer, setGameEnded, setAllFood, setFoodListLen);
     }, [engine, gameInfo]);
     
     const endGame = async () => {
@@ -254,40 +249,46 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
             && currentPlayerEntity.current
             && anteroomEntity.current
         ) {
-            
-            if(gameEnded == 2){
+            console.log("endGame", currentPlayer);
+            if(currentPlayer.score > 0){
+                //gameended == 2
+                playersComponentSubscriptionId.current = [];
+                entityMatch.current = null;
+                foodEntities.current = [];
+                setPlayers([]);
+                setAllFood([]);
+                setFoodListLen([]);
+
                 const cashoutTx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current, currentPlayer);
                 if (cashoutTx){
                     setCashoutTx(cashoutTx);
-                    playersComponentSubscriptionId.current = [];
                     currentPlayerEntity.current = null;
-                    entityMatch.current = null;
-                    foodEntities.current = [];
-                    setPlayers([]);
-                    setAllFood([]);
-                    setFoodListLen([]);
                 }else{
                     setCashoutTx("error");
                 }
             }else{
 
-                const myplayerComponent = FindComponentPda({
-                    componentId: COMPONENT_PLAYER_ID,
-                    entity: currentPlayerEntity.current,
-                });
+                try{
+                    const myplayerComponent = FindComponentPda({
+                        componentId: COMPONENT_PLAYER_ID,
+                        entity: currentPlayerEntity.current,
+                    });
     
-                const undelegateIx = createUndelegateInstruction({
-                    payer: engine.getSessionPayer(),
-                    delegatedAccount: myplayerComponent,
-                    componentPda: COMPONENT_PLAYER_ID,
-                });
+                    const undelegateIx = createUndelegateInstruction({
+                        payer: engine.getSessionPayer(),
+                        delegatedAccount: myplayerComponent,
+                        componentPda: COMPONENT_PLAYER_ID,
+                    });
             
-                const undeltx = new anchor.web3.Transaction().add(undelegateIx);
-                undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
-                undeltx.feePayer = engine.getSessionPayer();
-                const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
-                console.log('undelegate', playerundelsignature);
-
+                    const undeltx = new anchor.web3.Transaction().add(undelegateIx);
+                    undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
+                    undeltx.feePayer = engine.getSessionPayer();
+                    const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
+                    console.log('undelegate', playerundelsignature);
+                }catch(error){
+                    console.log('error', error);
+                }
+                
                 playersComponentSubscriptionId.current = [];
                 currentPlayerEntity.current = null;
                 entityMatch.current = null;
@@ -298,6 +299,12 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
             }
         }
     }
+
+    useEffect(() => {
+        if(currentPlayer?.removal){
+            playerRemovalTimeRef.current = currentPlayer.removal;
+        }
+    }, [currentPlayer]);
 
     useEffect(() => {
         endGame();
@@ -418,7 +425,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                     player.y !== 50000 &&
                     Math.sqrt(player.mass) !== 0,
             );
-            updateLeaderboard(playersWithAuthority, setLeaderboard, currentPlayer);
+            updateLeaderboard(playersWithAuthority, setLeaderboard);
             const newVisiblePlayers: Blob[] = playersWithAuthority.reduce(
                 (accumulator: Blob[], playerx) => {
                     if (
@@ -468,13 +475,13 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
         }
     }, [currentPlayer]);
 
-    useEffect(() => {
+     useEffect(() => {
         const intervalId = setInterval(() => {
             processNewFoodTransaction();
         }, 200);
 
         return () => clearInterval(intervalId);
-    }, [gameInfo, nextFood]);
+    }, []); 
 
     useEffect(() => {
 

@@ -120,6 +120,14 @@ export class MagicBlockEngine {
     return this.sessionKey.publicKey;
   }
 
+  getSessionKey(): Keypair {
+    return this.sessionKey;
+  }
+
+  getProviderEphemeralRollup(): AnchorProvider {
+    return this.providerEphemeralRollup;
+  }
+
   async processWalletTransaction(
     name: string,
     transaction: Transaction

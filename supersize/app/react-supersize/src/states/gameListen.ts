@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AccountInfo, PublicKey } from "@solana/web3.js";
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { decodeFood } from "@utils/helper";
@@ -71,6 +70,7 @@ export function updateLeaderboard(
 export function updateMyPlayer(
   player: any,
   setCurrentPlayer: (player: Blob) => void,
+  gameEnded: number,
   setGameEnded: (gameEnded: number) => void,
   isJoining: boolean,
 ) {
@@ -78,7 +78,8 @@ export function updateMyPlayer(
       if (
           Math.sqrt(player.mass) == 0 &&
           player.score == 0.0 &&
-          !isJoining
+          !isJoining &&
+          gameEnded == 0
       ) {
           const startTime = player.joinTime.toNumber() * 1000;
           const currentTime = Date.now();
@@ -106,29 +107,11 @@ export function updateMyPlayer(
       if (
           Math.sqrt(player.mass) == 0 &&
           player.score != 0.0 &&
-          !isJoining
+          !isJoining &&
+          gameEnded == 0
       ) {
           setGameEnded(2);
       }
-};
-
-export function updateMap(
-  map: any,
-  nextFood: { x: number; y: number },
-  setNextFood: (nextFood: { x: number; y: number }) => void,
-) {
-  // const playerArray = map.players as any[];
-  if(map.nextFood){
-      const foodDataArray = new Uint8Array(map.nextFood.data);
-      const decodedFood = decodeFood(foodDataArray); 
-      if(decodedFood.x !== nextFood.x || decodedFood.y !== nextFood.y){
-      nextFood = {x: decodedFood.x, y: decodedFood.y};
-      setNextFood(nextFood);
-      }
-  }else if(map.foodQueue > 0){
-      nextFood = {x: 0, y: 0};
-      setNextFood(nextFood);
-  }
 };
 
 export function updatePlayers(
@@ -169,7 +152,7 @@ export function handlePlayersComponentChange(
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
 
 ) {
-  console.log("handlePlayersComponentChange", accountInfo);
+  //console.log("handlePlayersComponentChange", accountInfo);
   const coder = getComponentPlayerOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("player", accountInfo.data);
   updatePlayers(parsedData, index, setAllPlayers);
@@ -185,30 +168,20 @@ export function handleFoodComponentChange(
 ) {
   const coder = getComponentSectionOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("section", accountInfo.data);
-  updateFoodList(parsedData, index, setAllFood, setFoodListLen, currentPlayer);
+  updateFoodList(parsedData, index, setAllFood, setFoodListLen);
 };
 
 export function handleMyPlayerComponentChange(
   accountInfo: AccountInfo<Buffer>,
   engine: MagicBlockEngine,
   setCurrentPlayer: (player: Blob) => void,
+  gameEnded: number,
   setGameEnded: (gameEnded: number) => void,
   isJoining: boolean,
 ) {
   const coder = getComponentPlayerOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("player", accountInfo.data);
-  updateMyPlayer(parsedData, setCurrentPlayer, setGameEnded, isJoining);
-};
-
-export function handleMapComponentChange(
-  accountInfo: AccountInfo<Buffer>,
-  engine: MagicBlockEngine,
-  nextFood: { x: number; y: number },
-  setNextFood: (nextFood: { x: number; y: number }) => void,
-) {
-  const coder = getComponentMapOnEphem(engine).coder;
-  const parsedData = coder.accounts.decode("map", accountInfo.data);
-  updateMap(parsedData, nextFood, setNextFood);
+  updateMyPlayer(parsedData, setCurrentPlayer, gameEnded, setGameEnded, isJoining);
 };
 
 // Subscribe to the game state
@@ -219,18 +192,16 @@ export function subscribeToGame(
   entityMatch: PublicKey,
   currentPlayerEntity: PublicKey,
   currentPlayer: Blob,
-  nextFood: { x: number; y: number },
   isJoining: boolean,
+  gameEnded: number,
   foodComponentSubscriptionId: any,
   playersComponentSubscriptionId: any,
   myplayerComponentSubscriptionId: any,
-  mapComponentSubscriptionId: any,
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
   setCurrentPlayer: (player: Blob) => void,
   setGameEnded: (gameEnded: number) => void,
   setAllFood: (callback: (prevAllFood: any[][]) => any[][]) => void,
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
-  setNextFood: (nextFood: { x: number; y: number }) => void,
 ) {
   for (let i = 0; i < foodEntities.length; i++) {
       const foodComponenti = FindComponentPda({
@@ -298,20 +269,7 @@ export function subscribeToGame(
       return;
     }
     //const coder = getComponentPlayerOnEphem(engine).coder;
-    handleMyPlayerComponentChange(accountInfo, engine, setCurrentPlayer, setGameEnded, isJoining);
-  });
-
-  const mapComponent = FindComponentPda({
-      componentId: COMPONENT_MAP_ID,
-      entity: entityMatch,
-  });
-
-  mapComponentSubscriptionId.current = engine.subscribeToEphemAccountInfo(mapComponent, (accountInfo) => {
-    if (!accountInfo) {
-      return;
-    }
-    //const coder = getComponentMapOnEphem(engine).coder;
-    handleMapComponentChange(accountInfo, engine, nextFood, setNextFood);
+    handleMyPlayerComponentChange(accountInfo, engine, setCurrentPlayer, gameEnded, setGameEnded, isJoining);
   });
 
 };

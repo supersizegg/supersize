@@ -144,12 +144,13 @@ export async function gameExecuteNewGame(
 
     const worldTxnId = "init-world";
     await addTransaction(setTransactions, worldTxnId, "pending");
-    let initNewWorld: {
+    /* let initNewWorld: {
         instruction: TransactionInstruction;
         transaction: Transaction;
         worldPda: PublicKey;
         worldId: anchor.BN;
-    };
+    }; */
+    let initNewWorld: any;
     await retryTransaction(worldTxnId, async () => {
         initNewWorld = await InitializeNewWorld({
             payer: engine.getSessionPayer(),
@@ -591,6 +592,7 @@ export async function gameExecuteNewGame(
         max_buyin,
         endpoint: "https://api.supersize.gg/game",
         ping: 1000,
+        isLoaded: false,
     };
 
     setActiveGames([...activeGames, newGame]);

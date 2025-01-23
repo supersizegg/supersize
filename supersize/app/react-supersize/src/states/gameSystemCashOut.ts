@@ -1,5 +1,5 @@
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
-import { ApplySystem, createUndelegateInstruction, FindComponentPda } from "@magicblock-labs/bolt-sdk";
+import { ApplySystem, createUndelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import * as anchor from "@coral-xyz/anchor";
 
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
@@ -7,6 +7,7 @@ import {
     COMPONENT_PLAYER_ID,
     COMPONENT_ANTEROOM_ID,
     SYSTEM_CASH_OUT_ID,
+    COMPONENT_MAP_ID,
   } from "./gamePrograms";
 
   
@@ -23,7 +24,18 @@ export async function gameSystemCashOut(
   currentPlayerEntity: PublicKey,
   currentPlayer: Blob,
 ) {
-    console.log('cashing out');
+    const mapseed = "origin"; 
+    const mapEntityPda = FindEntityPda({
+        worldId: gameInfo.worldId,
+        entityId: new anchor.BN(0),
+        seed: Buffer.from(mapseed)
+    })
+
+    const mapComponentPda = FindComponentPda({
+        componentId: COMPONENT_MAP_ID,
+        entity: mapEntityPda,
+    });
+    
     const myplayerComponent = FindComponentPda({
         componentId: COMPONENT_PLAYER_ID,
         entity: currentPlayerEntity,
@@ -35,11 +47,17 @@ export async function gameSystemCashOut(
         componentPda: COMPONENT_PLAYER_ID,
     });
 
-    const undeltx = new anchor.web3.Transaction().add(undelegateIx);
-    undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
-    undeltx.feePayer = engine.getSessionPayer();
-    const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
-    console.log('undelegate', playerundelsignature);
+    try{ 
+        const undeltx = new anchor.web3.Transaction().add(undelegateIx);
+        undeltx.recentBlockhash = (await engine.getConnectionEphem().getLatestBlockhash()).blockhash;
+        undeltx.feePayer = engine.getSessionPayer();
+        //undeltx.sign(engine.getSessionKey());
+        //const playerundelsignature = await engine.getProviderEphemeralRollup().sendAndConfirm(undeltx, [], { skipPreflight: false });
+        const playerundelsignature = await engine.processSessionEphemTransaction("undelPlayer:" + myplayerComponent.toString(), undeltx); 
+        console.log('undelegate', playerundelsignature);
+    }catch(error){
+        console.log('error', error);
+    }
 
     const playerCashout = currentPlayer?.score ?? 0;
     const playerBuyIn = currentPlayer?.buyIn ?? 0;
@@ -51,6 +69,8 @@ export async function gameSystemCashOut(
         entity: anteroomEntity,
     });
     const anteAccount = await anteroomFetchOnChain(engine, anteComponentPda);
+
+    console.log('cashing out', anteComponentPda.toString(), myplayerComponent.toString());
 
     console.log("anteAccount", anteAccount, playerMass == 0 && playerCashout > 0);
     if (anteAccount && playerMass == 0 && playerCashout > 0) {
@@ -83,6 +103,13 @@ export async function gameSystemCashOut(
             engine.getWalletPayer()
         );
 
+        let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
+
+        let [tokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from("token_account_owner_pda"), mapComponentPda.toBuffer()],
+            vault_program_id
+            );
+
             const extraAccounts = [
                 {
                     pubkey: vault_token_account,
@@ -101,6 +128,11 @@ export async function gameSystemCashOut(
                 },
                 {
                     pubkey: supersize_token_account,
+                    isWritable: true,
+                    isSigner: false,
+                },
+                {
+                    pubkey: tokenAccountOwnerPda,
                     isWritable: true,
                     isSigner: false,
                 },
@@ -149,6 +181,6 @@ export async function gameSystemCashOut(
             const cashouttx = new anchor.web3.Transaction()
                 .add(applyCashOutSystem.transaction);
 
-            return await engine.processWalletTransaction("playerdelegate", cashouttx);
+            return await engine.processWalletTransaction("playercashout", cashouttx);
     }   
 }

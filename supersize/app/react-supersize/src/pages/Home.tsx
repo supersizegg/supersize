@@ -82,7 +82,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
             try {
                 const worldId = {worldId: new anchor.BN(inputValue.trim())};
                 const worldPda = await FindWorldPda( worldId);
-                const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:"", base_buyin: 0, min_buyin: 0, max_buyin: 0, endpoint: "", ping: 0}
+                const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:"", base_buyin: 0, min_buyin: 0, max_buyin: 0, endpoint: "", ping: 0, isLoaded: false}
                 for (const endpoint of endpoints) {
                     engine.setEndpointEphemRpc(endpoint);
                     try {
@@ -105,6 +105,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                             newGameInfo.base_buyin = mapParsedData.baseBuyin;
                             newGameInfo.min_buyin = mapParsedData.minBuyin;
                             newGameInfo.max_buyin = mapParsedData.maxBuyin;
+                            newGameInfo.isLoaded = true;
 
                             const pingTime = await pingEndpoint(endpoint);
                             newGameInfo.ping = pingTime;
@@ -310,7 +311,6 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
         <div>
             {isBuyInModalOpen && selectedGame && (
             <BuyInModal
-                isBuyInModalOpen={isBuyInModalOpen}
                 setIsBuyInModalOpen={setIsBuyInModalOpen}
                 activeGame={selectedGame}
                 setMyPlayerEntityPda={setMyPlayerEntityPda}
