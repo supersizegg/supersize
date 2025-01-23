@@ -56,7 +56,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@eslint/js": "^9.16.0",
+    "@eslint/js": "^9.18.0",
     "@types/bn.js": "^5.1.6",
     "@types/crypto-js": "^4.2.2",
     "@types/three": "^0.172.0",
@@ -67,8 +67,8 @@
     "buffer-browserify": "^0.2.5",
     "crypto-browserify": "^3.12.0",
     "eslint": "^9.18.0",
-    "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.13.0",
     "https-browserify": "^1.0.0",
     "postcss": "^8.4.49",
@@ -79,9 +79,10 @@
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "tailwindcss": "^3.4.15",
-    "typescript-eslint": "^8.17.0"
+    "typescript-eslint": "^8.21.0"
   },
   "resolutions": {
-    "@solana/web3.js": "1.95.5"
+    "@solana/web3.js": "1.95.5",
+    "@typescript-eslint/typescript-estre": "8.21.0"
   }
 }
