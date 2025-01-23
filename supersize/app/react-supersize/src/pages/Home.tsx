@@ -38,6 +38,7 @@ interface GameRow {
 */
 
 function getPingColor(ping: number) {
+    if (ping < 0) return "red";
     if (ping <= 100) return "green";
     if (ping <= 800) return "yellow";
     return "red";
@@ -169,6 +170,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
             await fetch(url, { method: "HEAD" });
         } catch (error) {
             console.error(`Failed to ping ${url}:`, error);
+             // -1 indicates an error/timeout
+            return -1;
         }
         const endTime = performance.now();
         return Math.round(endTime - startTime);
@@ -359,13 +362,13 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                                     <td>
                                         <div className="ping-cell">
                                             <span className="ping-circle" style={{ backgroundColor: getPingColor(row.ping) }} />
-                                            {row.ping}ms
+                                            <span style={{color: getPingColor(row.ping)}}>{row.ping >= 0 ? `${row.ping}ms` : 'Timeout'}</span>
                                         </div>
                                     </td>
                                     <td>
                                         <button
                                             className="btn-play"
-                                            disabled={!row.isLoaded}
+                                            disabled={!row.isLoaded || row.ping < 0}
                                             onClick={() => {
                                                 engine.setEndpointEphemRpc(activeGames[idx].endpoint);
                                                 setSelectedGame(row);
