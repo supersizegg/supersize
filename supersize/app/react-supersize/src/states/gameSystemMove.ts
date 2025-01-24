@@ -115,7 +115,7 @@ export async function gameSystemMove(
                 currentPlayer.radius, 
                 gameInfo.size, 
                 gameInfo.size
-            );
+            ); 
 
             const targetSectionBoosting = getSectionIndex(food_x, food_y, gameInfo.size, 2);
             const selectedSection = targetSectionBoosting.reduce(

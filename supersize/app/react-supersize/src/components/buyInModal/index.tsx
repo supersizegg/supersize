@@ -10,9 +10,10 @@ type BuyInModalProps = {
   setIsBuyInModalOpen: (isOpen: boolean) => void;
   activeGame: ActiveGame;
   setMyPlayerEntityPda: (pda: PublicKey | null) => void;
+  setScreenSize: (size: { width: number; height: number }) => void;
 };
 
-const BuyInModal: React.FC<BuyInModalProps> = ({ setIsBuyInModalOpen, activeGame, setMyPlayerEntityPda }) => {
+const BuyInModal: React.FC<BuyInModalProps> = ({ setIsBuyInModalOpen, activeGame, setMyPlayerEntityPda, setScreenSize }) => {
   const navigate = useNavigate();
   const engine = useMagicBlockEngine();
 
@@ -49,6 +50,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({ setIsBuyInModalOpen, activeGame
       const transaction = await gameExecuteJoin(engine, activeGame, buyIn, "unnamed", setMyPlayerEntityPda);
 
       if (transaction) {
+        setScreenSize({ width: activeGame.size, height: activeGame.size });
         navigate("/game");
       } else {
         alert("Failed to join the game. Please try again.");

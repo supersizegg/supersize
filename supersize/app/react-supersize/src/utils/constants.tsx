@@ -55,6 +55,8 @@ export const SOL_USDC_POOL_ID = "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2";
 
 export const CONNECTION_STRING =
     "https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
+export const  MAINNET_CONNECTION =  "https://floral-convincing-dawn.solana-mainnet.quiknode.pro/73d5d52678fd227b48dd0aec6a8e94ac9dd61f59"; 
+
 export const connection = new Connection(CONNECTION_STRING); //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676");
 
 export const endpoints = [
@@ -89,13 +91,13 @@ export const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: 
 
 export const activeGamesList: { worldId: anchor.BN; worldPda: PublicKey; endpoint: string }[] = [
     {
-        worldId: new anchor.BN(1761),
-        worldPda: new PublicKey('EvdxEoZRuuLHixjCEqLsftzDjgT1E5R8iCi9bjxHLRtH'),
+        worldId: new anchor.BN(1789),
+        worldPda: new PublicKey('CW4NphGRqimadoWApDzUCAzgpD5Q82YiPnQF6XiWz5W3'),
         endpoint: "https://supersize-sin.magicblock.app",
     },
     {
-        worldId: new anchor.BN(1759),
-        worldPda: new PublicKey('ExWtArxZfMNNDX8jfFJTe54CWYsrTz3S4xNvNH3imkwL'),
+        worldId: new anchor.BN(1781),
+        worldPda: new PublicKey('4qxvia6eontjmnE3xTTwMpZBHjfJD3j9j9N5bzhCXBRH'),
         endpoint: "https://supersize.magicblock.app",
     },
     {

@@ -48,9 +48,10 @@ type homeProps = {
     selectedGame: ActiveGame | null;
     setSelectedGame: (game: ActiveGame | null) => void;
     setMyPlayerEntityPda: (pda: PublicKey | null) => void;
+    setScreenSize: (size: { width: number; height: number }) => void;
 }
 
-const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) => {
+const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSize}: homeProps) => {
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
@@ -318,6 +319,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda}: homeProps) 
                 setIsBuyInModalOpen={setIsBuyInModalOpen}
                 activeGame={selectedGame}
                 setMyPlayerEntityPda={setMyPlayerEntityPda}
+                setScreenSize={setScreenSize}
             /> 
             )}
             <div className="home-container">

@@ -8,7 +8,7 @@ import { initBuddyState, initialBuddyLink, useInitBuddyLink,
  } from "buddy.link";
 import { MagicBlockEngineProvider } from "./engine/MagicBlockEngineProvider";
 import { MenuBar } from "./components/menu/MenuBar";
-import { connection } from "@utils/constants";
+import { connection, CONNECTION_STRING, MAINNET_CONNECTION } from "@utils/constants";
 
 // eslint-disable-next-line
 require("@solana/wallet-adapter-react-ui/styles.css");
@@ -26,6 +26,7 @@ initBuddyState({ ...initialBuddyLink,
 
 const InitBuddyLinkWrapper = () => {
     //const { connection } = useConnection()
+    const connection = new Connection(MAINNET_CONNECTION);
 
     const wallet = useWallet()
 
