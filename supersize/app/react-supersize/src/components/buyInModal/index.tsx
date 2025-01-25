@@ -13,7 +13,12 @@ type BuyInModalProps = {
   setScreenSize: (size: { width: number; height: number }) => void;
 };
 
-const BuyInModal: React.FC<BuyInModalProps> = ({ setIsBuyInModalOpen, activeGame, setMyPlayerEntityPda, setScreenSize }) => {
+const BuyInModal: React.FC<BuyInModalProps> = ({
+  setIsBuyInModalOpen,
+  activeGame,
+  setMyPlayerEntityPda,
+  setScreenSize,
+}) => {
   const navigate = useNavigate();
   const engine = useMagicBlockEngine();
 
@@ -47,20 +52,24 @@ const BuyInModal: React.FC<BuyInModalProps> = ({ setIsBuyInModalOpen, activeGame
     setStatusMessage("Submitting buy-in transaction...");
 
     try {
-      const transaction = await gameExecuteJoin(engine, activeGame, buyIn, "unnamed", setMyPlayerEntityPda);
+      const result = await gameExecuteJoin(engine, activeGame, buyIn, "unnamed", setMyPlayerEntityPda);
 
-      if (transaction) {
+      if (result.success) {
+        if (result.message === "resume_session") {
+          setStatusMessage("Resuming your existing session...");
+        }
+
         setScreenSize({ width: activeGame.size, height: activeGame.size });
         navigate("/game");
       } else {
-        alert("Failed to join the game. Please try again.");
+        setStatusMessage(result.error || "Failed to join the game. Please try again.");
       }
     } catch (error) {
       console.error("Error executing join:", error);
-      alert("An error occurred. Please try again.");
+      setStatusMessage("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
-      setStatusMessage("");
+      // setStatusMessage("");
     }
   };
 
