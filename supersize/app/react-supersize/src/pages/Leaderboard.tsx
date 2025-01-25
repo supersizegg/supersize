@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { MenuBar } from "@components/menu/MenuBar";
 import  LeaderboardDropdown from "@components/LeaderboardDropdown";
 
 interface Player {
@@ -193,13 +194,15 @@ const Leaderboard: React.FC = () => {
     }, [publicKey, season]);
 
     return (
+        <div className="main-container">
+            <MenuBar />
         <div className="flex flex-col justify-center w-[70vw]  m-[auto] mt-[3vh]">
         <LeaderboardDropdown/>
-        <div className="bg-black text-white mt-[5vh] px-[100px] h-screen flex flex-col font-['Terminus'] font-normal w-[100%] h-[70vh]">
+        <div className=" text-white mt-[5vh] px-[100px] h-screen flex flex-col font-['Terminus'] font-normal w-[100%] h-[70vh]">
             <div className="relative mt-[60px]">
-                <h2 className="absolute top-[-30px] left-[10px] text-[30px] bg-black p-2 text-[rgb(103,244,182)]">
+                {/* <h2 className="absolute top-[-30px] left-[10px] text-[30px] bg-black p-2 text-[rgb(103,244,182)]">
                     MY RANKING
-                </h2>
+                </h2> */}
                 <div className="border border-white p-6 mb-6">
                     <div className="flex gap-[32px]">
                         <div className="flex justify-center items-center w-[50%]">
@@ -270,6 +273,7 @@ const Leaderboard: React.FC = () => {
                     </table>
                 </div>
             </div>
+        </div>
         </div>
         </div>
     );

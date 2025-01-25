@@ -13,6 +13,7 @@ import { FindEntityPda, FindComponentPda, FindWorldPda } from "@magicblock-labs/
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
+import { MenuBar } from "@components/menu/MenuBar";
 import BuyInModal from "@components/buyInModal";
 import { Spinner } from "@components/util/Spinner";
 
@@ -313,7 +314,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
     }, []);
 
     return (
-        <div>
+        <div className="main-container">
+            <MenuBar />
             {isBuyInModalOpen && selectedGame && (
             <BuyInModal
                 setIsBuyInModalOpen={setIsBuyInModalOpen}
