@@ -36,7 +36,6 @@ export async function gameExecuteJoin(
   if (selectGameId.name == "loading") return;
   const gameInfo = selectGameId;
   let maxplayer = 20;
-  let foodcomponents = 32;
 
   const mapseed = "origin";
   const mapEntityPda = FindEntityPda({
@@ -57,27 +56,12 @@ export async function gameExecuteJoin(
   }
   if (map_size == 4000) {
       maxplayer = 20;
-      foodcomponents = 16 * 5;
   }
   else if (map_size == 6000) {
       maxplayer = 40;
-      foodcomponents = 36 * 5;
   }
   else if (map_size == 10000) {
       maxplayer = 100;
-      foodcomponents = 100 * 5;
-  }
-
-  const foodEntityPdas: PublicKey[] = [];
-
-  for (let i = 1; i < foodcomponents + 1; i++) {
-      const foodseed = 'food' + i.toString();
-      const foodEntityPda = FindEntityPda({
-          worldId: gameInfo.worldId,
-          entityId: new anchor.BN(0),
-          seed: stringToUint8Array(foodseed)
-      });
-      foodEntityPdas.push(foodEntityPda);
   }
 
   const playerEntityPdas: PublicKey[] = [];

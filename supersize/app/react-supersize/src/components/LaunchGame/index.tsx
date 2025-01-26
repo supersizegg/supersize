@@ -11,25 +11,25 @@ type launchProps = {
 
 const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
     const options = [
-        { id: 0, size: 4000, players: 20, cost: "1 SOL" },
-        { id: 1, size: 6000, players: 40, cost: "2.5 SOL" },
-        { id: 2, size: 10000, players: 100, cost: "4 SOL" },
+        { id: 0, size: 4000, players: 20, cost: "0.4 SOL" },
+        { id: 1, size: 6000, players: 45, cost: "1.0 SOL" },
+        { id: 2, size: 8000, players: 80, cost: "1.6 SOL" },
     ];
 
     const [selectedOption, setSelectedOption] = useState(0);
     const { publicKey } = useWallet();
-    const [selectedServer, setSelectedServer] = useState<string[]>([]);
-    const [selectedEndpoint, setSelectedEndpoint] = useState<string[]>([]);
+    const [selectedServer, setSelectedServer] = useState<string>("");
+    const [selectedEndpoint, setSelectedEndpoint] = useState<string>("");
 
     useEffect(() => {
-        if(selectedServer[0] === "Europe"){
-            setSelectedEndpoint([endpoints[0]]);
+        if(selectedServer === "Europe"){
+            setSelectedEndpoint(endpoints[0]);
         }   
-        if(selectedServer[0] === "America"){
-            setSelectedEndpoint([endpoints[1]]);
+        if(selectedServer === "America"){
+            setSelectedEndpoint(endpoints[1]);
         }
-        if(selectedServer[0] === "Asia"){
-            setSelectedEndpoint([endpoints[2]]);
+        if(selectedServer === "Asia"){
+            setSelectedEndpoint(endpoints[2]);
         }
     }, [selectedServer]);
 
@@ -63,7 +63,7 @@ const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
                     </div>
                     <br />
                     Select server:
-                    <Dropdown items={["Europe", "America", "Asia"]} onSelect={setSelectedServer} />
+                    <Dropdown items={["Europe", "America", "Asia"]} onSelect={setSelectedServer} selectedItem={selectedServer} />
 
                     <br />
                     <span className="opacity-70">

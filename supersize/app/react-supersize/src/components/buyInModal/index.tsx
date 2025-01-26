@@ -46,8 +46,15 @@ const BuyInModal: React.FC<BuyInModalProps> = ({ setIsBuyInModalOpen, activeGame
     setIsSubmitting(true);
     setStatusMessage("Submitting buy-in transaction...");
 
+    const retrievedUser = localStorage.getItem('user');
+    let myusername = "unnamed";
+    if(retrievedUser){
+        let myusername = JSON.parse(retrievedUser).name;
+        console.log('myusername', myusername);
+    }
+
     try {
-      const transaction = await gameExecuteJoin(engine, activeGame, buyIn, "unnamed", setMyPlayerEntityPda);
+      const transaction = await gameExecuteJoin(engine, activeGame, buyIn, myusername, setMyPlayerEntityPda);
 
       if (transaction) {
         setScreenSize({ width: activeGame.size, height: activeGame.size });

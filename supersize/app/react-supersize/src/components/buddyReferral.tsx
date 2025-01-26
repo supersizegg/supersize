@@ -12,7 +12,7 @@ const CopyLink: React.FC<ShareProps> = React.memo(({ baseUrl = 'https://supersiz
   const { publicKey } = useWallet();
 
   const [isCopying, setIsCopying] = useState(false) //Control loading state, prevent duplicate clicks
-  const [textContet, setTextContent] = useState("Copy referral link")
+  const [textContet, setTextContent] = useState("Copy")
   const [isHovered, setIsHovered] = useState(false);
   const shareLink = useMemo(() => {
     const accountName = member?.[0]?.account?.name
@@ -33,9 +33,9 @@ const CopyLink: React.FC<ShareProps> = React.memo(({ baseUrl = 'https://supersiz
         navigator.clipboard
           .writeText(shareLink)
           .then(() => {
-            setTextContent("Copied to clipboard");
+            setTextContent("Copied");
             setTimeout(() => {
-                setTextContent("Copy referral link");
+                setTextContent("Copy");
             }, 1000);
             console.log('URL copied to clipboard')
           })
@@ -54,7 +54,6 @@ const CopyLink: React.FC<ShareProps> = React.memo(({ baseUrl = 'https://supersiz
     <>
       {member && member?.length > 0 ? (
         <div
-          className="h-10 w-40 bg-transparent text-sm text-boost-secondary-yellow rounded-md font-avenir-bold active:scale-95 uppercase py-2 text-nowrap flex-grow sm:flex-none px-4"
           onClick={() => {if(!isCopying){handleCopyLink()}}}
           style={{marginBottom:"5px"}}>
         <div className="inline-flex items-center gap-2">

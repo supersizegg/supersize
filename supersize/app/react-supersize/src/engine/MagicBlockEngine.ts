@@ -81,7 +81,6 @@ export class MagicBlockEngine {
       new NodeWallet(this.sessionKey),
       { preflightCommitment: "processed" }
     );
-    console.log(`Endpoint for ephemeral RPC set to: ${this.endpointEphemRpc}`);
   }
 
   public getEndpointEphemRpc(): string {

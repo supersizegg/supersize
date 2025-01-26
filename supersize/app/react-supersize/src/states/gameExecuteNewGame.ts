@@ -92,9 +92,9 @@ export async function gameExecuteNewGame(
   }
 
   const gameParams = {
-    4000: { maxplayer: 20, foodcomponents: 80, cost: 1.0 },
-    6000: { maxplayer: 40, foodcomponents: 180, cost: 2.5 },
-    10000: { maxplayer: 100, foodcomponents: 500, cost: 4.0 },
+    4000: { maxplayer: 20, foodcomponents: 32, cost: 0.4 },
+    6000: { maxplayer: 45, foodcomponents: 72, cost: 1.0 },
+    8000: { maxplayer: 80, foodcomponents: 128, cost: 1.6 },
   }[game_size];
 
   if (!gameParams) {
@@ -176,6 +176,8 @@ export async function gameExecuteNewGame(
   if (!initNewWorld) {
     throw new Error("Failed to initialize the new world.");
   }
+
+  await addTransaction(setTransactions, initNewWorld.worldId.toString(), "new game id");
 
   const mapTxnId = "create-map";
   await addTransaction(setTransactions, mapTxnId, "pending");
@@ -669,14 +671,15 @@ export async function gameExecuteNewGame(
     size: game_size,
     image: tokenMetadata.image || `${process.env.PUBLIC_URL}/default.png`,
     token: tokenMetadata.name || "TOKEN",
-    base_buyin,
-    min_buyin,
-    max_buyin,
-    endpoint: "https://api.supersize.gg/game",
+    base_buyin: base_buyin,
+    min_buyin: min_buyin,
+    max_buyin: max_buyin,
+    endpoint: engine.getEndpointEphemRpc(),
     ping: 1000,
   };
 
-  setActiveGames([...activeGames, newGame]);
+  setActiveGames([newGame, ...activeGames]);
+  console.log('activeGames', activeGames, newGame);
 
   // Reclaim leftover SOL
   const reclaimSolTxnId = "reclaim-sol";
@@ -697,4 +700,6 @@ export async function gameExecuteNewGame(
     },
     setTransactions,
   );
+
+  await addTransaction(setTransactions, initNewWorld.worldId.toString(),"Success! new game id");
 }

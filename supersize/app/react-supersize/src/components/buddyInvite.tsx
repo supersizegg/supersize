@@ -43,7 +43,6 @@ const Invite = ({ textContent = "Sign Up" }: { textContent?: string; }) => {
     // Can make this a wallet connect button in this state
     return (
       <button
-        className="h-10 pt-1 bg-gradient-to-r from-gray-300 to-gray-400 text-boost-navy-background text-lg rounded-md font-avenir-bold active:scale-95 uppercase px-4 text-nowrap"
         onClick={() => null}
         disabled={true}>
         Wallet not connected
@@ -65,13 +64,12 @@ const Invite = ({ textContent = "Sign Up" }: { textContent?: string; }) => {
       <>
         {member && member?.length > 0 ? (
           <div
-            className="h-10 pt-1 bg-gradient-to-r from-gray-300 to-gray-400 text-boost-navy-background text-lg rounded-md font-avenir-bold active:scale-95 uppercase px-4 text-nowrap"
             onClick={() => null}>
             Already Joined
           </div>
         ) : (
           <div
-            className="h-10 pt-1 bg-boost-secondary-yellow text-boost-navy-background text-sm rounded-md font-avenir-bold active:scale-95 uppercase px-4 text-nowrap cursor-pointer"
+            className="cursor-pointer"
             onClick={() => {if(!isCreating){ handleInit()}}} style={{cursor: "pointer"}}>
             {textContent}
           </div>

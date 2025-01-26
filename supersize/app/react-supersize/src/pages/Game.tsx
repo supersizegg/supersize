@@ -177,15 +177,15 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
 
         if (gameInfo.size == 4000) {
             maxplayer = 20;
-            foodcomponents = 16 * 5;
+            foodcomponents = 16 * 2;
         }
         else if (gameInfo.size == 6000) {
-            maxplayer = 40;
-            foodcomponents = 36 * 5;
+            maxplayer = 45;
+            foodcomponents = 36 * 2;
         }
-        else if (gameInfo.size == 10000) {
-            maxplayer = 100;
-            foodcomponents = 100 * 5;
+        else if (gameInfo.size == 8000) {
+            maxplayer = 80;
+            foodcomponents = 64 * 2;
         }
         
         for (let i = 1; i < foodcomponents + 1; i++) {

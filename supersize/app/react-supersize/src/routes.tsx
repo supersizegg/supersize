@@ -18,7 +18,8 @@ const AppRoutes = () => {
     
     return (
         <Routes>
-            <Route index element={<Home selectedGame={selectedGame} setSelectedGame={setSelectedGame}  setMyPlayerEntityPda={setMyPlayerEntityPda} setScreenSize={setScreenSize}/>} />
+            <Route index element={<Home selectedGame={selectedGame} setSelectedGame={setSelectedGame}  setMyPlayerEntityPda={setMyPlayerEntityPda} setScreenSize={setScreenSize}
+            activeGames={activeGames} setActiveGames={setActiveGames}/>} />
             <Route path="/create-game" element={<CreateGame activeGames={activeGames} setActiveGames={setActiveGames} />} />
             {selectedGame && (
                 <Route path="/game" element={<Game gameInfo={selectedGame} screenSize={screenSize} myPlayerEntityPda={myPlayerEntityPda} />} />

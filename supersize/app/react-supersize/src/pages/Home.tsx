@@ -49,9 +49,11 @@ type homeProps = {
     setSelectedGame: (game: ActiveGame | null) => void;
     setMyPlayerEntityPda: (pda: PublicKey | null) => void;
     setScreenSize: (size: { width: number; height: number }) => void;
+    activeGames: ActiveGame[];
+    setActiveGames: (games: ActiveGame[]) => void;
 }
 
-const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSize}: homeProps) => {
+const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSize, activeGames, setActiveGames}: homeProps) => {
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
@@ -59,7 +61,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
     const [isBuyInModalOpen, setIsBuyInModalOpen] = useState(false);
 
     //set selected game to 0
-    const [activeGames, setActiveGames] = useState<ActiveGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => ({
+    const [activeGamesStrict, setActiveGamesStrict] = useState<ActiveGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => ({
         isLoaded: false,
         worldId: world.worldId,
         worldPda: world.worldPda,
@@ -79,7 +81,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(event.target.value);
     };
-    const handleEnterKeyPress = async () => {
+    const handleEnterKeyPress = async (inputValue: string) => {
         if (inputValue.trim() !== '') {
             try {
                 const worldId = {worldId: new anchor.BN(inputValue.trim())};
@@ -147,7 +149,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
                             newGameInfo.isLoaded = true;
                             setSelectedGame(newGameInfo);
-                            setActiveGames([newGameInfo, ...activeGames]);
+                            setActiveGamesStrict([newGameInfo, ...activeGamesStrict]);
                             break;
                         }
                     } catch (error) {
@@ -161,7 +163,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
     };        
     const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter') {
-            handleEnterKeyPress();
+            handleEnterKeyPress(inputValue);
         }
       };
 
@@ -185,7 +187,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
         return "unknown";
     }
 
-    const fetchAndLogMapData = async () => {
+    const fetchAndLogMapData = async (activeGamesList: ActiveGame[]) => {
         for (let i = 0; i < activeGamesList.length; i++) {
             engine.setEndpointEphemRpc(activeGamesList[i].endpoint);
             const mapseed = "origin";
@@ -271,9 +273,9 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
 
                     const pingTime = await pingEndpoint(activeGamesList[i].endpoint);
 
-                    setActiveGames((prevActiveGames) => {
+                    setActiveGamesStrict((prevActiveGames) => {
                         const updatedGames = prevActiveGames.map((game) =>
-                            game.worldId === activeGames[i].worldId &&
+                            game.worldId === activeGamesStrict[i].worldId &&
                                 game.worldPda.toString() ===
                                 activeGamesList[i].worldPda.toString()
                                 ? {
@@ -294,14 +296,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                         );
                         return updatedGames;
                     });
-                    console.log(activeGames)
+                    console.log(activeGamesStrict)
                     console.log(
-                        `No account info found for game ID ${activeGames[i].worldId}`,
+                        `No account info found for game ID ${activeGamesStrict[i].worldId}`,
                     );
                 }
             } catch (error) {
                 console.log(
-                    `Error fetching map data for game ID ${activeGames[i].worldId}:`,
+                    `Error fetching map data for game ID ${activeGamesStrict[i].worldId}:`,
                     error,
                 );
             }
@@ -309,8 +311,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
     };
 
     useEffect(() => {
-        fetchAndLogMapData();
+        fetchAndLogMapData(activeGamesStrict); 
     }, []);
+
+    useEffect(() => {
+        for (let i = 0; i < activeGames.length; i++) {
+            handleEnterKeyPress(activeGames[i].worldId.toString());
+        }
+    }, [activeGames]);
 
     return (
         <div>
@@ -353,10 +361,10 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                             </tr>
                         </thead>
                         <tbody>
-                            {activeGames.map((row, idx) => (
+                            {activeGamesStrict.map((row, idx) => (
                                 <tr key={idx}>
                                     <td>{row.isLoaded ? row.name : <Spinner />}</td>
-                                    <td>{getRegion(activeGames[idx].endpoint)}</td>
+                                    <td>{getRegion(activeGamesStrict[idx].endpoint)}</td>
                                     <td>{row.worldId.toString()}</td>
                                     <td>{row.isLoaded ? row.token : <Spinner />}</td>
                                     <td>{row.isLoaded ? row.min_buyin + " - " + row.max_buyin : <Spinner />}</td>
@@ -372,7 +380,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                                             className="btn-play"
                                             disabled={!row.isLoaded || row.ping < 0}
                                             onClick={() => {
-                                                engine.setEndpointEphemRpc(activeGames[idx].endpoint);
+                                                engine.setEndpointEphemRpc(activeGamesStrict[idx].endpoint);
                                                 setSelectedGame(row);
                                                 setIsBuyInModalOpen(true);
                                             }}

@@ -3,21 +3,14 @@ import './Dropdown.scss'; // Assuming you have a CSS file for styling
 
 type DropdownProps = {
     items: string[];
-    onSelect: (selectedItems: string[]) => void;
+    onSelect: (selectedItems: string) => void;
+    selectedItem: string;
 };
 
-const Dropdown: React.FC<DropdownProps> = ({ items, onSelect }) => {
-    const [selectedItems, setSelectedItems] = useState<string[]>([]);
+const Dropdown: React.FC<DropdownProps> = ({ items, onSelect, selectedItem }) => {
 
     const handleClick = (item: string) => {
-        setSelectedItems((prevSelectedItems) => {
-            const isSelected = prevSelectedItems.includes(item);
-            const newSelectedItems = isSelected
-                ? prevSelectedItems.filter((i) => i !== item)
-                : [...prevSelectedItems, item];
-            onSelect(newSelectedItems);
-            return newSelectedItems;
-        });
+        onSelect(item);
     };
 
     return (
@@ -25,10 +18,10 @@ const Dropdown: React.FC<DropdownProps> = ({ items, onSelect }) => {
             {items.map((item) => (
                 <div
                     key={item}
-                    className={`dropdown-item ${selectedItems.includes(item) ? 'selected' : ''}`}
+                    className={`dropdown-item ${selectedItem === item ? 'selected' : ''}`}
                     onClick={() => handleClick(item)}
                 >
-                    <span className={`indicator ${selectedItems.includes(item) ? 'green' : 'red'}`}></span>
+                    <span className={`indicator ${selectedItem === item ? 'green' : 'red'}`}></span>
                     {item}
                 </div>
             ))}

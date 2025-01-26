@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
 import { ActiveGame } from "@utils/types";
 import TxnModal from "@components/txnModal";
@@ -9,7 +9,7 @@ type gameProps = {
     userKey: string;
     activeGames: ActiveGame[];
     setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
-    selectedServer: string[];
+    selectedServer: string;
 };
 
 type FormData = [number, number, number, string, string, string];
@@ -24,8 +24,15 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
         "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp",
         "ffa",
     ]);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [transactions, setTransactions] = useState<{ id: string; status: string }[]>([]);
+
+    useEffect(() => {
+        const updatedFormData = [...formData] as FormData;
+        updatedFormData[0] = game_size;
+        setFormData(updatedFormData);
+    }, [game_size])
 
     const handleChange =
         (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,8 +56,8 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsModalOpen(true); // Open the modal
-        console.log(selectedServer[0]);
-        engine.setEndpointEphemRpc(selectedServer[0]);
+        console.log(selectedServer);
+        engine.setEndpointEphemRpc(selectedServer);
         gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGames, setActiveGames, setTransactions);
     };
 
