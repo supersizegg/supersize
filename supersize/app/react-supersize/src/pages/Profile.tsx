@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { MenuBar } from "@components/menu/MenuBar";
 import { MenuSession } from "@components/menu/MenuSession";
 import FooterLink from "@components/Footer";
 import "./Profile.scss";
@@ -31,7 +32,8 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<"general" | "quests" | "admin">("general");
 
   return (
-    <div className="profile-page">
+    <div className="profile-page main-container">
+      <MenuBar />
       <div className="profile-container">
         <div className="profile-tabs">
           <button className={activeTab === "general" ? "active" : ""} onClick={() => setActiveTab("general")}>
@@ -758,7 +760,7 @@ function AdminTab() {
   };
   return (
     <div className="admin-tab">
-      <div className="game-stack" style={{ overflowY: 'scroll', maxHeight: '700px', width: '600px' }}>
+      <div className="game-stack" style={{ overflowY: 'scroll', maxHeight: '70vh', width: '600px' }}>
         {myGames.map((row, idx) => (
           <CollapsiblePanel
             key={idx}

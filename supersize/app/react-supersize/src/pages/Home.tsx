@@ -13,6 +13,7 @@ import { FindEntityPda, FindComponentPda, FindWorldPda } from "@magicblock-labs/
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
+import { MenuBar } from "@components/menu/MenuBar";
 import BuyInModal from "@components/buyInModal";
 import { Spinner } from "@components/util/Spinner";
 
@@ -321,7 +322,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
     }, [activeGames]);
 
     return (
-        <div>
+        <div className="main-container">
+            <MenuBar />
             {isBuyInModalOpen && selectedGame && (
             <BuyInModal
                 setIsBuyInModalOpen={setIsBuyInModalOpen}
@@ -339,8 +341,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                     >          
                     </input>
                     <div className="header-buttons">
-                        <button className="btn-outlined btn-orange" style={{ backgroundColor: "black" }} disabled>How to Play</button>
-                        <button className="btn-outlined btn-green"  style={{ backgroundColor: "black" }}  onClick={() => navigate("/create-game")}>
+                        <button className="btn-outlined btn-orange" disabled>How to Play</button>
+                        <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
                             + Create Game
                         </button>
                     </div>

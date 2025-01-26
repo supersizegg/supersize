@@ -3,6 +3,8 @@ import LanchGame from "@components/LaunchGame";
 import EarnFees from "@components/EarnFees";
 import ModGame from "@components/ModGame";
 import { ActiveGame } from "@utils/types";
+import { MenuBar } from "@components/menu/MenuBar";
+import FooterLink from "@components/Footer";
 
 type CreateGameProps = {
     activeGames: ActiveGame[];
@@ -14,8 +16,10 @@ const CreateGame: React.FC<CreateGameProps> = ({ activeGames, setActiveGames }) 
     const [tab, setTab] = useState(0);
 
     return (
+        <div className="main-container">
+            <MenuBar />
         <div className="flex flex-col h-[84vh] w-full justify-center items-center">
-            <div className="h-[60vh] p-[2vw] w-[60vw] bg-black border border-[#272B30] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] rounded-[0.75rem]">
+            <div className="p-[2vw] w-[60vw] bg-black border border-[#272B30] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] rounded-[0.75rem]">
                 {tab === 0 ? (
                     <LanchGame activeGames={activeGames} setActiveGames={setActiveGames} />
                 ) : tab === 1 ? (
@@ -37,6 +41,8 @@ const CreateGame: React.FC<CreateGameProps> = ({ activeGames, setActiveGames }) 
                     );
                 })}
             </div>
+        </div>
+        <FooterLink />
         </div>
     );
 };

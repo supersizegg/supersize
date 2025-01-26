@@ -48,7 +48,7 @@ function App() {
                  {/*<WebGLBackground /> */}
                  <BrowserRouter>
                     <MagicBlockEngineProvider>
-                        <ConditionalMenuBar />
+                        {/* <ConditionalMenuBar /> */}
                         <AppRoutes />
                         <InitBuddyLinkWrapper />
                     </MagicBlockEngineProvider>

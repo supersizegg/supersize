@@ -136,7 +136,7 @@ const LeaderboardDropdown = () => {
             }}
         >
             <div
-                className={`p-2 w-fit bg-black text-white border border-gray-300 rounded-lg text-center flex whitespace-nowrap items-center ${isDropdownOpen ? "rounded-bl-none rounded-br-none" : ""}`}
+                className={`p-2 w-fit bg-[#2a2a2a] text-white border border-gray-300 rounded-lg text-center flex whitespace-nowrap items-center ${isDropdownOpen ? "rounded-bl-none rounded-br-none" : ""}`}
             >
                 <img
                     src={season.icon}
@@ -147,7 +147,7 @@ const LeaderboardDropdown = () => {
             </div>
 
             {isDropdownOpen && (
-                <div className="absolute top-full left-0 bg-black border border-gray-300 border-t-0 rounded-b-lg w-[120px] shadow-lg z-10">
+                <div className="absolute top-full left-0 bg-[#2a2a2a] border border-gray-300 border-t-0 rounded-b-lg w-[120px] shadow-lg z-10">
                     {leaderBoardOptions.current
                         .filter((option) => option.name !== season.name)
                         .map((option) => (
