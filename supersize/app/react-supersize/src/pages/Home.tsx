@@ -69,6 +69,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
+    const [isSearchingGame, setIsSearchingGame] = useState(false);
     const [inputValue, setInputValue] = useState<string>('');  
     const [isBuyInModalOpen, setIsBuyInModalOpen] = useState(false);
     const [selectedGamePlayerInfo, setSelectedGamePlayerInfo] = useState<PlayerInfo>({
@@ -109,8 +110,19 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
     };
     const handleEnterKeyPress = async (inputValue: string) => {
         if (inputValue.trim() !== '') {
+            setIsSearchingGame(true);
             try {
                 const worldId = {worldId: new anchor.BN(inputValue.trim())};
+
+                const alreadyExists = activeGamesStrict.some(
+                    (item) => item.activeGame.worldId.eq(worldId.worldId)
+                );
+                if (alreadyExists) {
+                    console.log("Game with this worldId already exists, skipping.");
+                    setIsSearchingGame(false);
+                    return;
+                }
+
                 const worldPda = await FindWorldPda( worldId);
                 const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:"", base_buyin: 0, min_buyin: 0, max_buyin: 0, endpoint: "", ping: 0, isLoaded: false}
                 for (const endpoint of endpoints) {
@@ -201,12 +213,12 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
                                 need_to_undelegate: need_to_undelegate,
                                 newplayerEntityPda: newplayerEntityPda
                             });
-                            setActiveGamesStrict([{activeGame: newGameInfo, playerInfo: {
+                            setActiveGamesStrict([...activeGamesStrict, {activeGame: newGameInfo, playerInfo: {
                                 playerStatus: playerStatus,
                                 need_to_delegate: need_to_delegate,
                                 need_to_undelegate: need_to_undelegate,
                                 newplayerEntityPda: newplayerEntityPda
-                            }}, ...activeGamesStrict]);
+                            }}]);
                             break;
                         }
                     } catch (error) {
@@ -215,6 +227,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
                 }
             } catch (error) {
                 console.error("Invalid PublicKey:", error);
+            } finally {
+                setIsSearchingGame(false);
             }
         }
     };        
@@ -455,12 +469,15 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
             )}
             <div className="home-container">
                 <div className="home-header">
-                    <input type="text" className="search-game-input" placeholder="Search Game"
-                                value={inputValue}
-                                onChange={handleInputChange}
-                                onKeyDown={handleKeyPress}
-                    >          
-                    </input>
+                    <div>
+                        <input type="text" className="search-game-input" placeholder="Search Game by ID"
+                                    value={inputValue}
+                                    onChange={handleInputChange}
+                                    onKeyDown={handleKeyPress}
+                        >          
+                        </input>
+                        { isSearchingGame && <Spinner /> }
+                    </div>
                     <div className="header-buttons">
                         <button className="btn-outlined btn-orange" disabled>How to Play</button>
                         <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
