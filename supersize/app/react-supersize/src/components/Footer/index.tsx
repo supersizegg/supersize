@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="footerContainer">
       <span className="footerCopyright">
-        © Supersize Inc. 2024
+        © Supersize Inc. 2025
       </span>
 
       <div className="footerIcons">

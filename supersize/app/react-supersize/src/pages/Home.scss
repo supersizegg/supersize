@@ -1,6 +1,7 @@
 .main-container {
   background-image: radial-gradient(56.1514% 56.1514% at 49.972% 38.959%, rgb(39, 54, 73) 0%, rgb(0, 0, 0) 100%);
   height: 100vh;
+  overflow-y: scroll;
 }
 
 .home-container {
@@ -67,6 +68,7 @@
 
   &.btn-green {
     color: #00d37d;
+    background: #70ca6d17;
   }
 }
 
