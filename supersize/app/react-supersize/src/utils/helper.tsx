@@ -4,6 +4,13 @@ import {Blob } from "@utils/types";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import * as crypto from "crypto-js";
 import * as anchor from "@coral-xyz/anchor";
+import { MagicBlockEngine } from "@engine/MagicBlockEngine";
+import { playerFetchOnChain } from "@states/gameFetch";
+import { playerFetchOnEphem } from "@states/gameFetch";
+import { FindEntityPda } from "@magicblock-labs/bolt-sdk";
+import { COMPONENT_PLAYER_ID } from "@states/gamePrograms";
+import { FindComponentPda } from "@magicblock-labs/bolt-sdk";
+import { BN } from "@coral-xyz/anchor";
 
 export const stringToUint8Array = (str: string): Uint8Array => {
     return new TextEncoder().encode(str);
@@ -313,4 +320,132 @@ export const decodeFood = (data: Uint8Array) => {
     const y = (packed >> 14) & 0x3FFF;
     const size = (packed >> 28) & 0x0F;
     return { x, y, size };
+};
+
+export const getMyPlayerStatus = async (
+    engine: MagicBlockEngine,
+    worldId: BN,
+    maxplayer: number,
+): Promise<{
+    playerStatus: string;
+    need_to_delegate: boolean;
+    need_to_undelegate: boolean;
+    newplayerEntityPda: PublicKey;
+    activeplayers: number;
+} | "error"> => {
+  const playerEntityPdas: PublicKey[] = [];
+  let newplayerEntityPda: PublicKey | null = null;
+  let playerStatus = "new_player";
+  let need_to_undelegate = false;
+  let need_to_delegate = false; 
+  let activeplayers = 0;
+  for (let i = 1; i < maxplayer + 1; i++) {
+    const playerentityseed = "player" + i.toString();
+
+    const playerEntityPda = FindEntityPda({
+      worldId: worldId,
+      entityId: new anchor.BN(0),
+      seed: stringToUint8Array(playerentityseed),
+    });
+    playerEntityPdas.push(playerEntityPda);
+
+    const playersComponentPda = FindComponentPda({
+      componentId: COMPONENT_PLAYER_ID,
+      entity: playerEntityPda,
+    });
+
+    const playersacc = await engine.getChainAccountInfo(playersComponentPda);
+    const playersParsedData = await playerFetchOnChain(engine, playersComponentPda);
+    const playersParsedDataER = await playerFetchOnEphem(engine, playersComponentPda);
+
+    if(! playersacc ) continue;
+    if(! playersParsedData) continue;
+
+    if(playersParsedData.authority != null) {
+        activeplayers = activeplayers + 1;
+    }
+
+    if (playersParsedData.authority == null) {
+        if( newplayerEntityPda == null){
+            newplayerEntityPda = playerEntityPda;
+            if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+                need_to_undelegate = true;
+                need_to_delegate = false;
+            }else{
+                need_to_undelegate = false;
+                need_to_delegate = false;
+            }
+        }
+    } 
+    else if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
+
+        if(playersParsedData.mass.toNumber() == 0 && playersParsedData.score == 0){
+            playerStatus = "bought_in";
+        }else if(playersParsedDataER && 
+            playersParsedDataER.authority &&
+            playersParsedDataER.authority.toString() == engine.getSessionPayer().toString()
+            && playersParsedDataER.mass.toNumber() == 0
+            && playersParsedDataER.score !== 0
+        ){
+            playerStatus = "cashing_out";
+        }
+        else{ 
+            playerStatus = "in_game";
+        }
+
+        if(playerStatus == "bought_in" || playerStatus == "in_game"){
+            if (playersacc.owner.toString() !== "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+                need_to_delegate = true;
+                need_to_undelegate = false;
+            }else{
+                need_to_delegate = false;
+                need_to_undelegate = false;
+            }
+        }
+        if(playerStatus == "cashing_out"){
+            if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+                need_to_undelegate = true;
+                need_to_delegate = false;
+            }else{
+                need_to_undelegate = false;
+                need_to_delegate = false;
+            }
+        }
+        newplayerEntityPda = playerEntityPda;
+    }
+    else if ( 
+        playersParsedDataER && 
+        playersParsedDataER.authority == null &&
+        playersParsedData.authority !== null &&
+        playersParsedDataER.x == 50000 &&
+        playersParsedDataER.y == 50000 &&
+        playersParsedDataER.score == 0 &&
+        newplayerEntityPda == null
+      ) {
+        const startTime = playersParsedDataER.joinTime.toNumber() * 1000;
+        const currentTime = Date.now();
+        const elapsedTime = currentTime - startTime;
+        if (elapsedTime >= 10000) {
+          newplayerEntityPda = playerEntityPda;
+        if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+            need_to_undelegate = true;
+            need_to_delegate = false;
+        }else{
+            need_to_undelegate = false;
+            need_to_delegate = false;
+        }
+        }
+    }
+    else{
+        continue;
+    }
+    }
+    if(newplayerEntityPda == null) return "error";
+    return {
+        playerStatus: playerStatus,
+        need_to_delegate: need_to_delegate,
+        need_to_undelegate: need_to_undelegate,
+        newplayerEntityPda: newplayerEntityPda,
+        activeplayers: activeplayers,
+    };
 };

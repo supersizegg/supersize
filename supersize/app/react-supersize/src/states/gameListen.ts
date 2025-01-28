@@ -76,13 +76,11 @@ export function updateMyPlayer(
   setCurrentPlayer: (player: Blob) => void,
   gameEnded: number,
   setGameEnded: (gameEnded: number) => void,
-  isJoining: boolean,
 ) {
   //console.log("updateMyPlayer", player); 
       if (
           Math.sqrt(player.mass) == 0 &&
           player.score == 0.0 &&
-          !isJoining &&
           gameEnded == 0
       ) {
           const startTime = player.joinTime.toNumber() * 1000;
@@ -111,7 +109,6 @@ export function updateMyPlayer(
       if (
           Math.sqrt(player.mass) == 0 &&
           player.score != 0.0 &&
-          !isJoining &&
           gameEnded == 0
       ) {
           setGameEnded(2);
@@ -180,11 +177,10 @@ export function handleMyPlayerComponentChange(
   setCurrentPlayer: (player: Blob) => void,
   gameEnded: number,
   setGameEnded: (gameEnded: number) => void,
-  isJoining: boolean,
 ) {
   const coder = getComponentPlayerOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("player", accountInfo.data);
-  updateMyPlayer(parsedData, setCurrentPlayer, gameEnded, setGameEnded, isJoining);
+  updateMyPlayer(parsedData, setCurrentPlayer, gameEnded, setGameEnded);
 }
 
 // Subscribe to the game state
@@ -195,7 +191,6 @@ export function subscribeToGame(
   entityMatch: PublicKey,
   currentPlayerEntity: PublicKey,
   currentPlayer: Blob,
-  isJoining: boolean,
   gameEnded: number,
   foodComponentSubscriptionId: any,
   playersComponentSubscriptionId: any,
@@ -272,6 +267,6 @@ export function subscribeToGame(
       return;
     }
     //const coder = getComponentPlayerOnEphem(engine).coder;
-    handleMyPlayerComponentChange(accountInfo, engine, setCurrentPlayer, gameEnded, setGameEnded, isJoining);
+    handleMyPlayerComponentChange(accountInfo, engine, setCurrentPlayer, gameEnded, setGameEnded);
   });
 }

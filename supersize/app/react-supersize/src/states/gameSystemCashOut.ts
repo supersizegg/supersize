@@ -22,7 +22,6 @@ export async function gameSystemCashOut(
   gameInfo: ActiveGame,
   anteroomEntity: PublicKey,
   currentPlayerEntity: PublicKey,
-  currentPlayer: Blob,
 ) {
     const mapseed = "origin"; 
     const mapEntityPda = FindEntityPda({
@@ -59,9 +58,6 @@ export async function gameSystemCashOut(
         console.log('error', error);
     }
 
-    const playerCashout = currentPlayer?.score ?? 0;
-    const playerBuyIn = currentPlayer?.buyIn ?? 0;
-    const playerMass = currentPlayer?.mass ?? 0;
     //const myReferrer = currentPlayer?.referrerTokenAccount;
     
     const anteComponentPda = FindComponentPda({
@@ -72,8 +68,8 @@ export async function gameSystemCashOut(
 
     console.log('cashing out', anteComponentPda.toString(), myplayerComponent.toString());
 
-    console.log("anteAccount", anteAccount, playerMass == 0 && playerCashout > 0);
-    if (anteAccount && playerMass == 0 && playerCashout > 0) {
+    console.log("anteAccount", anteAccount);
+    if (anteAccount) {
         console.log("anteAccount", anteAccount);
         const vault_token_account = anteAccount.vaultTokenAccount;
         const mint_of_token_being_sent = anteAccount.token;
@@ -88,6 +84,7 @@ export async function gameSystemCashOut(
 
         const { name } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
 
+        /*
         try {
             await axios.post('https://supersize.lewisarnsten.workers.dev/update-wins', {
                 walletAddress: engine.getWalletPayer().toString(),
@@ -96,7 +93,7 @@ export async function gameSystemCashOut(
             });
         } catch (error) {
             console.log('error', error);
-        }
+        } */
 
         const usertokenAccountInfo = await getAssociatedTokenAddress(
             mint_of_token_being_sent,

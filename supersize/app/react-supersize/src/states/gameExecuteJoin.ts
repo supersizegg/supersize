@@ -22,15 +22,23 @@ type GameExecuteJoinResult = {
   error?: string;
 };
 
+type PlayerInfo = {
+    playerStatus: string;
+    need_to_delegate: boolean;
+    need_to_undelegate: boolean;
+    newplayerEntityPda: PublicKey;
+}
+
 export async function gameExecuteJoin(
   engine: MagicBlockEngine,
   selectGameId: ActiveGame,
   buyIn: number,
   playerName: string,
+  selectedGamePlayerInfo: PlayerInfo,
   setMyPlayerEntityPda: (pda: PublicKey | null) => void,
 ): Promise<GameExecuteJoinResult> {
   if (!selectGameId || selectGameId.name === "loading") {
-    return { success: false, error: "Game not loaded or invalid game ID" };
+    return { success: false, error: "Game not loaded or invalid game ID", message: "error" };
   }
   const gameInfo = selectGameId;
   let maxplayer = 20;
@@ -62,108 +70,11 @@ export async function gameExecuteJoin(
       maxplayer = 80;
   }
 
-  const playerEntityPdas: PublicKey[] = [];
-  let newplayerEntityPda: PublicKey | null = null;
-  let myPlayerId = "";
-  let myPlayerStatus = "new_player";
-  let need_to_undelegate = false;
-
-  for (let i = 1; i < maxplayer + 1; i++) {
-    const playerentityseed = "player" + i.toString();
-    const playerEntityPda = FindEntityPda({
-      worldId: gameInfo.worldId,
-      entityId: new anchor.BN(0),
-      seed: stringToUint8Array(playerentityseed),
-    });
-    playerEntityPdas.push(playerEntityPda);
-    const playersComponentPda = FindComponentPda({
-      componentId: COMPONENT_PLAYER_ID,
-      entity: playerEntityPda,
-    });
-
-    const playersacc = await engine.getChainAccountInfo(playersComponentPda);
-    const playersaccER = await engine.getEphemAccountInfo(playersComponentPda);
-    const playersParsedData = await playerFetchOnChain(engine, playersComponentPda);
-
-    if (playersacc && playersParsedData) {
-      if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
-        if (playersParsedData.authority !== null) {
-          const playersParsedDataER = await playerFetchOnEphem(engine, playersComponentPda);
-          if (playersaccER && playersParsedDataER) {
-            if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
-              if (playersParsedDataER.authority) {
-                if (playersParsedDataER.authority.toString() == engine.getSessionPayer().toString()) {
-                  myPlayerStatus = "resume_session";
-                  newplayerEntityPda = playerEntityPda;
-                  myPlayerId = playerentityseed;
-                  need_to_undelegate = false;
-                } else {
-                  myPlayerStatus = "rejoin_session";
-                  newplayerEntityPda = playerEntityPda;
-                  myPlayerId = playerentityseed;
-                  need_to_undelegate = false;
-                }
-              } else {
-                myPlayerStatus = "rejoin_session";
-                newplayerEntityPda = playerEntityPda;
-                myPlayerId = playerentityseed;
-                need_to_undelegate = false;
-              }
-            } else {
-              if (
-                playersParsedDataER.authority == null &&
-                playersParsedData.authority !== null &&
-                playersParsedDataER.x == 50000 &&
-                playersParsedDataER.y == 50000 &&
-                playersParsedDataER.score == 0 &&
-                newplayerEntityPda == null
-              ) {
-                const startTime = playersParsedDataER.joinTime.toNumber() * 1000;
-                const currentTime = Date.now();
-                const elapsedTime = currentTime - startTime;
-                if (elapsedTime >= 10000) {
-                  newplayerEntityPda = playerEntityPda;
-                  myPlayerId = playerentityseed;
-                  need_to_undelegate = true;
-                }
-              }
-            }
-          } else if (playersParsedData.authority !== null) {
-            if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
-              myPlayerStatus = "rejoin_session";
-              newplayerEntityPda = playerEntityPda;
-              myPlayerId = playerentityseed;
-              need_to_undelegate = false;
-            }
-          }
-        }
-      } else if (playersParsedData.authority == null && newplayerEntityPda == null) {
-        newplayerEntityPda = playerEntityPda;
-        myPlayerId = playerentityseed;
-        need_to_undelegate = false;
-      } else {
-        if (playersParsedData.authority !== null) {
-          if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
-            myPlayerStatus = "rejoin_undelegated";
-            newplayerEntityPda = playerEntityPda;
-            myPlayerId = playerentityseed;
-            need_to_undelegate = false;
-          }
-        }
-      }
-    } else {
-      if (newplayerEntityPda == null) {
-        newplayerEntityPda = playerEntityPda;
-        myPlayerId = playerentityseed;
-        need_to_undelegate = false;
-      }
-    }
-  }
-
-  console.log("my player", myPlayerId, myPlayerStatus);
+  let newplayerEntityPda = selectedGamePlayerInfo.newplayerEntityPda;
+  let need_to_undelegate = selectedGamePlayerInfo.need_to_undelegate;
 
   if (!newplayerEntityPda) {
-    return { success: false, error: "No available player slots in this game" };
+    return { success: false, error: "No available player slots in this game", message: "error" };
   }
 
   const playerComponentPda = FindComponentPda({
@@ -185,7 +96,7 @@ export async function gameExecuteJoin(
       const playerundelsignature = await engine.processSessionEphemTransaction(
         "undelPlayer:" + playerComponentPda.toString(),
         undeltx,
-      ); //providerEphemeralRollup.current.sendAndConfirm(undeltx, [], { skipPreflight: false });
+      ); 
       console.log("undelegate", playerundelsignature);
     } catch (error) {
       console.log("Error undelegating:", error);
@@ -208,7 +119,7 @@ export async function gameExecuteJoin(
   let mint_of_token_being_sent = new PublicKey(0);
 
   if (!anteParsedData || !anteParsedData.vaultTokenAccount || !anteParsedData.token) {
-    return { success: false, error: "Missing or invalid ante data" };
+    return { success: false, error: "Missing or invalid ante data", message: "error" };
   }
 
   mint_of_token_being_sent = anteParsedData.token;
@@ -242,25 +153,30 @@ export async function gameExecuteJoin(
   }
 
   try {
-    await gameSystemBuyIn(engine, selectGameId, newplayerEntityPda, anteEntityPda, myPlayerStatus, buyIn);
+    let buyInResult = await gameSystemBuyIn(engine, selectGameId, newplayerEntityPda, anteEntityPda, buyIn);
+    if (!buyInResult.success) {
+        return { success: false, error: buyInResult.error, message: "buyin_failed" };
+    }
   } catch (buyInError) {
     console.error("Buy-in error:", buyInError);
-    return { success: false, error: `Buy-in transaction failed: ${(buyInError as Error)?.message}` };
+    return { success: false, error: `Buy-in transaction failed: ${(buyInError as Error)?.message}`, message: "buyin_failed" };
   }
-
+ 
   try {
     const joinsig = await gameSystemJoin(engine, selectGameId, newplayerEntityPda, mapEntityPda, playerName);
     setMyPlayerEntityPda(newplayerEntityPda);
-    return { success: true, transactionSignature: joinsig };
+    if(joinsig){
+      return { success: true, transactionSignature: joinsig };
+    }
+    else{
+      return { success: false, error: `Error joining the game`, message: "join_failed" };
+    }
   } catch (joinError) {
     console.log("error", joinError);
-    if (myPlayerStatus == "resume_session") {
-      setMyPlayerEntityPda(newplayerEntityPda);
-      return { success: true, message: "resume_session" };
-    }
     return {
       success: false,
       error: `Error joining the game: ${(joinError as Error)?.message}`,
-    };
-  }
+      message: "join_failed"
+    }; 
+  } 
 }

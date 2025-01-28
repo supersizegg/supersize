@@ -13,14 +13,20 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getMemberPDA } from "buddy.link";
 import { anteroomFetchOnChain } from "./gameFetch";
 
+type GameExecuteBuyInResult = {
+    success: boolean;
+    message?: string;
+    transactionSignature?: string;
+    error?: string;
+  };
+
 export async function gameSystemBuyIn(
   engine: MagicBlockEngine,
   gameInfo: ActiveGame,
   newplayerEntityPda: PublicKey,
   anteEntityPda: PublicKey,
-  myPlayerStatus: string,
   buyIn: number,
-) {
+): Promise<GameExecuteBuyInResult> {
     const playerComponentPda = FindComponentPda({
         componentId: COMPONENT_PLAYER_ID,
         entity: newplayerEntityPda,
@@ -48,8 +54,6 @@ export async function gameSystemBuyIn(
         );
         payout_token_account = usertokenAccountInfo;
     }
-
-    if (myPlayerStatus !== "rejoin_undelegated" && myPlayerStatus !== "resume_session" && myPlayerStatus !== "rejoin_session") {
 
         const [referralTokenAccountOwnerPda] = PublicKey.findProgramAddressSync(
             [Buffer.from("token_account_owner_pda"), mint_of_token_being_sent.toBuffer()],
@@ -150,8 +154,7 @@ export async function gameSystemBuyIn(
             extraAccounts: extraAccounts,
         });
         combinedTx.add(applyBuyInSystem.transaction);
-    }
-    if (myPlayerStatus !== "resume_session") {
+    
         try {
             const playerdelegateIx = createDelegateInstruction({
                 entity: newplayerEntityPda,
@@ -162,12 +165,9 @@ export async function gameSystemBuyIn(
             combinedTx.add(playerdelegateIx);
             const playerdelsignature = await engine.processWalletTransaction("playerdelegate", combinedTx);
             console.log(`buy in signature: ${playerdelsignature}`);
+            return { success: true, transactionSignature: playerdelsignature };
         } catch (error) {
             console.log('Error buying in:', error);
-            //setTransactionError("Buy in failed, please retry");
-            //setIsSubmitting(false);
-            //setIsJoining(false);
-            return;
+            return { success: false, error: `Error buying in: ${(error as Error)?.message}`, message: "error" };
         }
-    }
 }

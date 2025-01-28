@@ -21,16 +21,16 @@ import "./game.scss";
 type gameProps = {
     gameInfo: ActiveGame;
     myPlayerEntityPda: PublicKey | null;
-    screenSize: { width: number; height: number };
 };
 
 
-const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
+const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
-    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-    const [isMouseDown, setIsMouseDown] = useState(false);
+    const animationFrame = useRef(0);
+
+    const [target, setTarget] = useState({ x: 0, y: 0, boost: false });
 
     const [currentPlayer, setCurrentPlayer] = useState<Blob | null>(null);
 
@@ -46,8 +46,6 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
     const playerRemovalTimeRef = useRef<BN | null>(null);
     const [playerExiting, setPlayerExiting] = useState(false);
     const [gameEnded, setGameEnded] = useState(0);
-    //const [isJoining, setIsJoining] = useState(false);
-    const isJoining = false;
     const [cashoutTx, setCashoutTx] = useState<string | null>(null);
     
     const [leaderboard, setLeaderboard] = useState<Blob[]>([]);
@@ -61,6 +59,18 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
     const foodComponentSubscriptionId = useRef<number[] | null>([]);
     const myplayerComponentSubscriptionId = useRef<number | null>(null);
     const mapComponentSubscriptionId= useRef<number | null>(null);
+
+    const currentPlayerRef = useRef<Blob | null>(null);
+    const currentMousePositionRef = useRef<{ x: number; y: number }>({x: 0, y: 0});
+    const lastMousePosition = useRef({ x: 0, y: 0 });
+    const currentIsMouseDownRef = useRef<boolean>(false);
+
+    useEffect(() => {
+        if(currentPlayer?.removal){
+            playerRemovalTimeRef.current = currentPlayer.removal;
+        }
+        currentPlayerRef.current = currentPlayer;
+    }, [currentPlayer]);
 
     const handleExitClick = () => {
         if (!currentPlayerEntity.current) {
@@ -91,7 +101,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                 });
                 const playerData = await playerFetchOnEphem(engine, myplayerComponent);
                 if (playerData) {
-                    updateMyPlayer(playerData, setCurrentPlayer, gameEnded, setGameEnded, isJoining);
+                    updateMyPlayer(playerData, setCurrentPlayer, gameEnded, setGameEnded);
                 }
             }
         });
@@ -237,7 +247,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
         if (!entityMatch.current || !currentPlayerEntity.current) return;
         subscribeToGame(engine, 
             foodEntities.current, playerEntities.current, entityMatch.current, currentPlayerEntity.current, 
-            emptyPlayer, isJoining, gameEnded,
+            emptyPlayer, gameEnded,
             foodComponentSubscriptionId, playersComponentSubscriptionId, myplayerComponentSubscriptionId, 
             setAllPlayers, setCurrentPlayer, setGameEnded, setAllFood, setFoodListLen);
     }, [engine, gameInfo]);
@@ -258,12 +268,17 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                 setPlayers([]);
                 setAllFood([]);
                 setFoodListLen([]);
-
-                const cashoutTx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current, currentPlayer);
-                if (cashoutTx){
-                    setCashoutTx(cashoutTx);
-                    currentPlayerEntity.current = null;
-                }else{
+                try{
+                    const cashoutTx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current)
+                    console.log('cashoutTx', cashoutTx);
+                    if (cashoutTx){
+                        setCashoutTx(cashoutTx);
+                        currentPlayerEntity.current = null;
+                    }else{
+                        setCashoutTx("error");
+                    }
+                }catch(error){
+                    console.log('error', error);
                     setCashoutTx("error");
                 }
             }else{
@@ -301,23 +316,16 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
     }
 
     useEffect(() => {
-        if(currentPlayer?.removal){
-            playerRemovalTimeRef.current = currentPlayer.removal;
-        }
-    }, [currentPlayer]);
-
-    useEffect(() => {
         endGame();
     }, [gameEnded]);
 
     useEffect(() => {
-
         if(currentPlayer && allFood){
             const visibleFood = allFood.map((foodList) => {
                 return foodList.reduce<Food[]>((innerAcc, foodItem) => {
                     const diffX = foodItem.x - currentPlayer.x;
                     const diffY = foodItem.y - currentPlayer.y;
-                    if (Math.abs(diffX) <= screenSize.width / 2 && Math.abs(diffY) <= screenSize.height / 2) {
+                    if (Math.abs(diffX) <= ((window.innerWidth / 2) + 100) && Math.abs(diffY) <= ((window.innerHeight / 2) + 100)) {
                         innerAcc.push({
                             x: foodItem.x,
                             y: foodItem.y, 
@@ -327,22 +335,22 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                     return innerAcc;
                 }, []);
             });
-        //.log(visibleFood);
         setVisibleFood(visibleFood);
         }
-    }, [currentPlayer, allFood, screenSize]);
+    }, [currentPlayer, allFood]);
 
     useEffect(() => {
+
         const handleMouseMove = (event: MouseEvent) => {
-            setMousePosition({ x: event.clientX, y: event.clientY });
+            lastMousePosition.current = { x: event.clientX, y: event.clientY };
         };
 
         const handleMouseDown = () => {
-            setIsMouseDown(true);
+            currentIsMouseDownRef.current = true;
         };
 
         const handleMouseUp = () => {
-            setIsMouseDown(false);
+            currentIsMouseDownRef.current = false;
         };
         console.log('Set mouse listeners');
         window.addEventListener("mousedown", handleMouseDown);
@@ -352,37 +360,34 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
         return () => {
             console.log('Remove mouse listeners');
             window.removeEventListener("mousemove", handleMouseMove);
+            cancelAnimationFrame(animationFrame.current);
             window.removeEventListener("mousedown", handleMouseDown);
             window.removeEventListener("mouseup", handleMouseUp);
         };
         
-    }, [gameInfo]);
+    }, []);
+
 
     useEffect(() => {
-        function translateLargerRectangle() {
-            const largerRectangle = document.getElementsByClassName(
-                "game",
-            )[0] as HTMLElement;
-            const smallerRectangle = document.getElementsByClassName(
-                "gameWrapper",
-            )[0] as HTMLElement;
+        const smoothUpdate = () => {
 
-            if (largerRectangle && smallerRectangle) {
-                const widthLarger = screenSize.width * scale;
-                const heightLarger = screenSize.height * scale;
-                const widthSmaller = smallerRectangle.offsetWidth;
-                const heightSmaller = smallerRectangle.offsetHeight;
-                const deltaX = widthSmaller / 2 - widthLarger / 2;
-                const deltaY = heightSmaller / 2 - heightLarger / 2;
-                largerRectangle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-            } else {
-                console.error(
-                    'Elements with class name "gameWrapper" or "game" not found.',
-                );
+            const dx = (lastMousePosition.current.x - currentMousePositionRef.current.x) * 0.03;
+            const dy = (lastMousePosition.current.y - currentMousePositionRef.current.y) * 0.03;
+
+            const newMousePosition = {
+                    x: currentMousePositionRef.current.x + dx,
+                    y: currentMousePositionRef.current.y + dy
             }
-        }
-        translateLargerRectangle();
-    }, [gameInfo, screenSize]);
+
+            currentMousePositionRef.current = newMousePosition;
+
+            animationFrame.current = requestAnimationFrame(smoothUpdate);
+        };
+
+        animationFrame.current = requestAnimationFrame(smoothUpdate);
+
+        return () => cancelAnimationFrame(animationFrame.current);
+    }, []);
 
     useEffect(() => {
         let status: string = '<span class="title">Leaderboard</span>';
@@ -413,7 +418,7 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
         if (statusElement) {
             statusElement.innerHTML = status;
         }
-    }, [gameInfo, leaderboard, currentPlayer]);
+    }, [gameInfo, leaderboard]);
 
 
     useEffect(() => {
@@ -437,8 +442,8 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                             currentPlayer.authority.toString() !=
                             playerx.authority.toString()
                         ) {
-                            const halfWidth = screenSize.width / 2;
-                            const halfHeight = screenSize.height / 2;
+                            const halfWidth = (window.innerWidth / 2) + 100;
+                            const halfHeight = (window.innerHeight / 2) + 100;
                             const diffX = playerx.x - currentPlayer.x;
                             const diffY = playerx.y - currentPlayer.y;
 
@@ -486,14 +491,29 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
     useEffect(() => {
 
         const intervalId = setInterval(() => {
-            if (currentPlayerEntity.current && currentPlayer && entityMatch.current  && foodEntities.current && playerEntities.current && players && foodListLen) {
-                gameSystemMove(engine, gameInfo, currentPlayerEntity.current, currentPlayer, entityMatch.current, foodEntities.current, playerEntities.current, players, foodListLen, mousePosition.x, mousePosition.y, isMouseDown, screenSize); 
+            if (currentPlayerEntity.current && currentPlayerRef.current && entityMatch.current  && foodEntities.current && playerEntities.current && players && foodListLen) {
+                gameSystemMove(engine, gameInfo, currentPlayerEntity.current, currentPlayerRef.current, entityMatch.current, foodEntities.current, playerEntities.current, players, foodListLen, currentMousePositionRef.current.x, currentMousePositionRef.current.y, currentIsMouseDownRef.current, {width: gameInfo.size, height: gameInfo.size}); 
+                    const newX = Math.max(
+                        0,
+                        Math.min(
+                            gameInfo.size,
+                            Math.floor(currentPlayerRef.current.x + currentMousePositionRef.current.x- window.innerWidth / 2),
+                        ), 
+                    );
+                    const newY = Math.max(
+                        0,
+                        Math.min(
+                            gameInfo.size,
+                            Math.floor(currentPlayerRef.current.y + currentMousePositionRef.current.y - window.innerHeight / 2),
+                        ),
+                    );
+                    setTarget({ x: newX, y: newY, boost: currentIsMouseDownRef.current });
             }  
-        }, 30);
+        }, 30); //testing 30-50
 
         return () => clearInterval(intervalId);
      
-    }, [gameInfo, currentPlayer]);
+    }, []);
 
     return (
         <div className="gameWrapper w-screen h-screen overflow-hidden">
@@ -540,19 +560,20 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
             </div>
 
             <div
-                className="game"
-                style={{
+               className="game"
+               style={{
                     display: "block",
-                    height: screenSize.height * scale,
-                    width: screenSize.width * scale,
+                    height: "100%",
+                    width: "100%",
                 }}
             >
                 <GameComponent
                     players={players}
                     visibleFood={visibleFood.flat()}
                     currentPlayer={currentPlayer}
-                    screenSize={screenSize}
-                    scale={scale}
+                    screenSize={{width: window.innerWidth, height: window.innerHeight}}
+                    newTarget={target}
+                    gameSize={gameInfo.size}
                 />
             </div>
 
@@ -640,7 +661,10 @@ const Game = ({gameInfo, screenSize, myPlayerEntityPda}: gameProps) => {
                                         ) : (
                                             <button
                                                 className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
-                                                onClick={() => {if(anteroomEntity.current && currentPlayerEntity.current && currentPlayer) {gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current, currentPlayer)}}}
+                                                onClick={() => {if(anteroomEntity.current && currentPlayerEntity.current && currentPlayer) {gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current).catch((error) => {
+                                                    console.log('error', error);
+                                                    setCashoutTx("error");
+                                                })}}}
                                             >
                                                 Retry
                                             </button>

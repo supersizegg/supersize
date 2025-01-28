@@ -8,9 +8,9 @@ import "./Home.scss";
 import { ActiveGame } from "@utils/types";
 import { activeGamesList } from "@utils/constants";
 
-import { fetchTokenMetadata } from "@utils/helper";
-import { FindEntityPda, FindComponentPda, FindWorldPda } from "@magicblock-labs/bolt-sdk";
-import { PublicKey } from "@solana/web3.js";
+import { fetchTokenMetadata, getMyPlayerStatus } from "@utils/helper";
+import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
 import { MenuBar } from "@components/menu/MenuBar";
@@ -26,6 +26,8 @@ import { anteroomFetchOnChain, mapFetchOnChain, mapFetchOnEphem, playerFetchOnCh
 import { useMagicBlockEngine } from "../engine/MagicBlockEngineProvider";
 import {endpoints } from "@utils/constants";
 import { stringToUint8Array } from "@utils/helper";
+import { gameSystemJoin } from "@states/gameSystemJoin";
+import { gameSystemCashOut } from "@states/gameSystemCashOut";
 
 /*
 interface GameRow {
@@ -37,6 +39,16 @@ interface GameRow {
     ping: number;
 }
 */
+type PlayerInfo = {
+    playerStatus: string;
+    need_to_delegate: boolean;
+    need_to_undelegate: boolean;
+    newplayerEntityPda: PublicKey;
+}
+type FetchedGame = {
+    activeGame: ActiveGame;
+    playerInfo: PlayerInfo;
+}
 
 function getPingColor(ping: number) {
     if (ping < 0) return "red";
@@ -49,34 +61,47 @@ type homeProps = {
     selectedGame: ActiveGame | null;
     setSelectedGame: (game: ActiveGame | null) => void;
     setMyPlayerEntityPda: (pda: PublicKey | null) => void;
-    setScreenSize: (size: { width: number; height: number }) => void;
     activeGames: ActiveGame[];
     setActiveGames: (games: ActiveGame[]) => void;
 }
 
-const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSize, activeGames, setActiveGames}: homeProps) => {
+const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames, setActiveGames}: homeProps) => {
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
 
     const [inputValue, setInputValue] = useState<string>('');  
     const [isBuyInModalOpen, setIsBuyInModalOpen] = useState(false);
-
+    const [selectedGamePlayerInfo, setSelectedGamePlayerInfo] = useState<PlayerInfo>({
+        playerStatus: "new_player",
+        need_to_delegate: false,
+        need_to_undelegate: false,
+        newplayerEntityPda: new PublicKey(0)
+    });
     //set selected game to 0
-    const [activeGamesStrict, setActiveGamesStrict] = useState<ActiveGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => ({
-        isLoaded: false,
-        worldId: world.worldId,
-        worldPda: world.worldPda,
-        name: "loading",
-        active_players: 0,
-        max_players: 0,
-        size: 0,
-        image: `${process.env.PUBLIC_URL}/token.png`,
-        token: "LOADING",
-        base_buyin: 0,
-        min_buyin: 0,
-        max_buyin: 0,
-        endpoint: world.endpoint,
-        ping: 0
+    const [activeGamesStrict, setActiveGamesStrict] = useState<FetchedGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => 
+        ({
+        activeGame: {
+            isLoaded: false,
+            worldId: world.worldId,
+            worldPda: world.worldPda,
+            name: "loading",
+            active_players: 0,
+            max_players: 0,
+            size: 0,
+            image: `${process.env.PUBLIC_URL}/token.png`,
+            token: "LOADING",
+            base_buyin: 0,
+            min_buyin: 0,
+            max_buyin: 0,
+            endpoint: world.endpoint,
+            ping: 0,
+        },
+        playerInfo: {
+            playerStatus: "new_player",
+            need_to_delegate: false,
+            need_to_undelegate: false,
+            newplayerEntityPda: new PublicKey(0)
+        }
     })));
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,7 +175,38 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
                             newGameInfo.isLoaded = true;
                             setSelectedGame(newGameInfo);
-                            setActiveGamesStrict([newGameInfo, ...activeGamesStrict]);
+
+                            const result = await getMyPlayerStatus(engine, newGameInfo.worldId, mapParsedData.maxPlayers);
+                            let activeplayers = 0;
+                            let need_to_delegate = false;
+                            let need_to_undelegate = false;
+                            let newplayerEntityPda = new PublicKey(0);
+                            let playerStatus = "new_player";
+        
+                            if (isPlayerStatus(result)) {
+                                activeplayers = result.activeplayers;
+                                need_to_delegate = result.need_to_delegate;
+                                need_to_undelegate = result.need_to_undelegate;
+                                newplayerEntityPda = result.newplayerEntityPda;
+                                playerStatus = result.playerStatus;
+                                console.log(result);
+                            } else {
+                                console.error("Error fetching player status");
+                            }
+
+                            newGameInfo.active_players = activeplayers;
+                            setSelectedGamePlayerInfo({
+                                playerStatus: playerStatus,
+                                need_to_delegate: need_to_delegate,
+                                need_to_undelegate: need_to_undelegate,
+                                newplayerEntityPda: newplayerEntityPda
+                            });
+                            setActiveGamesStrict([{activeGame: newGameInfo, playerInfo: {
+                                playerStatus: playerStatus,
+                                need_to_delegate: need_to_delegate,
+                                need_to_undelegate: need_to_undelegate,
+                                newplayerEntityPda: newplayerEntityPda
+                            }}, ...activeGamesStrict]);
                             break;
                         }
                     } catch (error) {
@@ -188,12 +244,16 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
         return "unknown";
     }
 
-    const fetchAndLogMapData = async (activeGamesList: ActiveGame[]) => {
+    function isPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } {
+        return typeof result === 'object' && 'activeplayers' in result;
+    }
+
+    const fetchAndLogMapData = async (activeGamesList: FetchedGame[]) => {
         for (let i = 0; i < activeGamesList.length; i++) {
-            engine.setEndpointEphemRpc(activeGamesList[i].endpoint);
+            engine.setEndpointEphemRpc(activeGamesList[i].activeGame.endpoint);
             const mapseed = "origin";
             const mapEntityPda = FindEntityPda({
-                worldId: activeGamesList[i].worldId,
+                worldId: activeGamesList[i].activeGame.worldId,
                 entityId: new anchor.BN(0),
                 seed: stringToUint8Array(mapseed),
             });
@@ -210,7 +270,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                 let max_buyin = 0;
                 const anteseed = "ante";
                 const anteEntityPda = FindEntityPda({
-                    worldId: activeGamesList[i].worldId,
+                    worldId: activeGamesList[i].activeGame.worldId,
                     entityId: new anchor.BN(0),
                     seed: stringToUint8Array(anteseed),
                 });
@@ -245,66 +305,67 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                 }
                 const mapParsedData = await mapFetchOnChain(engine, mapComponentPda);
                 if (mapParsedData) {
+                    const result = await getMyPlayerStatus(engine, activeGamesList[i].activeGame.worldId, mapParsedData.maxPlayers);
                     let activeplayers = 0;
-                    for (
-                        let player_index = 1;
-                        player_index < mapParsedData.maxPlayers + 1;
-                        player_index++
-                    ) {
-                        const playerentityseed =
-                            "player" + player_index.toString();
-                        const playerEntityPda = FindEntityPda({
-                            worldId: activeGamesList[i].worldId,
-                            entityId: new anchor.BN(0),
-                            seed: stringToUint8Array(playerentityseed),
-                        });
-                        const playersComponentPda = FindComponentPda({
-                            componentId: COMPONENT_PLAYER_ID,
-                            entity: playerEntityPda,
-                        });
-                        try {
-                            const playersParsedData = await playerFetchOnChain(engine, playersComponentPda);
-                            if (playersParsedData && playersParsedData.authority != null) {
-                                activeplayers = activeplayers + 1;
-                            }
-                        } catch (error) {
-                            console.log(error);
-                        }
+                    let need_to_delegate = false;
+                    let need_to_undelegate = false;
+                    let newplayerEntityPda = new PublicKey(0);
+                    let playerStatus = "new_player";
+
+                    if (isPlayerStatus(result)) {
+                        activeplayers = result.activeplayers;
+                        need_to_delegate = result.need_to_delegate;
+                        need_to_undelegate = result.need_to_undelegate;
+                        newplayerEntityPda = result.newplayerEntityPda;
+                        playerStatus = result.playerStatus;
+                        //console.log(result);
+                    } else {
+                        console.error("Error fetching player status");
                     }
 
-                    const pingTime = await pingEndpoint(activeGamesList[i].endpoint);
+                    const pingTime = await pingEndpoint(activeGamesList[i].activeGame.endpoint);
 
                     setActiveGamesStrict((prevActiveGames) => {
-                        const updatedGames = prevActiveGames.map((game) =>
-                            game.worldId === activeGamesStrict[i].worldId &&
-                                game.worldPda.toString() ===
-                                activeGamesList[i].worldPda.toString()
+                        const updatedGames = prevActiveGames.map((game, index) =>
+                            game.activeGame.worldId === activeGamesStrict[i].activeGame.worldId &&
+                            game.activeGame.worldPda.toString() === activeGamesList[i].activeGame.worldPda.toString()
                                 ? {
                                     ...game,
-                                    isLoaded: true,
-                                    name: mapParsedData.name,
-                                    active_players: activeplayers,
-                                    max_players: mapParsedData.maxPlayers,
-                                    size: mapParsedData.width,
-                                    image: token_image,
-                                    token: token_name,
-                                    base_buyin: base_buyin,
-                                    min_buyin: min_buyin,
-                                    max_buyin: max_buyin,
-                                    ping: Math.round(pingTime)
+                                    activeGame: {
+                                        ...game.activeGame,
+                                        isLoaded: true,
+                                        name: mapParsedData.name,
+                                        active_players: activeplayers,
+                                        max_players: mapParsedData.maxPlayers,
+                                        size: mapParsedData.width,
+                                        image: token_image,
+                                        token: token_name,
+                                        base_buyin: base_buyin,
+                                        min_buyin: min_buyin,
+                                        max_buyin: max_buyin,
+                                        endpoint: activeGamesList[index].activeGame.endpoint,
+                                        ping: Math.round(pingTime),
+                                    },
+                                    playerInfo: {
+                                        playerStatus: playerStatus,
+                                        need_to_delegate: need_to_delegate,
+                                        need_to_undelegate: need_to_undelegate,
+                                        newplayerEntityPda: newplayerEntityPda
+                                    }
                                 }
                                 : game,
                         );
                         return updatedGames;
                     });
+
                     console.log(activeGamesStrict)
                     console.log(
-                        `No account info found for game ID ${activeGamesStrict[i].worldId}`,
+                        `No account info found for game ID ${activeGamesStrict[i].activeGame.worldId}`,
                     );
                 }
             } catch (error) {
                 console.log(
-                    `Error fetching map data for game ID ${activeGamesStrict[i].worldId}:`,
+                    `Error fetching map data for game ID ${activeGamesStrict[i].activeGame.worldId}:`,
                     error,
                 );
             }
@@ -321,6 +382,66 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
         }
     }, [activeGames]);
 
+    const handlePlayButtonClick = async (game: FetchedGame) => {
+        engine.setEndpointEphemRpc(game.activeGame.endpoint);
+        setSelectedGame(game.activeGame);
+        setSelectedGamePlayerInfo(game.playerInfo);
+
+        if (game.playerInfo.need_to_delegate){
+            try {
+                const playerComponentPda = FindComponentPda({
+                    componentId: COMPONENT_PLAYER_ID,
+                    entity: game.playerInfo.newplayerEntityPda,
+                });
+                const playerdelegateIx = createDelegateInstruction({
+                    entity: game.playerInfo.newplayerEntityPda,
+                    account: playerComponentPda,
+                    ownerProgram: COMPONENT_PLAYER_ID,
+                    payer: engine.getWalletPayer(),
+                });
+                const deltx = new Transaction().add(playerdelegateIx);
+                const playerdelsignature = await engine.processWalletTransaction("playerdelegate", deltx);
+                console.log(`delegation signature: ${playerdelsignature}`);
+            } catch (error) {
+                console.log('Error delegating:', error);
+            }
+        }
+
+        if (game.playerInfo.playerStatus === "new_player") {    
+            setIsBuyInModalOpen(true);
+        }
+        if (game.playerInfo.playerStatus === "cashing_out") {
+            const anteEntityPda = FindEntityPda({
+                worldId: game.activeGame.worldId,
+                entityId: new anchor.BN(0),
+                seed: stringToUint8Array("ante")
+            });
+            const cashoutTx = await gameSystemCashOut(engine, game.activeGame, anteEntityPda, game.playerInfo.newplayerEntityPda);
+        }
+        if (game.playerInfo.playerStatus === "bought_in") {
+            try {
+                const mapseed = "origin";
+                const mapEntityPda = FindEntityPda({
+                  worldId: game.activeGame.worldId,
+                  entityId: new anchor.BN(0),
+                  seed: stringToUint8Array(mapseed),
+                });
+                const joinsig = await gameSystemJoin(engine, game.activeGame, game.playerInfo.newplayerEntityPda, mapEntityPda, "unnamed");
+                setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
+                navigate("/game");
+              } catch (joinError) {
+                console.log("error", joinError);
+              }
+        }
+        if (game.playerInfo.playerStatus === "in_game") {
+            setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
+            navigate("/game");
+        }
+        if(game.playerInfo.playerStatus === "error"){
+            console.log("error joining game");
+        }
+    }
+    
     return (
         <div className="main-container">
             <MenuBar />
@@ -329,7 +450,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                 setIsBuyInModalOpen={setIsBuyInModalOpen}
                 activeGame={selectedGame}
                 setMyPlayerEntityPda={setMyPlayerEntityPda}
-                setScreenSize={setScreenSize}
+                selectedGamePlayerInfo={selectedGamePlayerInfo}
             /> 
             )}
             <div className="home-container">
@@ -365,29 +486,32 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, setScreenSiz
                         <tbody>
                             {activeGamesStrict.map((row, idx) => (
                                 <tr key={idx}>
-                                    <td>{row.isLoaded ? row.name : <Spinner />}</td>
-                                    <td>{getRegion(activeGamesStrict[idx].endpoint)}</td>
-                                    <td>{row.worldId.toString()}</td>
-                                    <td>{row.isLoaded ? row.token : <Spinner />}</td>
-                                    <td>{row.isLoaded ? row.min_buyin + " - " + row.max_buyin : <Spinner />}</td>
-                                    <td>{row.isLoaded ? row.active_players + "/" + row.max_players : <Spinner />}</td>
+                                    <td>{row.activeGame.isLoaded ? row.activeGame.name : <Spinner />}</td>
+                                    <td>{getRegion(activeGamesStrict[idx].activeGame.endpoint)}</td>
+                                    <td>{row.activeGame.worldId.toString()}</td>
+                                    <td>{row.activeGame.isLoaded ? row.activeGame.token : <Spinner />}</td>
+                                    <td>{row.activeGame.isLoaded ? row.activeGame.min_buyin + " - " + row.activeGame.max_buyin : <Spinner />}</td>
+                                    <td>{row.activeGame.isLoaded ? row.activeGame.active_players + "/" + row.activeGame.max_players : <Spinner />}</td>
                                     <td>
                                         <div className="ping-cell">
-                                            <span className="ping-circle" style={{ backgroundColor: getPingColor(row.ping) }} />
-                                            <span style={{color: getPingColor(row.ping)}}>{row.ping >= 0 ? `${row.ping}ms` : 'Timeout'}</span>
+                                            <span className="ping-circle" style={{ backgroundColor: getPingColor(row.activeGame.ping) }} />
+                                            <span style={{color: getPingColor(row.activeGame.ping)}}>{row.activeGame.ping >= 0 ? `${row.activeGame.ping}ms` : 'Timeout'}</span>
                                         </div>
                                     </td>
                                     <td>
                                         <button
                                             className="btn-play"
-                                            disabled={!row.isLoaded || row.ping < 0}
+                                            disabled={!row.activeGame.isLoaded || row.activeGame.ping < 0}
                                             onClick={() => {
-                                                engine.setEndpointEphemRpc(activeGamesStrict[idx].endpoint);
-                                                setSelectedGame(row);
-                                                setIsBuyInModalOpen(true);
+                                                handlePlayButtonClick(row);
                                             }}
                                         >
-                                            Play
+                                            {{
+                                                "new_player": "play",
+                                                "cashing_out": "cash out",
+                                                "bought_in": "resume",
+                                                "in_game": "resume"
+                                            }[row.playerInfo.playerStatus] || row.playerInfo.playerStatus}
                                         </button>
                                     </td>
                                 </tr>

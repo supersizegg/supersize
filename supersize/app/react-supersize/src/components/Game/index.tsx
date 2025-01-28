@@ -105,144 +105,64 @@ interface GameComponentProps {
   players: Blob[];
   visibleFood: Food[];
   currentPlayer: Blob | null;
-  screenSize: { width: number; height: number };
-  scale: number;
+  screenSize: {width: number, height: number};
+  gameSize: number;
+  newTarget: { x: number; y: number, boost: boolean };
 }
 
-const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, currentPlayer, screenSize, scale }) => {
+const SMOOTHING_FACTOR = 0.03; 
+
+const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, currentPlayer, screenSize, gameSize, newTarget}) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const playersRef = useRef(players);
   const foodRef = useRef(visibleFood);
+  const newTargetRef = useRef(newTarget);
 
-  const timeStep = 30.0;  //1000.0 / 60.0;  
+  const timeStep = 90.0; // any value >50 works, testing 90-150 
 
   const previousTime = useRef(0.0);
   const accumulator = useRef(0.0);
   
-  const currentPlayerRef = useRef(currentPlayer);
+  const currentPlayerRef = useRef<Blob | null>(null);
   const previousPlayerPos = useRef(currentPlayerRef.current);
-  const previousPlayersRef = useRef<Blob[]>([]);
+
+  const currentPlayerOnchainRef = useRef<Blob | null>(null);
 
   useEffect(() => {
     foodRef.current = visibleFood; 
   }, [visibleFood]);
 
   useEffect(() => {
+    newTargetRef.current = newTarget;
+  }, [newTarget]);
+
+  useEffect(() => {
     if (players.length > 0) {
-      //previousPlayersRef.current = playersRef.current.map(player => ({ ...player }));
       playersRef.current = players;
     }
   }, [players]);
   
   useEffect(() => {
-    currentPlayerRef.current = currentPlayer;
+    currentPlayerOnchainRef.current = currentPlayer;
+    if(currentPlayerRef.current == null){
+      currentPlayerRef.current = currentPlayer;
+    }
+    if(currentPlayerRef.current && currentPlayer){
+      currentPlayerRef.current.radius = currentPlayer.radius;
+    }
     playersRef.current = players;
     foodRef.current = visibleFood;
-    //console.log(currentPlayerRef.current?.target_x);
   }, [currentPlayer]);
-
-  const loop = (time: number) => {
-    const dt = time - previousTime.current;
-    previousTime.current = time;
-
-    accumulator.current += dt;
-
-    while (accumulator.current >= timeStep) {
-      if (currentPlayerRef.current) {
-        previousPlayerPos.current = { ...currentPlayerRef.current }; 
-      }
-      if (playersRef.current) {
-        previousPlayersRef.current = playersRef.current.map(player => ({ ...player }));
-      }
-      accumulator.current -= timeStep;
-    }
-
-    const alpha = accumulator.current / timeStep;
-
-    if (previousPlayerPos.current && currentPlayerRef.current) {
-      renderWithInterpolation(previousPlayerPos.current, currentPlayerRef.current, alpha);
-    }
-
-    window.requestAnimationFrame(loop);
-  };
-
-  const renderWithInterpolation = (prevPos: Blob, currPos: Blob, alpha: number) => {
-    if (currentPlayerRef.current) {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          canvas.width = screenSize.width * scale;
-          canvas.height = screenSize.height * scale;
-
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          const interpolatedX = prevPos.x + (currPos.x - prevPos.x) * alpha;
-          const interpolatedY = prevPos.y + (currPos.y - prevPos.y) * alpha;
-
-          /* playersRef.current.forEach((blob) => {
-            drawPlayer(ctx, 
-              {...blob, 
-              x: blob.x - interpolatedX + screenSize.width / 2, 
-              y: blob.y - interpolatedY + screenSize.height / 2}, scale);
-          }); */
-
-          playersRef.current.forEach((blob, index) => {
-            const prevBlob = previousPlayersRef.current[index] || blob;
-            //const dampingFactor = 0.8;
-            const interpolatedBlobX = prevBlob.x + (blob.x - prevBlob.x) * alpha;
-            const interpolatedBlobY = prevBlob.y + (blob.y - prevBlob.y) * alpha;
-            //const smoothedBlobX = interpolatedBlobX * dampingFactor + blob.x * (1 - dampingFactor);
-            //const smoothedBlobY = interpolatedBlobY * dampingFactor + blob.y * (1 - dampingFactor);
   
-            const adjustedX =
-              interpolatedBlobX - interpolatedX + screenSize.width / 2;
-            const adjustedY =
-              interpolatedBlobY - interpolatedY + screenSize.height / 2;
-            if(currentPlayerRef.current){
-              drawPlayer3(ctx, { ...blob, x: adjustedX, y: adjustedY }, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY }, scale);
-            }
-          });
-          
-          foodRef.current.forEach((food) => {
-            drawFood3(ctx, {...food, 
-               x: food.x - interpolatedX + screenSize.width / 2,
-               y: food.y - interpolatedY + screenSize.height / 2,}, scale);
-          });
-
-          const centeredPlayer = {
-            ...currentPlayerRef.current,
-            x: screenSize.width / 2,
-            y: screenSize.height / 2,
-          };
-
-          drawPlayer2(ctx, { ...centeredPlayer, x: centeredPlayer.x, y: centeredPlayer.y }, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY }, scale);
-          drawBorder(ctx, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY }, screenSize, scale);
-        }
-      }
-    }
-  };
-  
-  useEffect(() => {
-    window.requestAnimationFrame((time) => { 
-      previousTime.current = time;
-      window.requestAnimationFrame(loop);
-    });
-  }, []);
-
-  /*if(currentPlayerPos.current){
-      currentPlayerPos.current = updatePlayerPosition(currentPlayerPos.current, currentPlayerPos.current.target_x, currentPlayerPos.current.target_y, timeStep);
-  }*/
-
-  /*
   const updatePlayerPosition = (
     player: Blob,
     target_x: number,
     target_y: number,
-    dt: number 
+    boost: boolean,
   ) => {
     const player_x = player.x;
     const player_y = player.y;
+  
     const dx = target_x - player_x;
     const dy = target_y - player_y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -262,77 +182,129 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
     if (true_mass < 100.0) {
       scale_up = -0.01 * true_mass + 4.0;
     }
-    const delta_y = (player.speed * scale_up * Math.sin(deg) * (dt / 1000)) / slow_down;
-    const delta_x = (player.speed * scale_up * Math.cos(deg) * (dt / 1000)) / slow_down;
+
+    if(boost){
+      if (player.mass > 100.0){
+        let boosted_speed = 12.0;
+        if (true_mass > 100.0) {
+          boosted_speed = -0.00008 * true_mass + 12.0; 
+        }
+        player.speed = boosted_speed;
+      }
+    }
+
+    const delta_y = (player.speed * scale_up * Math.sin(deg)) / slow_down;
+    const delta_x = (player.speed * scale_up * Math.cos(deg)) / slow_down;
   
     player.y = Math.round(player_y + delta_y);
     player.x = Math.round(player_x + delta_x);
   
-    player.y = Math.max(0, Math.min(player.y, screenSize.height));
-    player.x = Math.max(0, Math.min(player.x, screenSize.width));
+    player.y = Math.max(0, Math.min(player.y, gameSize));
+    player.x = Math.max(0, Math.min(player.x, gameSize));
   
     return player;
   };
-  */
-  
-  /*useEffect(() => {
-    if (gameId !== null) {
+
+  const loop = (time: number) => {
+    const dt = time - previousTime.current;
+    previousTime.current = time;
+
+    accumulator.current += dt;
+
+    while (accumulator.current >= timeStep) {
+      if (currentPlayerRef.current) {
+        previousPlayerPos.current = { ...currentPlayerRef.current };
+        currentPlayerRef.current = updatePlayerPosition(currentPlayerRef.current, newTargetRef.current.x, newTargetRef.current.y, newTargetRef.current.boost);
+      }
+      accumulator.current -= timeStep;
+    }
+
+    const alpha = accumulator.current / timeStep;
+
+    if (previousPlayerPos.current && currentPlayerRef.current) {
+      if(currentPlayerRef.current && currentPlayerOnchainRef.current){
+        currentPlayerRef.current.x += SMOOTHING_FACTOR * (currentPlayerOnchainRef.current.x - currentPlayerRef.current.x);
+        currentPlayerRef.current.y += SMOOTHING_FACTOR * (currentPlayerOnchainRef.current.y - currentPlayerRef.current.y);
+      }
+      renderWithInterpolation(previousPlayerPos.current, currentPlayerRef.current, alpha);
+    }
+
+    window.requestAnimationFrame(loop);
+  };
+
+  const renderWithInterpolation = (prevPos: Blob, currPos: Blob, alpha: number) => {
+    if (currentPlayerRef.current) {
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          canvas.width = screenSize.width * scale;
-          canvas.height = screenSize.height * scale;
+          canvas.width = screenSize.width; 
+          canvas.height = screenSize.height;
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          players.forEach(blob => {
-            drawPlayer(ctx, blob, scale);
+          const interpolatedX = prevPos.x + (currPos.x - prevPos.x) * alpha;
+          const interpolatedY = prevPos.y + (currPos.y - prevPos.y) * alpha;
+
+          playersRef.current.forEach((blob, index) => {
+            const adjustedX =
+              blob.x - interpolatedX + screenSize.width / 2;
+            const adjustedY =
+              blob.y - interpolatedY + screenSize.height / 2;
+            if(currentPlayerRef.current){
+              drawOpponentPlayer(ctx, { ...blob, x: adjustedX, y: adjustedY }, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY });
+            }
+          });
+          
+          foodRef.current.forEach((food) => {
+            drawFood(ctx, {...food, 
+               x: food.x - interpolatedX + screenSize.width / 2,
+               y: food.y - interpolatedY + screenSize.height / 2,});
           });
 
-          visibleFood.forEach(food => {
-            drawFood2(ctx, food, scale);
-          });
+          const centeredPlayer = {
+            ...currentPlayerRef.current,
+            x: screenSize.width / 2,
+            y: screenSize.height / 2,
+          };
 
-          if (currentPlayer) {
-            const centeredPlayer = {
-              ...currentPlayer,
-              x: screenSize.width / 2,
-              y: screenSize.height / 2,
-            };
-            drawPlayer(ctx, centeredPlayer, scale);
-            drawBorder(ctx, currentPlayer, screenSize, scale);
-          }
+          drawMyPlayer(ctx, { ...centeredPlayer, x: centeredPlayer.x, y: centeredPlayer.y }, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY });
+          drawBorder(ctx, { ...currentPlayerRef.current, x: interpolatedX, y: interpolatedY }, screenSize, gameSize);
         }
       }
     }
-  }, [gameId, players, visibleFood, currentPlayer, screenSize, scale]);*/
+  };
+  
+  useEffect(() => {
+    window.requestAnimationFrame((time) => { 
+      previousTime.current = time;
+      window.requestAnimationFrame(loop);
+    });
+  }, []);
 
-  const drawPlayer3 = (ctx: CanvasRenderingContext2D, blob: Blob, myblob: Blob, scale: number) => {
+  const drawOpponentPlayer = (ctx: CanvasRenderingContext2D, blob: Blob, myblob: Blob) => {
     let glowSize = 0;
     let glowIntensity = 'rgba(19, 241, 149, 0)'; 
 
     if(blob.mass > myblob.mass * 1.05){
-      glowSize = 50 * scale;
+      glowSize = 50;
       glowIntensity = 'rgba(240, 113, 113, 0.5)'
 
     }
     else if(myblob.mass > blob.mass * 1.05){
-      glowSize = 50 * scale;
+      glowSize = 50;
       glowIntensity = 'rgba(19, 241, 149, 0.5)'; 
     }
     else{
-      glowSize = 50 * scale;
+      glowSize = 50;
       glowIntensity = 'rgba(255, 239, 138, 0.5)';
     }
 
-    const diameter = blob.radius * scale * 2;
-    // Calculate angle between current position and target position
-    const dx = blob.target_x - blob.x; //playerMouseLocation.x; //- blob.x;
-    const dy = blob.target_y - blob.y; //playerMouseLocation.y; // - blob.y;
-    const angle = Math.atan2(dy, dx); // Returns angle in radians (-π to π)
+    const diameter = blob.radius * 2;
+    const dx = blob.target_x - blob.x; 
+    const dy = blob.target_y - blob.y; 
+    const angle = Math.atan2(dy, dx);
 
-    // Determine the quadrant based on the angle
     let imageIndex = 0;
     if (angle >= -Math.PI / 8 && angle < Math.PI / 8) {
       imageIndex = 6; // Side-right
@@ -352,40 +324,35 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
       imageIndex = 2; // Up-right
     }
   
-    // Select the appropriate image
     const selectedImage = playerImages[imageIndex];
     
-    // Render the selected image if it is loaded
     if (selectedImage && selectedImage.complete) {
       ctx.save();
       ctx.shadowBlur = glowSize;
       ctx.shadowColor = glowIntensity;
       ctx.drawImage(
         selectedImage, 
-        blob.x * scale - diameter / 2,  
-        blob.y * scale - diameter / 2,  
+        blob.x - diameter / 2,  
+        blob.y - diameter / 2,  
         diameter,                       
         diameter                       
       );
       ctx.restore();
     } else {
-      // Fallback: draw a simple circle if the image isn't loaded
       ctx.beginPath();
-      ctx.arc(blob.x * scale, blob.y * scale, blob.radius * scale, 0, 2 * Math.PI);
+      ctx.arc(blob.x, blob.y, blob.radius, 0, 2 * Math.PI);
       ctx.fillStyle = '#13F195';
       ctx.fill();
       ctx.stroke();
     }
   };
 
-  const drawPlayer2 = (ctx: CanvasRenderingContext2D, blob: Blob, currentblob: Blob, scale: number) => {
-    const diameter = blob.radius * scale * 2;
-    // Calculate angle between current position and target position
-    const dx = currentblob.target_x - currentblob.x; //playerMouseLocation.x; //- blob.x;
-    const dy = currentblob.target_y - currentblob.y; //playerMouseLocation.y; // - blob.y;
-    const angle = Math.atan2(dy, dx); // Returns angle in radians (-π to π)
+  const drawMyPlayer = (ctx: CanvasRenderingContext2D, blob: Blob, currentblob: Blob) => {
+    const diameter = blob.radius * 2;
+    const dx = newTargetRef.current.x - currentblob.x; //currentblob.target_x - currentblob.x; 
+    const dy = newTargetRef.current.y - currentblob.y; //currentblob.target_y - currentblob.y; 
+    const angle = Math.atan2(dy, dx);
 
-    // Determine the quadrant based on the angle
     let imageIndex = 0;
     if (angle >= -Math.PI / 8 && angle < Math.PI / 8) {
       imageIndex = 6; // Side-right
@@ -405,132 +372,72 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
       imageIndex = 2; // Up-right
     }
   
-    // Select the appropriate image
     const selectedImage = playerImages[imageIndex];
   
-    // Render the selected image if it is loaded
     if (selectedImage && selectedImage.complete) {
       ctx.drawImage(
         selectedImage, 
-        blob.x * scale - diameter / 2,  
-        blob.y * scale - diameter / 2,  
+        blob.x - diameter / 2,  
+        blob.y - diameter / 2,  
         diameter,                       
         diameter                       
       );
     } else {
-      // Fallback: draw a simple circle if the image isn't loaded
       ctx.beginPath();
-      ctx.arc(blob.x * scale, blob.y * scale, blob.radius * scale, 0, 2 * Math.PI);
+      ctx.arc(blob.x, blob.y, blob.radius, 0, 2 * Math.PI);
       ctx.fillStyle = '#13F195';
       ctx.fill();
       ctx.stroke();
     }
   };
 
-  /*
-  const drawPlayer = (ctx: CanvasRenderingContext2D, blob: Blob, scale: number) => {
-    let glowSize = 0;
-    let glowIntensity = 'rgba(19, 241, 149, 0)'; 
-
-    ctx.shadowBlur = glowSize;
-    ctx.shadowColor = glowIntensity;
-
-    ctx.beginPath();
-    ctx.arc(blob.x * scale, blob.y * scale, blob.radius * scale, 0, 2 * Math.PI);
-    ctx.fillStyle = '#13F195'; 
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0)';
-
-    ctx.fillStyle = 'black'; 
-    ctx.font = `${blob.radius * scale * 0.3}px Arial`; 
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(blob.name, blob.x * scale, blob.y * scale);
-  };
-
-  const drawFood = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
-    ctx.beginPath();
-    ctx.arc(food.x * scale, food.y * scale, 10 * scale, 0, 2 * Math.PI);
-    ctx.fillStyle = 'white'; 
-    ctx.fill();
-    ctx.stroke();
-  };
-  */
-
-  const drawFood3 = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
-    const diameter = 20 * scale; // Adjust size dynamically
-    const sizeIndex = food.size - 1; // Adjust size to match zero-based index
-    const selectedImage = foodImages[sizeIndex]; // Get the image corresponding to food size
+  const drawFood = (ctx: CanvasRenderingContext2D, food: Food) => {
+    const diameter = 20; 
+    const sizeIndex = food.size - 1;
+    const selectedImage = foodImages[sizeIndex]; 
   
     if (selectedImage && selectedImage.complete) {
-      // Draw the selected food image
       ctx.drawImage(
         selectedImage, 
-        food.x * scale - diameter / 2,  
-        food.y * scale - diameter / 2,  
+        food.x - diameter / 2,  
+        food.y - diameter / 2,  
         diameter,                       
         diameter                       
       );
     } else {
-      // Fallback: draw a white circle if the image isn't loaded
       ctx.beginPath();
-      ctx.arc(food.x * scale, food.y * scale, diameter / 2, 0, 2 * Math.PI);
+      ctx.arc(food.x, food.y, diameter / 2, 0, 2 * Math.PI);
       ctx.fillStyle = 'white';
       ctx.fill();
       ctx.stroke();
     }
   };
 
-  /*
-  const drawFood2 = (ctx: CanvasRenderingContext2D, food: Food, scale: number) => {
-    const diameter = 20 * scale; 
-    if (foodImage.complete) {
-      ctx.drawImage(
-        foodImage, 
-        food.x * scale - diameter / 2,  
-        food.y * scale - diameter / 2,  
-        diameter,                       
-        diameter                       
-      );
-    } else {
-      ctx.beginPath();
-      ctx.arc(food.x * scale, food.y * scale, 10, 0, 2 * Math.PI); 
-      ctx.fillStyle = 'white';
-      ctx.fill();
-      ctx.stroke();
-    }
-  };
-  */
-
-  const drawBorder = (ctx: CanvasRenderingContext2D, currentPlayer: Blob, screenSize: { width: number; height: number }, scale: number) => {
-    const gameSize = screenSize.width;
+  const drawBorder = (ctx: CanvasRenderingContext2D, currentPlayer: Blob, screenSize: { width: number; height: number }, gameSize: number) => {
     const offsetX = currentPlayer.x - screenSize.width / 2;
     const offsetY = currentPlayer.y - screenSize.height / 2;
 
     ctx.beginPath();
-    ctx.moveTo((0 - offsetX) * scale, (0 - offsetY) * scale);
-    ctx.lineTo((gameSize - offsetX) * scale, (0 - offsetY) * scale);
+    ctx.moveTo((0 - offsetX), (0 - offsetY));
+    ctx.lineTo((gameSize - offsetX), (0 - offsetY));
     ctx.strokeStyle = 'red';
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo((gameSize - offsetX) * scale, (0 - offsetY) * scale);
-    ctx.lineTo((gameSize - offsetX) * scale, (gameSize - offsetY) * scale);
+    ctx.moveTo((gameSize - offsetX), (0 - offsetY));
+    ctx.lineTo((gameSize - offsetX), (gameSize - offsetY));
     ctx.strokeStyle = 'red';
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo((gameSize - offsetX) * scale, (gameSize - offsetY) * scale);
-    ctx.lineTo((0 - offsetX) * scale, (gameSize - offsetY) * scale);
+    ctx.moveTo((gameSize - offsetX), (gameSize - offsetY));
+    ctx.lineTo((0 - offsetX), (gameSize - offsetY));
     ctx.strokeStyle = 'red';
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo((0 - offsetX) * scale, (gameSize - offsetY) * scale);
-    ctx.lineTo((0 - offsetX) * scale, (0 - offsetY) * scale);
+    ctx.moveTo((0 - offsetX), (gameSize - offsetY));
+    ctx.lineTo((0 - offsetX), (0 - offsetY));
     ctx.strokeStyle = 'red';
     ctx.stroke();
 };

@@ -1,30 +1,51 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActiveGame } from "@utils/types";
 import "./BuyInModal.css";
 import { useNavigate } from "react-router-dom";
 import { gameExecuteJoin } from "../../states/gameExecuteJoin";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
 import { PublicKey } from "@solana/web3.js";
+import { getMyPlayerStatus, stringToUint8Array } from "@utils/helper";
+import { anchor, FindEntityPda } from "@magicblock-labs/bolt-sdk";
+import { gameSystemJoin } from "@states/gameSystemJoin";
+
+type PlayerInfo = {
+    playerStatus: string;
+    need_to_delegate: boolean;
+    need_to_undelegate: boolean;
+    newplayerEntityPda: PublicKey;
+}
 
 type BuyInModalProps = {
   setIsBuyInModalOpen: (isOpen: boolean) => void;
   activeGame: ActiveGame;
   setMyPlayerEntityPda: (pda: PublicKey | null) => void;
-  setScreenSize: (size: { width: number; height: number }) => void;
+  selectedGamePlayerInfo: PlayerInfo;
 };
 
 const BuyInModal: React.FC<BuyInModalProps> = ({
   setIsBuyInModalOpen,
   activeGame,
   setMyPlayerEntityPda,
-  setScreenSize,
+  selectedGamePlayerInfo,
 }) => {
   const navigate = useNavigate();
   const engine = useMagicBlockEngine();
 
   const [buyIn, setBuyIn] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [retryModalView, setRetryModalView] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const selectedPlayerGameInfoRef = useRef<PlayerInfo>(selectedGamePlayerInfo);
+  const retryBuyIn = useRef(false);
+
+  useEffect(() => {
+    selectedPlayerGameInfoRef.current = selectedGamePlayerInfo;
+  }, [selectedGamePlayerInfo]);
+
+  function isPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } {
+    return typeof result === 'object' && 'activeplayers' in result;
+    }
 
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     let value = parseFloat(event.target.value);
@@ -51,25 +72,48 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
     setIsSubmitting(true);
     setStatusMessage("Submitting buy-in transaction...");
 
-    const retrievedUser = localStorage.getItem('user');
-    let myusername = "unnamed";
-    if(retrievedUser){
-        let myusername = JSON.parse(retrievedUser).name;
-        console.log('myusername', myusername);
-    }
-
     try {
-      const result = await gameExecuteJoin(engine, activeGame, buyIn, myusername, setMyPlayerEntityPda);
+      if(retryBuyIn.current){
+        const result = await getMyPlayerStatus(engine, activeGame.worldId, activeGame.max_players);
+        let activeplayers = 0;
+        let need_to_delegate = false;
+        let need_to_undelegate = false;
+        let newplayerEntityPda = new PublicKey(0);
+        let playerStatus = "new_player";
+        if (isPlayerStatus(result)) {
+            activeplayers = result.activeplayers;
+            need_to_delegate = result.need_to_delegate;
+            need_to_undelegate = result.need_to_undelegate;
+            newplayerEntityPda = result.newplayerEntityPda;
+            playerStatus = result.playerStatus;
+            selectedPlayerGameInfoRef.current = {
+                playerStatus: playerStatus,
+                need_to_delegate: need_to_delegate,
+                need_to_undelegate: need_to_undelegate,
+                newplayerEntityPda: newplayerEntityPda,
+            };
+        } 
+        
+      }
+      const retrievedUser = localStorage.getItem('user');
+      let myusername = "unnamed";
+      if(retrievedUser){
+          myusername = JSON.parse(retrievedUser).name;
+      }
+      const result = await gameExecuteJoin(engine, activeGame, buyIn, myusername, selectedPlayerGameInfoRef.current, setMyPlayerEntityPda);
 
       if (result.success) {
-        if (result.message === "resume_session") {
-          setStatusMessage("Resuming your existing session...");
-        }
-
-        setScreenSize({ width: activeGame.size, height: activeGame.size });
+        setStatusMessage("success");
         navigate("/game");
       } else {
         setStatusMessage(result.error || "Failed to join the game. Please try again.");
+        if(result.message == "buyin_failed"){
+            setStatusMessage("Buy in failed, please try again");
+            retryBuyIn.current = true;
+        }
+        if(result.message == "join_failed"){
+            setRetryModalView(true);
+        }
       }
     } catch (error) {
       console.error("Error executing join:", error);
@@ -80,11 +124,30 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
     }
   };
 
+  const handleRetry = async () => {
+    try {
+        const mapseed = "origin";
+        const mapEntityPda = FindEntityPda({
+          worldId: activeGame.worldId,
+          entityId: new anchor.BN(0),
+          seed: stringToUint8Array(mapseed),
+        });
+        const joinsig = await gameSystemJoin(engine, activeGame, selectedPlayerGameInfoRef.current.newplayerEntityPda, mapEntityPda, "unnamed");
+        setMyPlayerEntityPda(selectedPlayerGameInfoRef.current.newplayerEntityPda);
+        navigate("/game");
+      } catch (joinError) {
+        console.log("error", joinError);
+      }
+      setRetryModalView(false);
+  }
+
+
   return (
     <div className="modal-overlay">
       <div className="modal-container">
-        <h1 className="modal-title">Choose Buy In</h1>
-
+        <h1 className="modal-title">{retryModalView ? "Buy in successful, retry joining" : "Choose Buy In"}</h1>
+        {!retryModalView ? (
+        <>
         <div className="buyInField">
           <div className="buyInInfoGroup">
             <img
@@ -127,7 +190,13 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
           </button>
         </div>
 
-        {isSubmitting && <div className="status-message">{statusMessage}</div>}
+        {statusMessage !== "" && <div className="status-message">{statusMessage}</div>}
+        </>
+        ) : (
+          <div className="retry-modal-view" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <button className="cancel-button" onClick={handleRetry} style={{width: 'fit-content'}}>Retry Join Game</button>
+          </div>
+        )}
       </div>
     </div>
   );

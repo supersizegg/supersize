@@ -13,16 +13,15 @@ import { PublicKey } from "@solana/web3.js";
 const AppRoutes = () => {
     const [selectedGame, setSelectedGame] = useState<ActiveGame | null>(null);
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
-    const [screenSize, setScreenSize] = useState<{ width: number; height: number }>({ width: 4000, height: 4000 });
     const [myPlayerEntityPda, setMyPlayerEntityPda] = useState<PublicKey | null>(null);
     
     return (
         <Routes>
-            <Route index element={<Home selectedGame={selectedGame} setSelectedGame={setSelectedGame}  setMyPlayerEntityPda={setMyPlayerEntityPda} setScreenSize={setScreenSize}
+            <Route index element={<Home selectedGame={selectedGame} setSelectedGame={setSelectedGame}  setMyPlayerEntityPda={setMyPlayerEntityPda}
             activeGames={activeGames} setActiveGames={setActiveGames}/>} />
             <Route path="/create-game" element={<CreateGame activeGames={activeGames} setActiveGames={setActiveGames} />} />
             {selectedGame && (
-                <Route path="/game" element={<Game gameInfo={selectedGame} screenSize={screenSize} myPlayerEntityPda={myPlayerEntityPda} />} />
+                <Route path="/game" element={<Game gameInfo={selectedGame} myPlayerEntityPda={myPlayerEntityPda} />} />
             )}
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
