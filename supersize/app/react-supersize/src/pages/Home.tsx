@@ -264,6 +264,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
 
     const fetchAndLogMapData = async (activeGamesList: FetchedGame[]) => {
         for (let i = 0; i < activeGamesList.length; i++) {
+            const startTime = performance.now();
             engine.setEndpointEphemRpc(activeGamesList[i].activeGame.endpoint);
             const mapseed = "origin";
             const mapEntityPda = FindEntityPda({
@@ -371,7 +372,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
                         );
                         return updatedGames;
                     });
-
+                    console.log('fetchAndLogMapData', i, performance.now() - startTime);
                     console.log(activeGamesStrict)
                     console.log(
                         `No account info found for game ID ${activeGamesStrict[i].activeGame.worldId}`,
@@ -524,10 +525,10 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGames,
                                             }}
                                         >
                                             {{
-                                                "new_player": "play",
-                                                "cashing_out": "cash out",
-                                                "bought_in": "resume",
-                                                "in_game": "resume"
+                                                "new_player": "Play",
+                                                "cashing_out": "Cash Out",
+                                                "bought_in": "Resume",
+                                                "in_game": "Resume"
                                             }[row.playerInfo.playerStatus] || row.playerInfo.playerStatus}
                                         </button>
                                     </td>

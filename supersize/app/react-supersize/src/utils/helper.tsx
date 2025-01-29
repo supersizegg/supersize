@@ -355,11 +355,17 @@ export const getMyPlayerStatus = async (
     });
 
     const playersacc = await engine.getChainAccountInfo(playersComponentPda);
+    if (!playersacc) { 
+        continue;
+    }
     const playersParsedData = await playerFetchOnChain(engine, playersComponentPda);
+    if (!playersParsedData) {
+        continue;
+    }
     const playersParsedDataER = await playerFetchOnEphem(engine, playersComponentPda);
 
-    if(! playersacc ) continue;
-    if(! playersParsedData) continue;
+    
+    
 
     if(playersParsedData.authority != null) {
         activeplayers = activeplayers + 1;

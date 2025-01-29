@@ -240,6 +240,7 @@ function AdminTab() {
       isLoading.current = true;
       console.log('fetching games');
       for (let i = 1780; i < 1900; i++) {
+        console.log('Fetching game #' + i);
         const worldId = { worldId: new anchor.BN(i) };
         const worldPda = await FindWorldPda(worldId);
 
@@ -305,6 +306,7 @@ function AdminTab() {
         }
       }
     }
+    isLoading.current = false;
     }
     fetchGames();
   }, []);
@@ -760,6 +762,11 @@ function AdminTab() {
   };
   return (
     <div className="admin-tab">
+      {isLoading.current === true ? (
+        <div className="loading-container">
+          <Spinner /> <span>Loading games you own...</span>
+        </div>
+      ): <></>}
       <div className="game-stack" style={{ overflowY: 'scroll', maxHeight: '70vh', width: '600px' }}>
         {myGames.map((row, idx) => (
           <CollapsiblePanel

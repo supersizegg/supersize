@@ -104,12 +104,10 @@
 .buyin-button {
   width: 40%;
   padding: 0.5em 1em;
-  border-radius: 4px;
-  border: 1px solid #c4b5fd;
-  background-color: #000;
+  border-radius: 8px;
   color: #fff;
   cursor: pointer;
-  font-family: "Terminus", monospace;
+  font-family: "Open Sans", "Roboto", sans-serif;
   font-size: 1rem;
   transition:
     background-color 0.25s ease-in-out,
@@ -117,10 +115,21 @@
     box-shadow 0.25s ease-in-out;
 }
 
+.buyin-button {
+  color: #14be14;
+  border: 1px solid #14be14;
+  background: #14be141a;
+}
+
+.cancel-button {
+  color: #fff;
+  border: 1px solid #fff;
+  background: #fff1;
+}
+
 .cancel-button:hover,
 .buyin-button:hover {
-  background-color: #111;
-  border-color: #755e92;
+  opacity: 0.8;
   box-shadow: none;
 }
 

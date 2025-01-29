@@ -536,10 +536,11 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                 }}
             >
                 <button
+                    style={{border: '1px solid red', background: '#ff000042', color: '#fff'}}
                     className="flex items-center justify-center text-center relative box-border text-sm cursor-pointer text-black no-underline bg-[#f07171] float-right border border-[#f07171] rounded-full py-1.5 px-2.5 transition-colors duration-300 z-[9999999] hover:bg-black hover:text-[#f07171] active:bg-black active:text-[#f07171]"
                     onClick={handleExitClick}
                 >
-                    X
+                    Exit & Cash Out
                 </button>
                 {playerExiting && countdown.current > 0 && (
                     <div className="block text-[#f07171] font-[Terminus] text-xl text-right ml-2.5">
