@@ -91,18 +91,18 @@ export const endpointToWorldMap: Record<string, { worldId: anchor.BN; worldPda: 
 
 export const activeGamesList: { worldId: anchor.BN; worldPda: PublicKey; endpoint: string }[] = [
     {
-        worldId: new anchor.BN(1789),
-        worldPda: new PublicKey('CW4NphGRqimadoWApDzUCAzgpD5Q82YiPnQF6XiWz5W3'),
+        worldId: new anchor.BN(1844),
+        worldPda: new PublicKey('2gdDBKF2sTDQq4y44B3prGDsykeCyxdsVa7MeKBkLinw'),
         endpoint: "https://supersize-sin.magicblock.app",
     },
     {
-        worldId: new anchor.BN(1781),
-        worldPda: new PublicKey('4qxvia6eontjmnE3xTTwMpZBHjfJD3j9j9N5bzhCXBRH'),
+        worldId: new anchor.BN(1848),
+        worldPda: new PublicKey('DinogfyiJ8xgNATbbfARTkDuNPv8mbrK8FWNhMCUevKY'),
         endpoint: "https://supersize.magicblock.app",
     },
     {
-        worldId: new anchor.BN(1760),
-        worldPda: new PublicKey('CMjsZcWBciaN56NsHAw6GBFJCT7v7x79k65X9SXjL7my'),
+        worldId: new anchor.BN(1818),
+        worldPda: new PublicKey('BMy5QhenuStyAEki6D1wKKAG4LKT1rJaoTWQA5QaYr6F'),
         endpoint: "https://supersize-fra.magicblock.app",
     }
 ];

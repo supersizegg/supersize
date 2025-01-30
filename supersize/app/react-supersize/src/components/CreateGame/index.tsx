@@ -1,21 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
-import { ActiveGame } from "@utils/types";
+import { ActiveGame, FetchedGame } from "@utils/types";
 import TxnModal from "@components/txnModal";
+import { useWallet } from "@solana/wallet-adapter-react"
 import { gameExecuteNewGame } from "../../states/gameExecuteNewGame";
 
 type gameProps = {
     game_size: number;
-    userKey: string;
-    activeGames: ActiveGame[];
-    setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
+    activeGamesLoaded: FetchedGame[];
+    setActiveGamesLoaded: React.Dispatch<React.SetStateAction<FetchedGame[]>>;
     selectedServer: string;
 };
 
 type FormData = [number, number, number, string, string, string];
 
-const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setActiveGames, selectedServer }) => {
+const CreateGame: React.FC<gameProps> = ({ game_size, activeGamesLoaded, setActiveGamesLoaded, selectedServer }) => {
     const engine = useMagicBlockEngine();
+    const { publicKey } = useWallet();
+    const userKey = publicKey?.toString() || "Connect Wallet";
     const [formData, setFormData] = useState<FormData>([
         game_size,
         10.0,
@@ -26,7 +28,27 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
     ]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [gameCreated, setGameCreated] = useState(false);
     const [transactions, setTransactions] = useState<{ id: string; status: string }[]>([]);
+    const [newGameId, setNewGameId] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+    const resolveFnRef = useRef<(value: boolean) => void>();
+
+    function showPrompt(errorMessage: string): Promise<boolean> {
+        setErrorMessage(errorMessage);
+        return new Promise<boolean>((resolve) => {
+            resolveFnRef.current = resolve;
+        });
+    }
+
+    useEffect(() => {
+        try{
+            let userKey = engine.getWalletPayer().toString();
+            setFormData((prev) => ({ ...prev, 3: userKey }));
+        } catch(e){
+            console.log(e);
+        }
+    }, [engine])
 
     useEffect(() => {
         const updatedFormData = [...formData] as FormData;
@@ -46,19 +68,12 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
             setFormData(updatedFormData);
         };
 
-    const handleRetry = (transactionId: string) => {
-        const transactionFn = async () => {
-            console.log(`Retrying transaction: ${transactionId}`);
-        };
-        transactionFn();
-    };
-
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsModalOpen(true); // Open the modal
         console.log(selectedServer);
         engine.setEndpointEphemRpc(selectedServer);
-        gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGames, setActiveGames, setTransactions);
+        gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGamesLoaded, setActiveGamesLoaded, setTransactions, showPrompt, setNewGameId, setGameCreated);
     };
 
     return (
@@ -67,7 +82,13 @@ const CreateGame: React.FC<gameProps> = ({ game_size, userKey, activeGames, setA
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             transactions={transactions}
-            onRetry={handleRetry}
+            setTransactions={setTransactions}
+            errorMessage={errorMessage}
+            newGameId={newGameId}
+            gameCreated={gameCreated}
+            handleUserRetry={() => {
+                if (resolveFnRef.current) resolveFnRef.current(true);
+            }}
         />
         <form
             className="flex flex-col h-fit w-[21vw] gap-2.5 p-5 border border-[#272B30] rounded-[10px] text-white bg-black shadow-[rgba(0,0,0,0.05)_0px_1px_2px_0px] font-[Terminus]"

@@ -5,13 +5,14 @@ import ModGame from "@components/ModGame";
 import { ActiveGame } from "@utils/types";
 import { MenuBar } from "@components/menu/MenuBar";
 import FooterLink from "@components/Footer";
+import { FetchedGame } from "@utils/types";
 
 type CreateGameProps = {
-    activeGames: ActiveGame[];
-    setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
+    activeGamesLoaded: FetchedGame[];
+    setActiveGamesLoaded: React.Dispatch<React.SetStateAction<FetchedGame[]>>;
 };
 
-const CreateGame: React.FC<CreateGameProps> = ({ activeGames, setActiveGames }) => {
+const CreateGame: React.FC<CreateGameProps> = ({ activeGamesLoaded, setActiveGamesLoaded }) => {
     const tabs = [0, 1, 2];
     const [tab, setTab] = useState(0);
 
@@ -21,7 +22,7 @@ const CreateGame: React.FC<CreateGameProps> = ({ activeGames, setActiveGames }) 
         <div className="flex flex-col h-[84vh] w-full justify-center items-center">
             <div className="p-[2vw] w-[60vw] bg-black border border-[#272B30] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] rounded-[0.75rem]">
                 {tab === 0 ? (
-                    <LanchGame activeGames={activeGames} setActiveGames={setActiveGames} />
+                    <LanchGame activeGamesLoaded={activeGamesLoaded} setActiveGamesLoaded={setActiveGamesLoaded} />
                 ) : tab === 1 ? (
                     <EarnFees />
                 ) : (

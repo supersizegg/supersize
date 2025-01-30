@@ -6,15 +6,12 @@ import { gameExecuteJoin } from "../../states/gameExecuteJoin";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
 import { PublicKey } from "@solana/web3.js";
 import { getMyPlayerStatus, stringToUint8Array } from "@utils/helper";
-import { anchor, FindEntityPda } from "@magicblock-labs/bolt-sdk";
+import { anchor, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { gameSystemJoin } from "@states/gameSystemJoin";
+import { PlayerInfo } from "@utils/types";
+import { playerFetchOnChain } from "@states/gameFetch";
+import { COMPONENT_PLAYER_ID } from "@states/gamePrograms";
 
-type PlayerInfo = {
-    playerStatus: string;
-    need_to_delegate: boolean;
-    need_to_undelegate: boolean;
-    newplayerEntityPda: PublicKey;
-}
 
 type BuyInModalProps = {
   setIsBuyInModalOpen: (isOpen: boolean) => void;
@@ -37,7 +34,6 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
   const [retryModalView, setRetryModalView] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const selectedPlayerGameInfoRef = useRef<PlayerInfo>(selectedGamePlayerInfo);
-  const retryBuyIn = useRef(false);
 
   useEffect(() => {
     selectedPlayerGameInfoRef.current = selectedGamePlayerInfo;
@@ -73,7 +69,15 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
     setStatusMessage("Submitting buy-in transaction...");
 
     try {
-      if(retryBuyIn.current){
+      const playerEntityPda = selectedPlayerGameInfoRef.current.newplayerEntityPda;
+
+      const playerComponentPda = FindComponentPda({
+         componentId: COMPONENT_PLAYER_ID,
+         entity: playerEntityPda,
+      });
+      const thisPlayerStatus = await playerFetchOnChain(engine, playerComponentPda);
+      if(thisPlayerStatus?.authority !== null){
+        console.log("player already claimed by another player");
         const result = await getMyPlayerStatus(engine, activeGame.worldId, activeGame.max_players);
         let activeplayers = 0;
         let need_to_delegate = false;
@@ -92,8 +96,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
                 need_to_undelegate: need_to_undelegate,
                 newplayerEntityPda: newplayerEntityPda,
             };
-        } 
-        
+        }
       }
       const retrievedUser = localStorage.getItem('user');
       let myusername = "unnamed";
@@ -109,7 +112,6 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
         setStatusMessage(result.error || "Failed to join the game. Please try again.");
         if(result.message == "buyin_failed"){
             setStatusMessage("Buy in failed, please try again");
-            retryBuyIn.current = true;
         }
         if(result.message == "join_failed"){
             setRetryModalView(true);

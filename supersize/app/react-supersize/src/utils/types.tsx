@@ -41,3 +41,15 @@ export type ActiveGame = {
     endpoint: string;
     ping: number;
 };
+
+export type PlayerInfo = {
+    playerStatus: string;
+    need_to_delegate: boolean;
+    need_to_undelegate: boolean;
+    newplayerEntityPda: PublicKey;
+}
+export type FetchedGame = {
+    activeGame: ActiveGame;
+    playerInfo: PlayerInfo;
+}
+

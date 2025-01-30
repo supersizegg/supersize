@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import CreateGame from "@components/CreateGame";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { ActiveGame } from "@utils/types";
+import { useWallet } from "@solana/wallet-adapter-react"
+import { MagicBlockEngine } from "../../engine/MagicBlockEngine";
+import { ActiveGame, FetchedGame } from "@utils/types";
 import Dropdown from "@components/Dropdown";
 import { endpoints } from "@utils/constants";
+
 type launchProps = {
-    activeGames: ActiveGame[];
-    setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>;
+    activeGamesLoaded: FetchedGame[];
+    setActiveGamesLoaded: React.Dispatch<React.SetStateAction<FetchedGame[]>>;
 };
 
-const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
+const LanchGame: React.FC<launchProps> = ({ activeGamesLoaded, setActiveGamesLoaded }) => {
     const options = [
         { id: 0, size: 4000, players: 20, cost: "0.4 SOL" },
         { id: 1, size: 6000, players: 45, cost: "1.0 SOL" },
@@ -17,7 +19,6 @@ const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
     ];
 
     const [selectedOption, setSelectedOption] = useState(0);
-    const { publicKey } = useWallet();
     const [selectedServer, setSelectedServer] = useState<string>("");
     const [selectedEndpoint, setSelectedEndpoint] = useState<string>("");
 
@@ -77,13 +78,8 @@ const LanchGame: React.FC<launchProps> = ({ activeGames, setActiveGames }) => {
             <div style={{ marginRight: "1.5vw", marginTop: "1vw" }}>
                 <CreateGame
                     game_size={options[selectedOption].size}
-                    activeGames={activeGames}
-                    setActiveGames={setActiveGames}
-                    userKey={
-                        publicKey !== null
-                            ? publicKey.toString()
-                            : "Connect Wallet"
-                    }
+                    activeGamesLoaded={activeGamesLoaded}
+                    setActiveGamesLoaded={setActiveGamesLoaded}
                     selectedServer={selectedEndpoint}
                 />
             </div>

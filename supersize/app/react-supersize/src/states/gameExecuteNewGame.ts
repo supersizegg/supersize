@@ -14,7 +14,7 @@ import {
   InitializeComponent,
   InitializeNewWorld,
 } from "@magicblock-labs/bolt-sdk";
-import { ActiveGame } from "@utils/types";
+import { ActiveGame, FetchedGame, PlayerInfo } from "@utils/types";
 import { fetchTokenMetadata, getTopLeftCorner, stringToUint8Array } from "@utils/helper";
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { COMPONENT_PLAYER_ID, COMPONENT_ANTEROOM_ID, COMPONENT_MAP_ID, COMPONENT_SECTION_ID } from "./gamePrograms";
@@ -54,6 +54,7 @@ async function retryTransaction(
   transactionId: string,
   transactionFn: () => Promise<void>,
   setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>,
+  showPrompt: (errorMessage: string) => Promise<boolean>
 ) {
   let retry = true;
   while (retry) {
@@ -67,7 +68,8 @@ async function retryTransaction(
       if (error instanceof Error) {
         message = error.message;
       }
-      retry = window.confirm(`Transaction ${transactionId} failed: ${message}. Would you like to retry?`);
+      //retry = window.confirm(`Transaction ${transactionId} failed: ${message}. Would you like to retry?`);      
+      retry = await showPrompt(`Transaction ${transactionId} failed: ${message}`);
     }
   }
 }
@@ -80,9 +82,12 @@ export async function gameExecuteNewGame(
   game_owner_wallet_string: string,
   game_token_string: string,
   game_name: string,
-  activeGames: ActiveGame[],
-  setActiveGames: React.Dispatch<React.SetStateAction<ActiveGame[]>>,
+  activeGamesLoaded: FetchedGame[],
+  setActiveGamesLoaded: React.Dispatch<React.SetStateAction<FetchedGame[]>>,
   setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>,
+  showPrompt: (errorMessage: string) => Promise<boolean>,
+  setNewGameId: React.Dispatch<React.SetStateAction<string>>,
+  setGameCreated: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   const base_buyin = Math.sqrt(max_buyin * min_buyin);
   const max_multiple = max_buyin / base_buyin;
@@ -129,6 +134,7 @@ export async function gameExecuteNewGame(
       await engine.processWalletTransaction(solTxnId, solTx);
     },
     setTransactions,
+    showPrompt
   );
 
   const worldTxnId = "init-world";
@@ -146,38 +152,33 @@ export async function gameExecuteNewGame(
     connection,
   });
 
+  setNewGameId(initNewWorld.worldId.toNumber().toString());
+
   const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
     units: CONFIG.computeUnitLimit,
   });
-  initNewWorld.transaction.add(computeIx);
-  await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
+  //initNewWorld.transaction.add(computeIx);
+  //await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
 
-  /*
   await retryTransaction(
     worldTxnId,
     async () => {
-      const newWorld = await InitializeNewWorld({
-        payer: engine.getSessionPayer(),
-        connection,
-      });
 
       const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
         units: CONFIG.computeUnitLimit,
       });
-      newWorld.transaction.add(computeIx);
-      await engine.processSessionChainTransaction(worldTxnId, newWorld.transaction);
+      initNewWorld.transaction.add(computeIx);
+      await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
 
-      initNewWorld = newWorld;
     },
     setTransactions,
+    showPrompt
   );
-  */
+  
 
   if (!initNewWorld) {
     throw new Error("Failed to initialize the new world.");
   }
-
-  await addTransaction(setTransactions, initNewWorld.worldId.toString(), "new game id");
 
   const mapTxnId = "create-map";
   await addTransaction(setTransactions, mapTxnId, "pending");
@@ -208,6 +209,7 @@ export async function gameExecuteNewGame(
       await engine.processSessionChainTransaction(mapTxnId, mapTx);
     },
     setTransactions,
+    showPrompt
   );
 
   const foodEntityPdas = Array.from({ length: foodcomponents }, (_, i) =>
@@ -240,7 +242,7 @@ export async function gameExecuteNewGame(
 
         await Promise.all(addEntityPromises).catch((error) => {
           console.error("Error in batch processing:", error);
-          throw new Error("Batch processing failed, retrying...");
+          throw new Error("Batch processing failed");
         });
 
         tx.add(
@@ -253,6 +255,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
+    showPrompt
   );
 
   const playerEntityPdas = Array.from({ length: maxplayer + 1 }, (_, i) =>
@@ -285,7 +288,7 @@ export async function gameExecuteNewGame(
 
         await Promise.all(addEntityPromises).catch((error) => {
           console.error("Error in batch processing:", error);
-          throw new Error("Batch processing failed, retrying...");
+          throw new Error("Batch processing failed");
         });
 
         tx.add(
@@ -298,6 +301,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
+    showPrompt
   );
 
   const anteroomTxnId = "create-anteroom";
@@ -328,6 +332,7 @@ export async function gameExecuteNewGame(
       await engine.processSessionChainTransaction(anteroomTxnId, anteroomTx);
     },
     setTransactions,
+    showPrompt
   );
 
   // Initialize map component
@@ -351,6 +356,7 @@ export async function gameExecuteNewGame(
       console.log(`Init map component signature: ${initMapIx.transaction}`);
     },
     setTransactions,
+    showPrompt
   );
 
   // Initialize food components
@@ -375,7 +381,7 @@ export async function gameExecuteNewGame(
 
         await Promise.all(initComponentPromises).catch((error) => {
           console.error("Error in batch processing:", error);
-          throw new Error("Batch processing failed, retrying...");
+          throw new Error("Batch processing failed");
         });
 
         tx.add(
@@ -388,6 +394,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
+    showPrompt
   );
 
   // Initialize player components
@@ -412,7 +419,7 @@ export async function gameExecuteNewGame(
         // Wait for all promises to resolve and catch any errors
         await Promise.all(initComponentPromises).catch((error) => {
           console.error("Error in batch processing:", error);
-          throw new Error("Batch processing failed, retrying...");
+          throw new Error("Batch processing failed");
         });
 
         tx.add(
@@ -425,6 +432,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
+    showPrompt
   );
 
   // Initialize anteroom component
@@ -448,6 +456,7 @@ export async function gameExecuteNewGame(
       console.log(`Init anteroom component signature: ${initAnteIx.transaction}`);
     },
     setTransactions,
+    showPrompt
   );
 
   const vaultTxnId = "setup-vault";
@@ -482,6 +491,7 @@ export async function gameExecuteNewGame(
       await engine.processSessionChainTransaction(vaultTxnId, vaultTx);
     },
     setTransactions,
+    showPrompt
   );
 
   const initGameTxnId = "initialize-game";
@@ -503,6 +513,7 @@ export async function gameExecuteNewGame(
       console.log(`Game initialized with signature: ${initGameSig}`);
     },
     setTransactions,
+    showPrompt
   );
 
   // Initialize players
@@ -525,11 +536,12 @@ export async function gameExecuteNewGame(
         // Wait for all promises to resolve and catch any errors
         await Promise.all(initPlayerPromises).catch((error) => {
           console.error("Error initializing players:", error);
-          throw new Error("Batch processing failed, retrying...");
+          throw new Error("Batch processing failed");
         });
       }
     },
     setTransactions,
+    showPrompt
   );
 
   // Initialize anteroom with token info
@@ -552,6 +564,7 @@ export async function gameExecuteNewGame(
       console.log(`Init func anteroom signature: ${initAnteroom}`);
     },
     setTransactions,
+    showPrompt
   );
 
   // Delegate map component
@@ -578,6 +591,7 @@ export async function gameExecuteNewGame(
       console.log(`Delegation signature map: ${delsignature}`);
     },
     setTransactions,
+    showPrompt
   );
 
   // Delegate food components
@@ -604,7 +618,7 @@ export async function gameExecuteNewGame(
         // Wait for all promises to resolve and catch any errors
         const instructions = await Promise.all(delegatePromises).catch((error) => {
           console.error("Error in batch processing:", error);
-          throw new Error("Batch processing failed, retrying...");
+          throw new Error("Batch processing failed");
         });
 
         instructions.forEach((instruction) => playertx.add(instruction));
@@ -618,6 +632,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
+    showPrompt
   );
 
   // Initialize food positions
@@ -652,34 +667,44 @@ export async function gameExecuteNewGame(
         // Wait for all promises to resolve and catch any errors
         await Promise.all(initFoodPromises).catch((error) => {
           console.error("Error processing food batch:", error);
-          throw new Error("Batch processing failed, retrying...");
+          throw new Error("Batch processing failed");
         });
       }
     },
     setTransactions,
+    showPrompt
   );
 
   // Finalize new game setup in active games
   const tokenMetadata = await fetchTokenMetadata(mint_of_token.toString());
-  const newGame: ActiveGame = {
-    isLoaded: true,
-    worldId: initNewWorld.worldId,
-    worldPda: initNewWorld.worldPda,
-    name: game_name,
-    active_players: 0,
-    max_players: maxplayer,
-    size: game_size,
-    image: tokenMetadata.image || `${process.env.PUBLIC_URL}/default.png`,
-    token: tokenMetadata.name || "TOKEN",
-    base_buyin: base_buyin,
-    min_buyin: min_buyin,
-    max_buyin: max_buyin,
-    endpoint: engine.getEndpointEphemRpc(),
-    ping: 1000,
-  };
+  const newGame: FetchedGame = {
+    activeGame: {
+        isLoaded: true,
+        worldId: initNewWorld.worldId,
+        worldPda: initNewWorld.worldPda,
+        name: game_name,
+        active_players: 0,
+        max_players: maxplayer,
+        size: game_size,
+        image: tokenMetadata.image || `${process.env.PUBLIC_URL}/default.png`,
+        token: tokenMetadata.name || "TOKEN",
+        base_buyin: base_buyin,
+        min_buyin: min_buyin,
+        max_buyin: max_buyin,
+        endpoint: engine.getEndpointEphemRpc(),
+        ping: 1000,
+    } as ActiveGame, 
+    playerInfo: {
+        playerStatus: "new_player",
+        need_to_delegate: false,
+        need_to_undelegate: false,
+        newplayerEntityPda: new PublicKey(0)
+    } as PlayerInfo
+  }
 
-  setActiveGames([newGame, ...activeGames]);
-  console.log('activeGames', activeGames, newGame);
+
+  setActiveGamesLoaded([...activeGamesLoaded, newGame]);
+  console.log('activeGames', activeGamesLoaded, newGame);
 
   // Reclaim leftover SOL
   const reclaimSolTxnId = "reclaim-sol";
@@ -699,7 +724,8 @@ export async function gameExecuteNewGame(
       console.log(`Reclaimed leftover SOL.`);
     },
     setTransactions,
+    showPrompt
   );
-
-  await addTransaction(setTransactions, initNewWorld.worldId.toString(),"Success! new game id");
+  
+  setGameCreated(true);
 }

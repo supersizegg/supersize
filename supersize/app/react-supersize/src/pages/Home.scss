@@ -146,3 +146,30 @@
   }
 }
 
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+}
+.tooltip-text{
+    position: absolute; 
+    top: 50%; 
+    left: 100%; 
+    transform: translateY(-50%); 
+    color: red; 
+    font-size: small; 
+    margin-left: 5px;
+    visibility: hidden;  
+    background-color: white;
+    opacity: 0.7;
+    border-radius: 5px;
+    padding: 5px;
+    margin-left: 5px;
+}
+.refresh-icon:hover {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+

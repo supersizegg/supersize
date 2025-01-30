@@ -30,6 +30,9 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
 
     const animationFrame = useRef(0);
 
+    const [screenSize, setScreenSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+    const exitHovered = useRef(false);  
+
     const [target, setTarget] = useState({ x: 0, y: 0, boost: false });
 
     const [currentPlayer, setCurrentPlayer] = useState<Blob | null>(null);
@@ -42,7 +45,6 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
 
 
     const countdown = useRef(5);
-    // const [exitHovered, setExitHovered] = useState(false);
     const playerRemovalTimeRef = useRef<BN | null>(null);
     const [playerExiting, setPlayerExiting] = useState(false);
     const [gameEnded, setGameEnded] = useState(0);
@@ -71,6 +73,23 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
         }
         currentPlayerRef.current = currentPlayer;
     }, [currentPlayer]);
+
+    const getRoundedAmount = (amount: number, foodUnitValue: number) : string => {
+        const decimals = getDecimals(foodUnitValue);
+        if (decimals > 0) {
+            return amount.toFixed(decimals);
+        } else {
+            return amount.toString();
+        }
+    }
+
+    const getDecimals = (amount: number) : number => {
+        if (amount % 1 !== 0) {
+            return amount.toString().split('.')[1]?.length || 0;
+        } else {
+            return 0;
+        }
+    }
 
     const handleExitClick = () => {
         if (!currentPlayerEntity.current) {
@@ -325,7 +344,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                 return foodList.reduce<Food[]>((innerAcc, foodItem) => {
                     const diffX = foodItem.x - currentPlayer.x;
                     const diffY = foodItem.y - currentPlayer.y;
-                    if (Math.abs(diffX) <= ((window.innerWidth / 2) + 100) && Math.abs(diffY) <= ((window.innerHeight / 2) + 100)) {
+                    if (Math.abs(diffX) <= ((screenSize.width / 2) + 100) && Math.abs(diffY) <= ((screenSize.height / 2) + 100)) {
                         innerAcc.push({
                             x: foodItem.x,
                             y: foodItem.y, 
@@ -339,6 +358,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
         }
     }, [currentPlayer, allFood]);
 
+
     useEffect(() => {
 
         const handleMouseMove = (event: MouseEvent) => {
@@ -346,16 +366,30 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
         };
 
         const handleMouseDown = () => {
-            currentIsMouseDownRef.current = true;
+            if(!exitHovered.current){
+                currentIsMouseDownRef.current = true;
+            }
         };
 
         const handleMouseUp = () => {
             currentIsMouseDownRef.current = false;
         };
+
+        const handleResize = () => {
+            const gameDiv = document.querySelector('.game');
+            if (gameDiv) {
+                const { width, height } = gameDiv.getBoundingClientRect();
+                setScreenSize({width: width, height: height});
+            }else{
+                setScreenSize({width: window.innerWidth, height: window.innerHeight});
+            }
+        };
+
         console.log('Set mouse listeners');
         window.addEventListener("mousedown", handleMouseDown);
         window.addEventListener("mouseup", handleMouseUp);
         window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener('resize', handleResize);
 
         return () => {
             console.log('Remove mouse listeners');
@@ -363,6 +397,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
             cancelAnimationFrame(animationFrame.current);
             window.removeEventListener("mousedown", handleMouseDown);
             window.removeEventListener("mouseup", handleMouseUp);
+            window.removeEventListener('resize', handleResize);
         };
         
     }, []);
@@ -442,8 +477,8 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                             currentPlayer.authority.toString() !=
                             playerx.authority.toString()
                         ) {
-                            const halfWidth = (window.innerWidth / 2) + 100;
-                            const halfHeight = (window.innerHeight / 2) + 100;
+                            const halfWidth = (screenSize.width / 2) + 100;
+                            const halfHeight = (screenSize.height / 2) + 100;
                             const diffX = playerx.x - currentPlayer.x;
                             const diffY = playerx.y - currentPlayer.y;
 
@@ -497,14 +532,14 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                         0,
                         Math.min(
                             gameInfo.size,
-                            Math.floor(currentPlayerRef.current.x + currentMousePositionRef.current.x- window.innerWidth / 2),
+                            Math.floor(currentPlayerRef.current.x + currentMousePositionRef.current.x- screenSize.width / 2),
                         ), 
                     );
                     const newY = Math.max(
                         0,
                         Math.min(
                             gameInfo.size,
-                            Math.floor(currentPlayerRef.current.y + currentMousePositionRef.current.y - window.innerHeight / 2),
+                            Math.floor(currentPlayerRef.current.y + currentMousePositionRef.current.y - screenSize.height / 2),
                         ),
                     );
                     setTarget({ x: newX, y: newY, boost: currentIsMouseDownRef.current });
@@ -528,17 +563,17 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
             <div
                 className={`block flex items-center fixed top-0 left-0 m-2.5 z-[9999]`}
                 style={{ zIndex: 9999 }}
-                onMouseEnter={() => {
-                    // setExitHovered(true);
-                }}
-                onMouseLeave={() => {
-                    // setExitHovered(false);
-                }}
             >
                 <button
                     style={{border: '1px solid red', background: '#ff000042', color: '#fff'}}
                     className="flex items-center justify-center text-center relative box-border text-sm cursor-pointer text-black no-underline bg-[#f07171] float-right border border-[#f07171] rounded-full py-1.5 px-2.5 transition-colors duration-300 z-[9999999] hover:bg-black hover:text-[#f07171] active:bg-black active:text-[#f07171]"
                     onClick={handleExitClick}
+                    onMouseEnter={() => {
+                        exitHovered.current = true;
+                    }}
+                    onMouseLeave={() => {
+                        exitHovered.current = false;
+                    }}
                 >
                     Exit & Cash Out
                 </button>
@@ -555,7 +590,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                 <div>
                     <span className="opacity-50">Your size: </span>
                     <span className="opacity-100">
-                        {currentPlayer ? currentPlayer.score : null}
+                        {currentPlayer ? getRoundedAmount(currentPlayer.score, gameInfo.base_buyin / 1000) : null}
                     </span>
                 </div>
             </div>
@@ -572,7 +607,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                     players={players}
                     visibleFood={visibleFood.flat()}
                     currentPlayer={currentPlayer}
-                    screenSize={{width: window.innerWidth, height: window.innerHeight}}
+                    screenSize={screenSize}
                     newTarget={target}
                     gameSize={gameInfo.size}
                 />
@@ -601,14 +636,18 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                     <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black z-[9999]">
                         <div className="bg-black flex flex-col items-center justify-center select-text">
                             <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
-                                Final score: {currentPlayer ? currentPlayer.score + currentPlayer.tax : ''}
+                                Final score: {currentPlayer ? 
+                                getRoundedAmount(currentPlayer.score + currentPlayer.tax, gameInfo.base_buyin / 1000) : ''}
                             </p>
                             <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
                                 Exit tax:{" "}
-                                {currentPlayer ? currentPlayer.tax + currentPlayer.score * 0.02 : ''}
+                                {currentPlayer ?
+                                getRoundedAmount(currentPlayer.tax + currentPlayer.score * 0.02, gameInfo.base_buyin / 1000)
+                                 : ''}
                             </p>
                             <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
-                                Payout: {currentPlayer ? currentPlayer.score * 0.98 : ''}
+                                Payout: {currentPlayer ? 
+                                getRoundedAmount(currentPlayer.score * 0.98, gameInfo.base_buyin / 1000) : ''}
                             </p>
                             <div
                                 className="flex items-center justify-center"
@@ -662,10 +701,20 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                                         ) : (
                                             <button
                                                 className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
-                                                onClick={() => {if(anteroomEntity.current && currentPlayerEntity.current && currentPlayer) {gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current).catch((error) => {
-                                                    console.log('error', error);
-                                                    setCashoutTx("error");
-                                                })}}}
+                                                onClick={async () => {
+                                                    if(anteroomEntity.current && currentPlayerEntity.current && currentPlayer) {
+                                                        setCashoutTx(null);
+                                                        let cashouttx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current).catch((error) => {
+                                                            console.log('error', error);
+                                                            setCashoutTx("error");
+                                                        });
+                                                        if(cashouttx) {
+                                                            setCashoutTx(cashouttx);
+                                                        } else {
+                                                            setCashoutTx("error");
+                                                        }
+                                                    }
+                                                }}
                                             >
                                                 Retry
                                             </button>
