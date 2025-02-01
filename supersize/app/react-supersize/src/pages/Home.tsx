@@ -590,7 +590,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                         { isSearchingGame && <Spinner /> }
                     </div>
                     <div className="header-buttons">
-                        <button className="btn-outlined btn-orange" disabled>How to Play</button>
+                        <button className="btn-outlined btn-orange" onClick={() => navigate("/about")}>How to Play</button>
                         <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
                             + Create Game
                         </button>

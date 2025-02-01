@@ -6,6 +6,7 @@ import CreateGame from "@pages/CreateGame";
 import Game from "@pages/Game";
 import Leaderboard from "@pages/Leaderboard";
 import Profile from "@pages/Profile";
+import HowToPlay from "@pages/HowToPlay";
 import { ActiveGame, FetchedGame } from "@utils/types";
 import { useState } from "react";
 import { PublicKey } from "@solana/web3.js";
@@ -50,6 +51,7 @@ const AppRoutes = () => {
                 <Route path="/game" element={<Game gameInfo={selectedGame} myPlayerEntityPda={myPlayerEntityPda} />} />
             )}
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/about" element={<HowToPlay />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,0 +1,75 @@
+.how-to-play-container {
+  width: 70vw;
+  max-width: 1000px;
+  margin: 5rem auto;
+  border-radius: 8px;
+  padding: 2rem;
+  color: #fff;
+  font-family: "Open Sans", sans-serif;
+  box-sizing: border-box;
+}
+
+.top-blocks-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.block {
+  background: #141516;
+  border: 1px solid #212527;
+  border-radius: 8px;
+  padding: 1rem;
+  flex: 1;
+  margin: 0 0.5rem;
+}
+
+.block h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.block p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.alert-box {
+  background-color: #fef3c7;
+  border: 1px solid #facc15;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  color: #000;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.block3 {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 1rem;
+  background: #141516;
+  border: 1px solid #212527;
+  border-radius: 8px;
+}
+
+.block3-text {
+  flex: 1;
+}
+
+.block3-image {
+  width: 200px;
+  position: relative;
+}
+
+.block3-image img {
+  width: 100%;
+  display: block;
+  position: absolute;
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+}
