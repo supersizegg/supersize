@@ -526,6 +526,9 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
     useEffect(() => {
 
         const intervalId = setInterval(() => {
+            if (exitHovered.current) {
+                return;
+            }
             if (currentPlayerEntity.current && currentPlayerRef.current && entityMatch.current  && foodEntities.current && playerEntities.current && players && foodListLen) {
                 gameSystemMove(engine, gameInfo, currentPlayerEntity.current, currentPlayerRef.current, entityMatch.current, foodEntities.current, playerEntities.current, players, foodListLen, currentMousePositionRef.current.x, currentMousePositionRef.current.y, currentIsMouseDownRef.current, {width: gameInfo.size, height: gameInfo.size}); 
                     const newX = Math.max(
@@ -554,7 +557,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
         <div className="gameWrapper w-screen h-screen overflow-hidden">
             <div
                 id="status"
-                className={`absolute p-2.5 bg-[rgba(17,19,20,0.4)] text-white font-['Terminus'] text-[16.1px] top-2.5 right-2.5 font-bold text-center rounded-[5px] border border-gray-400 filter drop-shadow-[0px_0px_5px_gray]`}
+                className={`absolute p-2.5  text-white text-[16px] top-2.5 right-2.5 font-bold text-center rounded-[5px] border border-gray-400`}
                 style={{ zIndex: 9999 }}
             >
                 <span className="font-[25px] text-white">Leaderboard</span>

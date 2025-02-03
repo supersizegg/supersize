@@ -443,7 +443,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
 };
 
   return (
-      <canvas id="gamecanvas" ref={canvasRef} style={{ position: "relative", width: "100%", height: "100%",display: "block" }}></canvas>
+      <canvas id="gamecanvas" ref={canvasRef} style={{ position: "relative", width: "100%", height: "100%",display: "block", backgroundImage: "url('/space-bg.jpg')", backgroundSize: "cover" }}></canvas>
   );
 };
 

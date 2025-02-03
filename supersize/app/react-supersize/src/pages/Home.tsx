@@ -131,22 +131,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             let mint_of_token_being_sent = new PublicKey(0);
                             if (anteParsedData && anteParsedData.token) {
                                 mint_of_token_being_sent = anteParsedData.token;
-                                if (
-                                    mint_of_token_being_sent.toString() ===
-                                    "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
-                                ) {
-                                    newGameInfo.image = `${process.env.PUBLIC_URL}/agld.jpg`;
-                                    newGameInfo.token = "AGLD";
-                                } else {
-                                    try {
-                                        const { name, image } = await fetchTokenMetadata(
-                                            mint_of_token_being_sent.toString(),
-                                        );
-                                        newGameInfo.image = image;
-                                        newGameInfo.token = name;
-                                    } catch (error) {
-                                        console.error("Error fetching token data:", error);
-                                    }
+                                try {
+                                    const { name, image } = await fetchTokenMetadata(
+                                        mint_of_token_being_sent.toString(),
+                                    );
+                                    newGameInfo.image = image;
+                                    newGameInfo.token = name;
+                                } catch (error) {
+                                    console.error("Error fetching token data:", error);
                                 }
                             }
                             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
@@ -355,22 +347,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     base_buyin = anteParsedData.baseBuyin;
                     max_buyin = anteParsedData.maxBuyin;
                     min_buyin = anteParsedData.minBuyin;
-                    if (
-                        mint_of_token_being_sent.toString() ===
-                        "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
-                    ) {
-                        token_image = `${process.env.PUBLIC_URL}/agld.jpg`;
-                        token_name = "AGLD";
-                    } else {
-                        try {
-                            const { name, image } = await fetchTokenMetadata(
-                                mint_of_token_being_sent.toString(),
-                            );
-                            token_image = image;
-                            token_name = name;
-                        } catch (error) {
-                            console.error("Error fetching token data:", error);
-                        }
+                    try {
+                        const { name, image } = await fetchTokenMetadata(
+                            mint_of_token_being_sent.toString(),
+                        );
+                        token_image = image;
+                        token_name = name;
+                    } catch (error) {
+                        console.error("Error fetching token data:", error);
                     }
                 }
                 const mapParsedData = await mapFetchOnChain(engine, mapComponentPda);
@@ -553,14 +537,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 });
                 const joinsig = await gameSystemJoin(engine, game.activeGame, game.playerInfo.newplayerEntityPda, mapEntityPda, "unnamed");
                 setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
-                navigate("/game");
+                navigate(`/game?id=${mapEntityPda.toString()}`);
               } catch (joinError) {
                 console.log("error", joinError);
               }
         }
         if (game.playerInfo.playerStatus === "in_game") {
             setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
-            navigate("/game");
+            navigate(`/game?id=${game.activeGame.worldPda.toString()}`);
         }
         if(game.playerInfo.playerStatus === "error"){
             console.log("error joining game");

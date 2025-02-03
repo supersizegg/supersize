@@ -109,5 +109,32 @@ export const activeGamesList: { worldId: anchor.BN; worldPda: PublicKey; endpoin
 
 export const options = ["Europe", "America", "Asia"];
 
+export const cachedTokenMetadata: Record<string, { name: string; symbol: string; image: string; network: string }> = {
+    "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn": {
+        name: "Adventure Gold (Wormhole)",
+        symbol: "AGLD",
+        image: `${process.env.PUBLIC_URL}/agld.jpg`,
+        network: "mainnet",
+    },
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+        name: "USD Coin",
+        symbol: "USDC",
+        image: `${process.env.PUBLIC_URL}/usdc.png`,
+        network: "mainnet",
+    },
+    "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp": {
+        name: "Magical Gem",
+        symbol: "MBGEM",
+        image: `https://shdw-drive.genesysgo.net/4PMP1MG5vYGkT7gnAMb7E5kqPLLjjDzTiAaZ3xRx5Czd/gem.png`,
+        network: "devnet",
+    },
+    "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263": {
+        name: "Bonk",
+        symbol: "BONK",
+        image: "https://d23exngyjlavgo.cloudfront.net/solana_DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+        network: "mainnet",
+    }
+};
+
 export const API_BASE_URL = "http://localhost:3000/api";
 export const scale = 1;
