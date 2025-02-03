@@ -4,6 +4,7 @@ import { ActiveGame, FetchedGame } from "@utils/types";
 import TxnModal from "@components/txnModal";
 import { useWallet } from "@solana/wallet-adapter-react"
 import { gameExecuteNewGame } from "../../states/gameExecuteNewGame";
+import "./CreateGameForm.scss";
 
 type gameProps = {
     game_size: number;
@@ -24,7 +25,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, activeGamesLoaded, setActi
         0.1,
         userKey,
         "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp",
-        "ffa",
+        "To the moon!",
     ]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +41,12 @@ const CreateGame: React.FC<gameProps> = ({ game_size, activeGamesLoaded, setActi
             resolveFnRef.current = resolve;
         });
     }
+
+    useEffect(() => {
+      setTransactions([]);
+      setNewGameId("");
+      setGameCreated(false);
+    }, []);
 
     useEffect(() => {
         try{
@@ -70,7 +77,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, activeGamesLoaded, setActi
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setIsModalOpen(true); // Open the modal
+        setIsModalOpen(true);
         console.log(selectedServer);
         engine.setEndpointEphemRpc(selectedServer);
         gameExecuteNewGame(engine, formData[0], formData[1], formData[2], formData[3], formData[4], formData[5], activeGamesLoaded, setActiveGamesLoaded, setTransactions, showPrompt, setNewGameId, setGameCreated);
@@ -78,7 +85,7 @@ const CreateGame: React.FC<gameProps> = ({ game_size, activeGamesLoaded, setActi
 
     return (
         <>
-        <TxnModal
+          <TxnModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             transactions={transactions}
@@ -87,75 +94,67 @@ const CreateGame: React.FC<gameProps> = ({ game_size, activeGamesLoaded, setActi
             newGameId={newGameId}
             gameCreated={gameCreated}
             handleUserRetry={() => {
-                if (resolveFnRef.current) resolveFnRef.current(true);
+              if (resolveFnRef.current) resolveFnRef.current(true);
             }}
-        />
-        <form
-            className="flex flex-col h-fit w-[21vw] gap-2.5 p-5 border border-[#272B30] rounded-[10px] text-white bg-black shadow-[rgba(0,0,0,0.05)_0px_1px_2px_0px] font-[Terminus]"
-            onSubmit={handleSubmit}
-        >
-            <h2 className="mb-[0.2vw]">Game Settings</h2>
-            <label>
-                <span className="mb-[5px] ml-[10px]">Name</span>
-                <input
-                    type="text"
-                    className="border border-[#272B30] rounded-[5px] w-full h-[30px] bg-black text-white pl-1 font-[Terminus]"
-                    name="game_name"
-                    value={String(formData[5])}
-                    onChange={handleChange(5)}
-                />
+          />
+          <form className="create-game-form" onSubmit={handleSubmit}>
+            <label className="form-label">
+              <span className="label-text">Name</span>
+              <input
+                type="text"
+                className="form-input"
+                name="game_name"
+                value={formData[5]}
+                onChange={handleChange(5)}
+              />
             </label>
-            <label>
-                <span className="mb-[5px] ml-[10px]">Max Buy-In</span>
-                <input
-                    className="no-arrows border border-[#272B30] rounded-[5px] w-full h-[30px] bg-black text-white pl-1 font-[Terminus]"
-                    type="number"
-                    name="buy_in_min"
-                    value={String(formData[1])}
-                    onChange={handleChange(1)}
-                />
+            <label className="form-label">
+              <span className="label-text">Max Buy-In</span>
+              <input
+                type="number"
+                className="form-input no-arrows"
+                name="buy_in_min"
+                value={formData[1]}
+                onChange={handleChange(1)}
+              />
             </label>
-            <label>
-                <span className="mb-[5px] ml-[10px]">Min Buy-In</span>
-                <input
-                    className="no-arrows border border-[#272B30] rounded-[5px] w-full h-[30px] bg-black text-white pl-1 font-[Terminus]"
-                    type="number"
-                    name="buy_in_max"
-                    value={String(formData[2])}
-                    onChange={handleChange(2)}
-                />
+            <label className="form-label">
+              <span className="label-text">Min Buy-In</span>
+              <input
+                type="number"
+                className="form-input no-arrows"
+                name="buy_in_max"
+                value={formData[2]}
+                onChange={handleChange(2)}
+              />
             </label>
-            <label>
-                <span className="mb-[5px] ml-[10px]">Token (mint address)</span>
-                <input
-                    className="no-arrows border border-[#272B30] rounded-[5px] w-full h-[30px] bg-black text-white pl-1 font-[Terminus]"
-                    type="text"
-                    name="game_token"
-                    value={String(formData[4])}
-                    onChange={handleChange(4)}
-                />
+            <label className="form-label">
+              <span className="label-text">Token (mint address)</span>
+              <input
+                type="text"
+                className="form-input no-arrows"
+                name="game_token"
+                value={formData[4]}
+                onChange={handleChange(4)}
+              />
             </label>
-            <label style={{ marginBottom: "5px" }}>
-                <span className="mb-[5px] ml-[10px]">
-                    Game Owner (wallet address)
-                </span>
-                <input
-                    className="no-arrows border border-[#272B30] rounded-[5px] w-full h-[30px] bg-black text-white pl-1 font-[Terminus]"
-                    type="text"
-                    name="game_owner"
-                    value={String(formData[3])}
-                    onChange={handleChange(3)}
-                />
+            <label className="form-label">
+              <span className="label-text">Game Owner (wallet address)</span>
+              <input
+                type="text"
+                className="form-input no-arrows"
+                name="game_owner"
+                value={formData[3]}
+                onChange={handleChange(3)}
+              />
             </label>
-            <button
-                type="submit"
-                className="px-4 py-2 text-[20px] font-[Terminus] rounded-[10px] cursor-pointer bg-[#000] text-white border-[1px] border-[#C4B5FD] shadow-[rgb(109,88,135)_0px_0px_10px_0px] transition-all duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#000] hover:border-[#755E92] hover:shadow-none"
-            >
-                Create Game
+            <button type="submit" className="submit-button">
+              Create Game
             </button>
-        </form>
+          </form>
         </>
-    );
+      );
+    
 };
 
 export default CreateGame;

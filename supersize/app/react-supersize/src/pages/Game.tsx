@@ -554,14 +554,14 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
         <div className="gameWrapper w-screen h-screen overflow-hidden">
             <div
                 id="status"
-                className={`block absolute p-2.5 bg-[rgba(17,19,20,0.4)] text-white font-['Terminus'] text-[16.1px] top-2.5 right-2.5 font-bold text-center rounded-[5px] border border-gray-400 filter drop-shadow-[0px_0px_5px_gray]`}
+                className={`absolute p-2.5 bg-[rgba(17,19,20,0.4)] text-white font-['Terminus'] text-[16.1px] top-2.5 right-2.5 font-bold text-center rounded-[5px] border border-gray-400 filter drop-shadow-[0px_0px_5px_gray]`}
                 style={{ zIndex: 9999 }}
             >
                 <span className="font-[25px] text-white">Leaderboard</span>
             </div>
 
             <div
-                className={`block flex items-center fixed top-0 left-0 m-2.5 z-[9999]`}
+                className={`flex items-center fixed top-0 left-0 m-2.5 z-[9999]`}
                 style={{ zIndex: 9999 }}
             >
                 <button
@@ -578,14 +578,14 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                     Exit & Cash Out
                 </button>
                 {playerExiting && countdown.current > 0 && (
-                    <div className="block text-[#f07171] font-[Terminus] text-xl text-right ml-2.5">
+                    <div className="text-[#f07171] font-[Terminus] text-xl text-right ml-2.5">
                         Disconnecting in {countdown.current} seconds
                     </div>
                 )}
             </div>
 
             <div
-                className={`block fixed bottom-0 left-0 m-2 z-[9999] text-white text-base font-[terminus] flex flex-col`}
+                className={`fixed bottom-0 left-0 m-2 z-[9999] text-white text-base font-[terminus] flex flex-col`}
             >
                 <div>
                     <span className="opacity-50">Your size: </span>

@@ -1,0 +1,233 @@
+.txn-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.txn-modal-container {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 500px;
+  overflow: hidden;
+  background-color: #171719;
+  border: 1px solid #272b30;
+}
+
+.txn-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #444;
+}
+
+.txn-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.txn-modal-close-button {
+  background: transparent;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.txn-modal-close-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.txn-modal-close-button:hover:not(:disabled) {
+  color: #fff;
+}
+
+.close-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.txn-modal-body {
+  padding: 1rem;
+  min-height: 160px;
+  color: #fff;
+}
+
+.txn-modal-transactions-header {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.txn-modal-transactions-list {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.txn-modal-transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.5rem;
+}
+
+.txn-modal-transaction-id {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.txn-modal-transaction-id-text {
+  margin: 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.txn-modal-transaction-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.txn-modal-spacer {
+  width: 10px;
+}
+
+.spinner {
+  margin-left: 5px;
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  stroke: white;
+}
+
+.confirmed-icon {
+  margin-left: 5px;
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+}
+
+.confirmed-circle {
+  stroke: #15bd12;
+  fill: #15bd12;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.confirmed-check {
+  stroke: white;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  transform-origin: 50% 50%;
+  animation: scale 0.3s ease-in-out 0.9s both;
+}
+
+@keyframes stroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.failed-icon {
+  color: red;
+  font-weight: bold;
+}
+
+.success-icon {
+  background: rgb(4, 218, 4);
+  font-weight: bold;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.txn-modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #444;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.txn-modal-error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.txn-modal-error-message {
+  color: #f87171;
+  text-align: center;
+  margin: 0;
+}
+
+.modal-info-text {
+  font-size: 14px;
+  background: #fef3c7;
+  border: 1px solid #facc15;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  color: #000;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.create-game-success-text {
+  background: #469746;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.txn-modal-retry-prompt {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.txn-modal-retry-button,
+.txn-modal-restart-button {
+  width: 100%;
+  background-color: #3b82f6;
+  color: #fff;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.txn-modal-retry-button:hover,
+.txn-modal-restart-button:hover {
+  background-color: #2563eb;
+}

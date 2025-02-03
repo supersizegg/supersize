@@ -625,7 +625,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             </tr>
                         </thead>
                         <tbody>
-                            {activeGamesLoaded.filter(row => row.activeGame.ping > 0).length == 0 && <tr><td colSpan={10}><Spinner /> {' '} Loading games, please wait. </td></tr>}
+                            {activeGamesLoaded.filter(row => row.activeGame.ping > 0).length == 0 && <tr><td colSpan={10} style={{textAlign: 'center'}}><Spinner /> {' '} Loading games, please wait. </td></tr>}
                             {activeGamesLoaded.map((row, idx) => (
                                 <tr key={idx} style={{display: row.activeGame.ping <= 0 ? 'none' : 'table-row'}}>
                                     <td>{row.activeGame.isLoaded ? row.activeGame.name : <Spinner />}</td>

@@ -24,21 +24,17 @@ const HowToPlay: React.FC = () => {
               Bigger players move slower than smaller players but can expend tokens to boost forward and eat them. Use
               the <b>left click to boost</b>.
             </p>
-            <div className="alert-box">
-              <p>
-                Your size represents the number of tokens. For example, if you have size 5 on the USDC map, that means
-                you can withdraw $5 USDC minus fees.
-              </p>
-            </div>
           </div>
         </div>
 
         <div className="block block3">
           <div className="block3-text">
             <p>
-              Supersize is playable with any SPL token. Players can exit the game at any time to receive their score in
-              tokens.
+            Your size represents the number of tokens. For example, if you have size 5 on the USDC map, that means you can withdraw $5 USDC minus fees.
             </p>
+          </div>
+          <div className="block3-image">
+            <img src={`${process.env.PUBLIC_URL}/size-meme.png`} alt="Your size is not size" />
           </div>
         </div>
       </div>

@@ -3,8 +3,8 @@ import React from "react";
 const ModGame = () => {
     return (
         <div className="flex w-full h-full text-white flex-col">
-            <h1 className="m-[2vw] font-conthrax text-[35px]">Mod Your Game</h1>
-            <p className="ml-[2vw] font-terminus text-[24px] w-[80%]">
+            <h1 className="m-[2vw] text-[35px]">Mod Your Game</h1>
+            <p className="ml-[2vw] text-[24px] w-[80%]">
                 Make your game stand out. Add everything from custom features
                 and gameplay mechanics to in-game drops. Supersize is a
                 real-time fully onchain game powered by Magicblock engine.
@@ -57,7 +57,7 @@ const ModGame = () => {
                         className="mt-2 ml-4 cursor-pointer"
                         onClick={() => {
                             window.open(
-                                "https://github.com/Lewarn00/supersize-solana/",
+                                "https://github.com/supersizegg/supersize/",
                                 "_blank",
                             );
                         }}
