@@ -24,18 +24,20 @@
   justify-content: center;
 }
 
-.modal-title {
-  margin: 0 0 1rem;
-  text-align: center;
-  font-size: 1.5rem;
+.modal-title.buy-in {
+  font-weight: bold;
+}
+
+.modal-descritption.buy-in {
+  color: #a5a5a5;
 }
 
 .buyInField {
   background-color: #fff;
   border: 1px solid #dcdcdc;
   border-radius: 10px;
-  width: 70%;
-  margin: 1em 0;
+  width: 100%;
+  margin: 1em 0 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,16 +90,14 @@
 }
 
 .slider {
-  width: 60%;
-  margin: 1em;
+  width: 100%;
 }
 
 .button-group {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  margin: 2em auto 0 auto;
-  padding: 0 1em;
+  margin: 1em;
 }
 
 .cancel-button,

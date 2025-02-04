@@ -179,4 +179,89 @@
     to { transform: rotate(360deg); }
 }
 
+.mobile-only {
+  display: none;
+}
 
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .lobby-table {
+    min-width: 100%;
+  }
+
+  .lobby-table thead {
+    display: none;
+  }
+  
+  .lobby-table tbody tr {
+    display: block;
+    border: 1px solid #444;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #141516;
+  }
+
+  .lobby-table tbody tr td {
+    display: block;
+    width: 100%;
+    border: none;
+    padding: 0.5rem;
+    position: relative;
+    font-size: 0.9rem;
+  }
+
+  .lobby-table tbody tr td:nth-of-type(1)::before {
+    content: "Game ID: ";
+    font-weight: bold;
+    display: inline-block;
+    width: 35%;
+  }
+  .lobby-table tbody tr td:nth-of-type(2)::before {
+    content: "Token: ";
+    font-weight: bold;
+    display: inline-block;
+    width: 35%;
+  }
+  .lobby-table tbody tr td:nth-of-type(3)::before {
+    content: "Buy In: ";
+    font-weight: bold;
+    display: inline-block;
+    width: 35%;
+  }
+  .lobby-table tbody tr td:nth-of-type(4)::before {
+    content: "Players: ";
+    font-weight: bold;
+    display: inline-block;
+    width: 35%;
+  }
+  .lobby-table tbody tr td:nth-of-type(5)::before {
+    content: "Ping: ";
+    font-weight: bold;
+    display: inline-block;
+    width: 35%;
+  }
+  .lobby-table tbody tr td:nth-of-type(6)::before {
+    content: "Status: ";
+    font-weight: bold;
+    display: inline-block;
+    width: 35%;
+  }
+
+  .tooltip-container.desktop-only {
+    display: none !important;
+  }
+
+  .ping-cell {
+    display: inline-block;
+  }
+}

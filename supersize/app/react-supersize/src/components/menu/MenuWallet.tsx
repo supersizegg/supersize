@@ -24,7 +24,7 @@ function MenuWalletConnected() {
   const addressBase58 = publicKey.toBase58();
 
   return (
-    <div className="wallet-connected">
+    <div className="wallet-connected desktop-only">
       <div className="wallet-info">
         <Text value={truncateAddress(addressBase58)} />
       </div>

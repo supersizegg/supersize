@@ -309,11 +309,14 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
             X
           </button>
         )}
-        <h1 className="modal-title" style={{marginTop: retryModalView !== 0 ? '-30px' : '0', marginBottom: retryModalView !== 0 ? '8px' : '0'}}>
-          {retryModalView == 0 ? "Choose Buy In" : retryModalView == 1 ? "Retry Spawn" : "Need to Cash Out"}
-        </h1>
+        <h2 className="modal-title buy-in" style={{marginTop: retryModalView !== 0 ? '-30px' : '0', marginBottom: retryModalView !== 0 ? '8px' : '0'}}>
+          {retryModalView == 0 ? "Choose your buy-in" : retryModalView == 1 ? "Retry Spawn" : "Need to Cash Out"}
+        </h2>
         {retryModalView == 0 ? (
         <>
+        <p className="modal-descritption buy-in">
+          The buy-in determines your size in the game.
+        </p>
         <div className="buyInField">
           <div className="buyInInfoGroup">
             <img
