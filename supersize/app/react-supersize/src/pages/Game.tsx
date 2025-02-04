@@ -620,7 +620,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                     <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black z-[9999]">
                         <div className="bg-black flex flex-col items-center justify-center">
                             <p className=" p-0 m-1 text-center text-white text-xl inline">
-                                You got eaten!
+                                <b>Game over.</b> You got eaten!
                             </p>
                             <button
                                 id="returnButton"

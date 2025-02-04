@@ -81,6 +81,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         setInputValue(event.target.value);
     };
     const handleEnterKeyPress = async (inputValue: string) => {
+        console.log('Searching game', inputValue);
         if (inputValue.trim() !== '') {
             isSearchingGame.current = true;
             try {
@@ -560,8 +561,13 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 const joinsig = await gameSystemJoin(engine, game.activeGame, game.playerInfo.newplayerEntityPda, mapEntityPda, "unnamed");
                 setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
                 navigate(`/game?id=${mapEntityPda.toString()}`);
-              } catch (joinError) {
+              } catch (joinError: any) {
                 console.log("error", joinError);
+                if (joinError.InstructionError && Array.isArray(joinError.InstructionError) && joinError.InstructionError[1]?.Custom === 6000) {
+                    console.log("Custom error 6000 detected");
+                    setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
+                    navigate("/game");
+                }
               }
         }
         if (game.playerInfo.playerStatus === "in_game") {
