@@ -18,13 +18,14 @@ import { fetchTokenMetadata, pingEndpoint, stringToUint8Array } from "@utils/hel
 import { AccountMeta, Connection, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
 import { getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { endpoints, MAINNET_CONNECTION } from "@utils/constants";
+import { endpoints, NETWORK, RPC_CONNECTION } from "@utils/constants";
 import { Spinner } from "@components/util/Spinner";
 import Graph from "../components/Graph";
 import { Chart, LineElement, PointElement, LinearScale, Title, Tooltip, Legend } from 'chart.js';
 import { ParsedInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
-import { getTopLeftCorner } from "@utils/helper";
+import { getTopLeftCorner, getRegion } from "@utils/helper";
 import { createTransferInstruction } from "@solana/spl-token";
+
 // Register the components
 Chart.register(LineElement, PointElement, LinearScale, Title, Tooltip, Legend);
 
@@ -164,7 +165,7 @@ function QuestsTab() {
   const [joinedOrg, setJoinedOrg] = useState<boolean>(false);
   const BUDDY_LINK_PROGRAM_ID = new PublicKey("BUDDYtQp7Di1xfojiCSVDksiYLQx511DPdj2nbtG9Yu5");
   let referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
-  const mainnet_connection = new Connection(MAINNET_CONNECTION);
+  const mainnet_connection = new Connection(RPC_CONNECTION["mainnet"]);
 
   useEffect(() => {
     const checkMembership = async () => {
@@ -227,24 +228,18 @@ function AdminTab() {
     buyInCount: 0,
   });
 
-  function getRegion(endpoint: string): string {
-    if (endpoint === "https://supersize-fra.magicblock.app") return "europe";
-    if (endpoint === "https://supersize.magicblock.app") return "america";
-    if (endpoint === "https://supersize-sin.magicblock.app") return "asia";
-    return "unknown";
-  }
-
   useEffect(() => {
     const fetchGames = async () => {
       if (isLoading.current) return;
       isLoading.current = true;
       console.log('fetching games');
-      for (let i = 1780; i < 1900; i++) {
+      let start = {"devnet": 1800, "mainnet": 0};
+      for (let i = start[NETWORK]; i < start[NETWORK]+100; i++) {
         console.log('Fetching game #' + i);
         const worldId = { worldId: new anchor.BN(i) };
         const worldPda = await FindWorldPda(worldId);
 
-        for (const endpoint of endpoints) {
+        for (const endpoint of endpoints[NETWORK]) {
           engine.setEndpointEphemRpc(endpoint);
           try {
             const mapEntityPda = FindEntityPda({

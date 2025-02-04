@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { fetchTokenMetadata } from "@utils/helper";
+import { NETWORK } from "@utils/constants";
 import "./LeaderboardDropdown.scss";
 
 const LeaderboardDropdown = () => {
-  const network = "devnet"; //"mainnet";
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const tokens = [
     {
@@ -24,10 +24,10 @@ const LeaderboardDropdown = () => {
   useEffect(() => {
     const loadTokenMetadata = async () => {
       try {
-        const matchedTokens = tokens.filter((token) => token.network === network);
+        const matchedTokens = tokens.filter((token) => token.network === NETWORK);
 
         const promises = matchedTokens.map(async (token) => {
-          const metadata = await fetchTokenMetadata(token.token, network);
+          const metadata = await fetchTokenMetadata(token.token);
           return {
             icon: metadata.image,
             name: metadata.name,
@@ -45,7 +45,7 @@ const LeaderboardDropdown = () => {
     };
 
     loadTokenMetadata();
-  }, [network]);
+  }, [NETWORK]);
 
   return (
     <div className="leaderboard-dropdown">

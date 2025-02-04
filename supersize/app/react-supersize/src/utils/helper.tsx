@@ -1,4 +1,4 @@
-import { API_BASE_URL, cachedTokenMetadata } from "@utils/constants";
+import { API_BASE_URL, cachedTokenMetadata, endpoints, NETWORK } from "@utils/constants";
 import {Blob } from "@utils/types";
 
 import { PublicKey, Keypair } from "@solana/web3.js";
@@ -11,6 +11,7 @@ import { FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { COMPONENT_PLAYER_ID } from "@states/gamePrograms";
 import { FindComponentPda } from "@magicblock-labs/bolt-sdk";
 import { BN } from "@coral-xyz/anchor";
+import { HELIUS_API_KEY } from "@utils/constants";
 
 export const stringToUint8Array = (str: string): Uint8Array => {
     return new TextEncoder().encode(str);
@@ -131,7 +132,7 @@ export async function getPriorityFeeEstimate(
     publicKeys: string[],
 ) {
     const response = await fetch(
-        "https://mainnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676",
+        `https://${NETWORK || 'devnet'}.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
         {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -161,18 +162,16 @@ export async function getPriorityFeeEstimate(
 }
 
 
-
 export async function fetchTokenMetadata (
     tokenAddress: string,
-    network?: string,
 ){
     if (cachedTokenMetadata[tokenAddress]) {
-        return cachedTokenMetadata[tokenAddress];
+        return { name: cachedTokenMetadata[tokenAddress].symbol, image: cachedTokenMetadata[tokenAddress].image };
     }
 
     try {
         const response = await fetch(
-            `https://${network || 'devnet'}.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937`,
+            `https://${NETWORK || 'devnet'}.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
             {
                 method: "POST",
                 headers: {
@@ -242,6 +241,12 @@ export async function fetchTokenMetadata (
     }
 };
 
+export function getRegion(endpoint: string): string {
+    if (endpoint === endpoints[NETWORK][0]) return "europe";
+    if (endpoint === endpoints[NETWORK][1]) return "america";
+    if (endpoint === endpoints[NETWORK][2]) return "asia";
+    return "unknown";
+  }
 
 export const getSectionIndex = (
     x: number,
@@ -300,7 +305,7 @@ export const checkPlayerDistances = (
                 (player.x - currentPlayer.x) ** 2 +
                 (player.y - currentPlayer.y) ** 2,
             );
-            if (distance < currentPlayer.radius) {
+            if (distance < (currentPlayer.radius * 3)) {
                 return player.authority;
             }
         }

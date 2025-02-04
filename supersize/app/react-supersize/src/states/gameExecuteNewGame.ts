@@ -1,5 +1,6 @@
 import {
   ComputeBudgetProgram,
+  Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
@@ -20,12 +21,14 @@ import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { COMPONENT_PLAYER_ID, COMPONENT_ANTEROOM_ID, COMPONENT_MAP_ID, COMPONENT_SECTION_ID } from "./gamePrograms";
 import * as anchor from "@coral-xyz/anchor";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token";
-import { connection } from "@utils/constants";
+import { RPC_CONNECTION, NETWORK } from "@utils/constants";
 import React from "react";
 import { gameSystemInitMap } from "./gameSystemInitMap";
 import { gameSystemInitPlayer } from "./gameSystemInitPlayer";
 import { gameSystemInitAnteroom } from "./gameSystemInitAnteroom";
 import { gameSystemInitSection } from "./gameSystemInitSection";
+
+const connection = new Connection(RPC_CONNECTION[NETWORK]); //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676");
 
 const CONFIG = {
   computeUnitLimit: 200_000,

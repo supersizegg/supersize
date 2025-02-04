@@ -4,7 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react"
 import { MagicBlockEngine } from "../../engine/MagicBlockEngine";
 import { ActiveGame, FetchedGame } from "@utils/types";
 import Dropdown from "@components/Dropdown";
-import { endpoints } from "@utils/constants";
+import { endpoints, NETWORK } from "@utils/constants";
 import "./LaunchGame.scss";
 
 type launchProps = {
@@ -25,13 +25,13 @@ const LanchGame: React.FC<launchProps> = ({ activeGamesLoaded, setActiveGamesLoa
 
     useEffect(() => {
         if(selectedServer === "Europe"){
-            setSelectedEndpoint(endpoints[0]);
+            setSelectedEndpoint(endpoints[NETWORK][0]);
         }   
         if(selectedServer === "America"){
-            setSelectedEndpoint(endpoints[1]);
+            setSelectedEndpoint(endpoints[NETWORK][1]);
         }
         if(selectedServer === "Asia"){
-            setSelectedEndpoint(endpoints[2]);
+            setSelectedEndpoint(endpoints[NETWORK][2]);
         }
     }, [selectedServer]);
 

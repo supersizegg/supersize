@@ -10,12 +10,12 @@ import HowToPlay from "@pages/HowToPlay";
 import { ActiveGame, FetchedGame } from "@utils/types";
 import { useState } from "react";
 import { PublicKey } from "@solana/web3.js";
-import { activeGamesList } from "@utils/constants";
+import { activeGamesList, NETWORK } from "@utils/constants";
 import * as anchor from "@coral-xyz/anchor";
 
 const AppRoutes = () => {
     const [selectedGame, setSelectedGame] = useState<ActiveGame | null>(null);
-    const [activeGamesLoaded, setActiveGamesLoaded] = useState<FetchedGame[]>(activeGamesList.map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => 
+    const [activeGamesLoaded, setActiveGamesLoaded] = useState<FetchedGame[]>(activeGamesList[NETWORK].map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => 
         ({
         activeGame: {
             isLoaded: false,

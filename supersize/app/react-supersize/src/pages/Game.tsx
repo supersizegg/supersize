@@ -66,7 +66,10 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
     const currentMousePositionRef = useRef<{ x: number; y: number }>({x: 0, y: 0});
     const lastMousePosition = useRef({ x: 0, y: 0 });
     const currentIsMouseDownRef = useRef<boolean>(false);
-
+    const allplayersRef = useRef<Blob[]>([]);
+    useEffect(() => {
+        allplayersRef.current = allplayers;
+    }, [allplayers]);
     useEffect(() => {
         if(currentPlayer?.removal){
             playerRemovalTimeRef.current = currentPlayer.removal;
@@ -527,7 +530,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
 
         const intervalId = setInterval(() => {
             if (currentPlayerEntity.current && currentPlayerRef.current && entityMatch.current  && foodEntities.current && playerEntities.current && players && foodListLen) {
-                gameSystemMove(engine, gameInfo, currentPlayerEntity.current, currentPlayerRef.current, entityMatch.current, foodEntities.current, playerEntities.current, players, foodListLen, currentMousePositionRef.current.x, currentMousePositionRef.current.y, currentIsMouseDownRef.current, {width: gameInfo.size, height: gameInfo.size}); 
+                gameSystemMove(engine, gameInfo, currentPlayerEntity.current, currentPlayerRef.current, entityMatch.current, foodEntities.current, playerEntities.current, allplayersRef.current, foodListLen, currentMousePositionRef.current.x, currentMousePositionRef.current.y, currentIsMouseDownRef.current, {width: gameInfo.size, height: gameInfo.size}); 
                     const newX = Math.max(
                         0,
                         Math.min(

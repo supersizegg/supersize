@@ -12,9 +12,10 @@ import {
 import { WalletName } from "@solana/wallet-adapter-base";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import * as anchor from "@coral-xyz/anchor";
+import {endpoints, NETWORK, RPC_CONNECTION } from "@utils/constants";
 
-const ENDPOINT_CHAIN_RPC = "https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
-const ENDPOINT_CHAIN_WS = "wss://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
+const ENDPOINT_CHAIN_RPC = RPC_CONNECTION[NETWORK]; //"https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
+const ENDPOINT_CHAIN_WS = ENDPOINT_CHAIN_RPC.replace("http", "ws"); //"wss://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
 
 // const _ENDPOINT_CHAIN_RPC = "http://127.0.0.1:7899";
 // const _ENDPOINT_CHAIN_WS = "ws://127.0.0.1:7900";
@@ -57,7 +58,7 @@ export class MagicBlockEngine {
     this.walletContext = walletContext;
     this.sessionKey = sessionKey;
     this.sessionConfig = sessionConfig;
-    this.endpointEphemRpc = "https://supersize-sin.magicblock.app";
+    this.endpointEphemRpc = endpoints[NETWORK][0]; //"https://supersize-sin.magicblock.app";
     this.connectionEphem = new Connection(this.endpointEphemRpc, {
       wsEndpoint: this.endpointEphemRpc.replace("http", "ws"),
     });

@@ -6,7 +6,7 @@ import FooterLink from "@components/Footer";
 import "./Home.scss";
 
 import { ActiveGame } from "@utils/types";
-import { activeGamesList, options } from "@utils/constants";
+import { activeGamesList, NETWORK, options } from "@utils/constants";
 
 import { fetchTokenMetadata, getActivePlayers, getMyPlayerStatus, getMyPlayerStatusFast } from "@utils/helper";
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
@@ -26,7 +26,7 @@ import { FetchedGame, PlayerInfo } from "@utils/types";
 import { anteroomFetchOnChain, mapFetchOnChain, mapFetchOnEphem, playerFetchOnChain } from "../states/gameFetch";
 import { useMagicBlockEngine } from "../engine/MagicBlockEngineProvider";
 import {endpoints } from "@utils/constants";
-import { stringToUint8Array } from "@utils/helper";
+import { stringToUint8Array, getRegion } from "@utils/helper";
 import { gameSystemJoin } from "@states/gameSystemJoin";
 import { gameSystemCashOut } from "@states/gameSystemCashOut";
 import { MagicBlockEngine } from "@engine/MagicBlockEngine";
@@ -69,7 +69,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         newplayerEntityPda: new PublicKey(0)
     });
     const pingResultsRef = useRef<{ endpoint: string; pingTime: number, region: string }[]>(
-        endpoints.map((endpoint, index) => ({ endpoint: endpoint, pingTime: 0, region: getRegion(endpoint) }))
+        endpoints[NETWORK].map((endpoint, index) => ({ endpoint: endpoint, pingTime: 0, region: getRegion(endpoint) }))
     );
     const isSearchingGame = useRef(false);
     const server_index = useRef(-1);
@@ -111,7 +111,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                         });
                         const mapParsedData = await mapFetchOnEphem(engine, mapComponentPda);
                         if (mapParsedData) {
-                            newGameInfo.endpoint = endpoints[options.indexOf(selectedServer.current)];
+                            newGameInfo.endpoint = endpoints[NETWORK][options.indexOf(selectedServer.current)];
                             newGameInfo.name = mapParsedData.name;
                             newGameInfo.max_players = mapParsedData.maxPlayers;
                             newGameInfo.size = mapParsedData.width;
@@ -120,7 +120,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             newGameInfo.max_buyin = mapParsedData.maxBuyin;
                             newGameInfo.isLoaded = true;
 
-                            const pingTime = await pingEndpoint(endpoints[options.indexOf(selectedServer.current)]);
+                            const pingTime = await pingEndpoint(endpoints[NETWORK][options.indexOf(selectedServer.current)]);
                             newGameInfo.ping = pingTime;
 
                             const anteseed = "ante";
@@ -219,13 +219,6 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         return Math.round(endTime - startTime);
     };
 
-    function getRegion(endpoint: string): string {
-        if (endpoint === "https://supersize-fra.magicblock.app") return "europe";
-        if (endpoint === "https://supersize.magicblock.app") return "america";
-        if (endpoint === "https://supersize-sin.magicblock.app") return "asia";
-        return "unknown";
-    }
-
     function isPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } {
         return typeof result === 'object' && 'activeplayers' in result;
     }
@@ -245,7 +238,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 entity: activeGamesLoaded[index].playerInfo.newplayerEntityPda,
             });
 
-            const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
+            const pingResults = await Promise.all(endpoints[NETWORK].map(async (endpoint) => {
                 const pingTimes = await Promise.all([
                     pingEndpoint(endpoint),
                     pingEndpoint(endpoint),
@@ -323,7 +316,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         }
         const gameCopy = [...activeGamesLoaded];
         let filteredGames = gameCopy.filter((game, i) => {
-            return endpoints[options.indexOf(server)] === game.activeGame.endpoint;
+            return endpoints[NETWORK][options.indexOf(server)] === game.activeGame.endpoint;
         });
         /*
         filteredGames.sort((a, b) => {
@@ -574,14 +567,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
     }
 
     const pingEndpoints = async () => {
-        const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
+        const pingResults = await Promise.all(endpoints[NETWORK].map(async (endpoint) => {
             const pingTimes = await Promise.all([
                 pingEndpoint(endpoint),
                 pingEndpoint(endpoint),
                 pingEndpoint(endpoint),
             ]);
             const bestPingTime = Math.min(...pingTimes);
-            return {  endpoint: endpoint, pingTime: bestPingTime, region: options[endpoints.indexOf(endpoint)] };
+            return {  endpoint: endpoint, pingTime: bestPingTime, region: options[endpoints[NETWORK].indexOf(endpoint)] };
         }));
         const lowestPingEndpoint = pingResults.reduce((a, b) =>
             a.pingTime < b.pingTime ? a : b

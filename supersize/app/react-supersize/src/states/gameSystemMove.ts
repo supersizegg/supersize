@@ -154,10 +154,10 @@ export async function gameSystemMove(
 
             await engine.processSessionEphemTransactionNoConfirm("txn:" +performance.now(), alltransaction).catch((error) => {
                 console.log(error);
-            });
+            })
 
         } catch (error) {
-            console.log(error);
+            //console.log(error);
             //setIsSubmitting(false);
         }
 }
