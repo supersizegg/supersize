@@ -526,9 +526,6 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
     useEffect(() => {
 
         const intervalId = setInterval(() => {
-            if (exitHovered.current) {
-                return;
-            }
             if (currentPlayerEntity.current && currentPlayerRef.current && entityMatch.current  && foodEntities.current && playerEntities.current && players && foodListLen) {
                 gameSystemMove(engine, gameInfo, currentPlayerEntity.current, currentPlayerRef.current, entityMatch.current, foodEntities.current, playerEntities.current, players, foodListLen, currentMousePositionRef.current.x, currentMousePositionRef.current.y, currentIsMouseDownRef.current, {width: gameInfo.size, height: gameInfo.size}); 
                     const newX = Math.max(
