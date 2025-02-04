@@ -229,7 +229,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
     function isPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } {
         return typeof result === 'object' && 'activeplayers' in result;
     }
-    function isMyPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; } {
+    function isMyPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; } {
         return typeof result === 'object';
     }
     function isActivePlayersStatus(result: any): result is { activeplayers: number; newplayerEntityPda: PublicKey; } {
@@ -237,6 +237,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
     }
 
     const handleRefresh = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], index: number) => {
+        console.log('handleRefresh', activeGamesLoaded[index].playerInfo.newplayerEntityPda)
         setIsLoadingCurrentGames(true);
         try {
             const playerComponentPda = FindComponentPda({
@@ -285,7 +286,6 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             if (isMyPlayerStatus(result)) {
                 need_to_delegate = result.need_to_delegate;
                 need_to_undelegate = result.need_to_undelegate;
-                newplayerEntityPda = result.newplayerEntityPda;
                 playerStatus = result.playerStatus;
             } else {
                 console.log("Error fetching player status");
