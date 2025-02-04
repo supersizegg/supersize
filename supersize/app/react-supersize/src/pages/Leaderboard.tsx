@@ -145,7 +145,7 @@ const Leaderboard: React.FC = () => {
 
           <div className="dropdown-box">
             <p className="stat-label">Select Token</p>
-            <LeaderboardDropdown />
+            <LeaderboardDropdown season={season} setSeason={setSeason}/>
           </div>
         </div>
 

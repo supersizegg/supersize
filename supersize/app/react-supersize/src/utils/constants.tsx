@@ -181,7 +181,7 @@ export const cachedTokenMetadata: Record<string, { name: string; symbol: string;
     },
     "AsoX43Q5Y87RPRGFkkYUvu8CSksD9JXNEqWVGVsr8UEp": {
         name: "Magical Gem",
-        symbol: "MBGEM",
+        symbol: "Magical Gem",
         image: `https://shdw-drive.genesysgo.net/4PMP1MG5vYGkT7gnAMb7E5kqPLLjjDzTiAaZ3xRx5Czd/gem.png`,
         network: "devnet",
     },

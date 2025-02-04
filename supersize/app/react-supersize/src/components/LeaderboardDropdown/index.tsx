@@ -3,7 +3,12 @@ import { fetchTokenMetadata } from "@utils/helper";
 import { NETWORK } from "@utils/constants";
 import "./LeaderboardDropdown.scss";
 
-const LeaderboardDropdown = () => {
+type LeaderboardDropdownProps = {
+  season: { icon: string; name: string };
+  setSeason: (season: { icon: string; name: string }) => void;
+};
+
+const LeaderboardDropdown = ({ season, setSeason }: LeaderboardDropdownProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const tokens = [
     {
@@ -14,12 +19,12 @@ const LeaderboardDropdown = () => {
       network: "mainnet",
       token: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     },
+    {
+      network: "mainnet",
+      token: "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn",
+    },
   ];
   const leaderBoardOptions = useRef([{ icon: `${process.env.PUBLIC_URL}/token.png`, name: "LOADING" }]);
-  const [season, setSeason] = useState({
-    icon: `${process.env.PUBLIC_URL}/token.png`,
-    name: "LOADING",
-  });
 
   useEffect(() => {
     const loadTokenMetadata = async () => {
@@ -60,15 +65,15 @@ const LeaderboardDropdown = () => {
             .filter((option) => option.name !== season.name)
             .map((option) => (
               <div
+                className="flex items-center pr-[0.5em] pl-[1em]"
                 key={option.name}
-                className="dropdown-item"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSeason({ icon: option.icon, name: option.name });
                   setIsDropdownOpen(false);
                 }}
               >
-                <img src={option.icon} alt={option.name} />
+                <img style={{ width: "24px", height: "24px", marginRight: "0.5em" }} src={option.icon} alt={option.name} />
                 {option.name}
               </div>
             ))}
