@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import FooterLink from "@components/Footer";
@@ -6,9 +6,9 @@ import FooterLink from "@components/Footer";
 import "./Home.scss";
 
 import { ActiveGame } from "@utils/types";
-import { activeGamesList } from "@utils/constants";
+import { activeGamesList, options } from "@utils/constants";
 
-import { fetchTokenMetadata, getMyPlayerStatus } from "@utils/helper";
+import { fetchTokenMetadata, getActivePlayers, getMyPlayerStatus, getMyPlayerStatusFast } from "@utils/helper";
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
@@ -29,6 +29,7 @@ import {endpoints } from "@utils/constants";
 import { stringToUint8Array } from "@utils/helper";
 import { gameSystemJoin } from "@states/gameSystemJoin";
 import { gameSystemCashOut } from "@states/gameSystemCashOut";
+import { MagicBlockEngine } from "@engine/MagicBlockEngine";
 
 /*
 interface GameRow {
@@ -59,7 +60,6 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
     const navigate = useNavigate();
     const engine = useMagicBlockEngine();
     const activeGamesRef = useRef<FetchedGame[]>(activeGamesLoaded);
-    const [isSearchingGame, setIsSearchingGame] = useState(false);
     const [inputValue, setInputValue] = useState<string>('');  
     const [isBuyInModalOpen, setIsBuyInModalOpen] = useState(false);
     const [selectedGamePlayerInfo, setSelectedGamePlayerInfo] = useState<PlayerInfo>({
@@ -68,14 +68,21 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         need_to_undelegate: false,
         newplayerEntityPda: new PublicKey(0)
     });
-    const pingResultsRef = useRef<{ endpoint: string; pingTime: number }[]>([]);
+    const pingResultsRef = useRef<{ endpoint: string; pingTime: number, region: string }[]>(
+        endpoints.map((endpoint, index) => ({ endpoint: endpoint, pingTime: 0, region: getRegion(endpoint) }))
+    );
+    const isSearchingGame = useRef(false);
+    const server_index = useRef(-1);
+    const selectedServer = useRef<string>("");
+    const [isLoadingCurrentGames, setIsLoadingCurrentGames] = useState(true);
+    const [loadingGameNum, setLoadingGameNum] = useState(-1);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(event.target.value);
     };
     const handleEnterKeyPress = async (inputValue: string) => {
         if (inputValue.trim() !== '') {
-            setIsSearchingGame(true);
+            isSearchingGame.current = true;
             try {
                 const worldId = {worldId: new anchor.BN(inputValue.trim())};
 
@@ -84,14 +91,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 );
                 if (alreadyExists) {
                     console.log("Game with this worldId already exists, skipping.");
-                    setIsSearchingGame(false);
+                    isSearchingGame.current = false;
                     return;
                 }
 
                 const worldPda = await FindWorldPda( worldId);
                 const newGameInfo : ActiveGame = {worldId: worldId.worldId, worldPda: worldPda, name: "loading", active_players: 0, max_players: 0, size: 0, image:"", token:"", base_buyin: 0, min_buyin: 0, max_buyin: 0, endpoint: "", ping: 0, isLoaded: false}
-                for (const endpoint of endpoints) {
-                    engine.setEndpointEphemRpc(endpoint);
+                //for (const endpoint of endpoints) {
+                //    engine.setEndpointEphemRpc(endpoint);
                     try {
                         const mapEntityPda = FindEntityPda({
                             worldId: worldId.worldId,
@@ -104,8 +111,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                         });
                         const mapParsedData = await mapFetchOnEphem(engine, mapComponentPda);
                         if (mapParsedData) {
-                            console.log('mapdata', mapParsedData, endpoint)
-                            newGameInfo.endpoint = endpoint;
+                            newGameInfo.endpoint = endpoints[options.indexOf(selectedServer.current)];
                             newGameInfo.name = mapParsedData.name;
                             newGameInfo.max_players = mapParsedData.maxPlayers;
                             newGameInfo.size = mapParsedData.width;
@@ -114,7 +120,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             newGameInfo.max_buyin = mapParsedData.maxBuyin;
                             newGameInfo.isLoaded = true;
 
-                            const pingTime = await pingEndpoint(endpoint);
+                            const pingTime = await pingEndpoint(endpoints[options.indexOf(selectedServer.current)]);
                             newGameInfo.ping = pingTime;
 
                             const anteseed = "ante";
@@ -131,22 +137,14 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             let mint_of_token_being_sent = new PublicKey(0);
                             if (anteParsedData && anteParsedData.token) {
                                 mint_of_token_being_sent = anteParsedData.token;
-                                if (
-                                    mint_of_token_being_sent.toString() ===
-                                    "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
-                                ) {
-                                    newGameInfo.image = `${process.env.PUBLIC_URL}/agld.jpg`;
-                                    newGameInfo.token = "AGLD";
-                                } else {
-                                    try {
-                                        const { name, image } = await fetchTokenMetadata(
-                                            mint_of_token_being_sent.toString(),
-                                        );
-                                        newGameInfo.image = image;
-                                        newGameInfo.token = name;
-                                    } catch (error) {
-                                        console.error("Error fetching token data:", error);
-                                    }
+                                try {
+                                    const { name, image } = await fetchTokenMetadata(
+                                        mint_of_token_being_sent.toString(),
+                                    );
+                                    newGameInfo.image = image;
+                                    newGameInfo.token = name;
+                                } catch (error) {
+                                    console.error("Error fetching token data:", error);
                                 }
                             }
                             console.log('new game info', newGameInfo.worldId,newGameInfo.worldPda.toString())
@@ -166,18 +164,17 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                 need_to_undelegate = result.need_to_undelegate;
                                 newplayerEntityPda = result.newplayerEntityPda;
                                 playerStatus = result.playerStatus;
-                                console.log(result);
                             } else {
                                 console.error("Error fetching player status");
                             }
 
                             newGameInfo.active_players = activeplayers;
-                            setSelectedGamePlayerInfo({
+                            /* setSelectedGamePlayerInfo({
                                 playerStatus: playerStatus,
                                 need_to_delegate: need_to_delegate,
                                 need_to_undelegate: need_to_undelegate,
                                 newplayerEntityPda: newplayerEntityPda
-                            });
+                            }); */
                             setActiveGamesLoaded([...activeGamesLoaded, {activeGame: newGameInfo, playerInfo: {
                                 playerStatus: playerStatus,
                                 need_to_delegate: need_to_delegate,
@@ -190,16 +187,16 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                 need_to_undelegate: need_to_undelegate,
                                 newplayerEntityPda: newplayerEntityPda
                             }}];
-                            break;
+                            //break;
                         }
                     } catch (error) {
                         console.error("Error fetching map data:", error);
                     }
-                }
+             //}
             } catch (error) {
                 console.error("Invalid PublicKey:", error);
             } finally {
-                setIsSearchingGame(false);
+                isSearchingGame.current = false;
             }
         }
     };        
@@ -232,13 +229,21 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
     function isPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } {
         return typeof result === 'object' && 'activeplayers' in result;
     }
+    function isMyPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; } {
+        return typeof result === 'object';
+    }
+    function isActivePlayersStatus(result: any): result is { activeplayers: number; newplayerEntityPda: PublicKey; } {
+        return typeof result === 'object';
+    }
 
-    const handleRefresh = async (reloadActiveGame: FetchedGame, index: number) => {
+    const handleRefresh = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], reloadActiveGame: FetchedGame, index: number) => {
+        setIsLoadingCurrentGames(true);
+        const playerComponentPda = FindComponentPda({
+            componentId: COMPONENT_PLAYER_ID,
+            entity: reloadActiveGame.playerInfo.newplayerEntityPda,
+        });
         try {
-            const clearThisGame = [...activeGamesLoaded];
-            clearThisGame[index].activeGame.active_players = -1;
-            setActiveGamesLoaded(clearThisGame);
-
+                        
             const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
                 const pingTimes = await Promise.all([
                     pingEndpoint(endpoint),
@@ -249,16 +254,38 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 return { endpoint, pingTime: bestPingTime };
             }));
 
-            const result = await getMyPlayerStatus(engine, reloadActiveGame.activeGame.worldId, reloadActiveGame.activeGame.max_players);
+            const refreshedGames = [...activeGamesLoaded];
+            const prewnewgame: FetchedGame = {
+                activeGame: {
+                    ...refreshedGames[index].activeGame,
+                    active_players: -1,
+                    ping: pingResults.find(ping => ping.endpoint === reloadActiveGame.activeGame.endpoint)?.pingTime || 0,
+                } as ActiveGame, 
+                playerInfo: {
+                    playerStatus: "new_player",
+                    need_to_delegate: false,
+                    need_to_undelegate: false,
+                    newplayerEntityPda: new PublicKey(0)
+                } as PlayerInfo
+            }
 
+            refreshedGames[index] = prewnewgame;
+            setActiveGamesLoaded(refreshedGames);
+
+            //engine.setEndpointEphemRpc(reloadActiveGame.activeGame.endpoint);
+
+            const result = await getMyPlayerStatusFast(engine, reloadActiveGame.activeGame.worldId, playerComponentPda);
+            const active_players = await getActivePlayers(engine, reloadActiveGame.activeGame.worldId, reloadActiveGame.activeGame.max_players);
             let activeplayers = 0;
+            if(active_players !== "error"){
+                activeplayers = active_players.activeplayers;
+            }
             let need_to_delegate = false;
             let need_to_undelegate = false;
             let newplayerEntityPda = new PublicKey(0);
             let playerStatus = "new_player";
 
-            if (isPlayerStatus(result)) {
-                activeplayers = result.activeplayers;
+            if (isMyPlayerStatus(result)) {
                 need_to_delegate = result.need_to_delegate;
                 need_to_undelegate = result.need_to_undelegate;
                 newplayerEntityPda = result.newplayerEntityPda;
@@ -282,17 +309,22 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 } as PlayerInfo
             }
 
-            const refreshedGames = [...activeGamesLoaded];
             refreshedGames[index] = newgame;
-            setActiveGamesLoaded(refreshedGames);
-        
-        }catch (error) {
+            setActiveGamesLoaded([...refreshedGames]); 
+            setIsLoadingCurrentGames(false);
+        } catch (error) {
             console.log("Error refreshing games:", error);
+            setIsLoadingCurrentGames(false);
         }
-    }
+    };
 
-    const fetchAndLogMapData = async (activeGamesLoaded: FetchedGame[]) => {
-        const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
+    const fetchAndLogMapData = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], server: string, reloadPlayerComponents: boolean = true, pingList: any = null, firstLoad: boolean = false) => {
+        let pingResults = pingList;
+        if(!pingResults){
+            pingResults = await pingEndpoints();
+            pingResults = pingResults.pingResults;
+        }
+        /* const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
             const pingTimes = await Promise.all([
                 pingEndpoint(endpoint),
                 pingEndpoint(endpoint),
@@ -300,26 +332,40 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             ]);
             const bestPingTime = Math.min(...pingTimes);
             return { endpoint, pingTime: bestPingTime };
-        }));
-
+        })); */
         const gameCopy = [...activeGamesLoaded];
         let filteredGames = gameCopy.filter((game, i) => {
-            const ping = pingResults.find(ping => ping.endpoint === game.activeGame.endpoint);
-            if (ping && ping.pingTime > 1000) {
-                return false;
-            }
-            gameCopy[i].activeGame.ping = ping?.pingTime || 0;
-            return true; 
+            return endpoints[options.indexOf(server)] === game.activeGame.endpoint;
         });
+        /*
         filteredGames.sort((a, b) => {
-            const pingA = pingResults.find(ping => ping.endpoint === a.activeGame.endpoint)?.pingTime || 0;
-            const pingB = pingResults.find(ping => ping.endpoint === b.activeGame.endpoint)?.pingTime || 0;
+            const pingA = pingResults.find((ping: any) => ping.endpoint === a.activeGame.endpoint)?.pingTime || 0;
+            const pingB = pingResults.find((ping: any) => ping.endpoint === b.activeGame.endpoint)?.pingTime || 0;
             return pingA - pingB;
-        });
-
+        }); */
         for (let i = 0; i < filteredGames.length; i++) {
+        try{
             const startTime = performance.now();
-            engine.setEndpointEphemRpc(filteredGames[i].activeGame.endpoint);
+
+            const preNewGame: FetchedGame = {
+                activeGame: {
+                    ...filteredGames[i].activeGame,
+                    isLoaded: true,
+                    active_players: -1,
+                    ping: 0,
+                } as ActiveGame,
+                playerInfo: {
+                    playerStatus: "new_player",
+                    need_to_delegate: false,
+                    need_to_undelegate: false,
+                    newplayerEntityPda: new PublicKey(0)
+                } as PlayerInfo
+            }
+
+            const preMergedGames = [...filteredGames];
+            preMergedGames[i] = preNewGame;
+            filteredGames = preMergedGames;
+            setActiveGamesLoaded(preMergedGames);
 
             const mapseed = "origin";
             const mapEntityPda = FindEntityPda({
@@ -355,70 +401,68 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     base_buyin = anteParsedData.baseBuyin;
                     max_buyin = anteParsedData.maxBuyin;
                     min_buyin = anteParsedData.minBuyin;
-                    if (
-                        mint_of_token_being_sent.toString() ===
-                        "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn"
-                    ) {
-                        token_image = `${process.env.PUBLIC_URL}/agld.jpg`;
-                        token_name = "AGLD";
-                    } else {
-                        try {
-                            const { name, image } = await fetchTokenMetadata(
-                                mint_of_token_being_sent.toString(),
-                            );
-                            token_image = image;
-                            token_name = name;
-                        } catch (error) {
-                            console.error("Error fetching token data:", error);
-                        }
+                    try {
+                        const { name, image } = await fetchTokenMetadata(
+                            mint_of_token_being_sent.toString(),
+                        );
+                        token_image = image;
+                        token_name = name;
+                    } catch (error) {
+                        console.error("Error fetching token data:", error);
                     }
                 }
                 const mapParsedData = await mapFetchOnChain(engine, mapComponentPda);
                 if (mapParsedData) {
-                    const preNewGame: FetchedGame = {
-                        activeGame: {
-                            ...filteredGames[i].activeGame,
-                            isLoaded: true,
-                            name: mapParsedData.name,
-                            active_players: -1,
-                            max_players: mapParsedData.maxPlayers,
-                            size: mapParsedData.width,
-                            image: token_image,
-                            token: token_name,
-                            base_buyin: base_buyin,
-                            min_buyin: min_buyin,
-                            max_buyin: max_buyin,
-                            endpoint: filteredGames[i].activeGame.endpoint,
-                        } as ActiveGame,
-                        playerInfo: {
-                            playerStatus: "new_player",
-                            need_to_delegate: false,
-                            need_to_undelegate: false,
-                            newplayerEntityPda: new PublicKey(0)
-                        } as PlayerInfo
-                    }
-
-                    const preMergedGames = [...filteredGames];
-                    preMergedGames[i] = preNewGame;
-                    filteredGames = preMergedGames;
-                    setActiveGamesLoaded(preMergedGames);
-                    
-                    const result = await getMyPlayerStatus(engine, filteredGames[i].activeGame.worldId, mapParsedData.maxPlayers);
                     let activeplayers = 0;
                     let need_to_delegate = false;
                     let need_to_undelegate = false;
                     let newplayerEntityPda = new PublicKey(0);
                     let playerStatus = "new_player";
 
-                    if (isPlayerStatus(result)) {
-                        activeplayers = result.activeplayers;
-                        need_to_delegate = result.need_to_delegate;
-                        need_to_undelegate = result.need_to_undelegate;
-                        newplayerEntityPda = result.newplayerEntityPda;
-                        playerStatus = result.playerStatus;
-                        //console.log(result);
-                    } else {
-                        console.error("Error fetching player status");
+                    if (reloadPlayerComponents){
+                        const result = await getMyPlayerStatus(engine, filteredGames[i].activeGame.worldId, mapParsedData.maxPlayers);
+                        if (isPlayerStatus(result)) {
+                            activeplayers = result.activeplayers;
+                            need_to_delegate = result.need_to_delegate;
+                            need_to_undelegate = result.need_to_undelegate;
+                            newplayerEntityPda = result.newplayerEntityPda;
+                            playerStatus = result.playerStatus;
+                        } else {
+                            console.error("Error fetching player status");
+                        }
+                    }else{
+                        const result = await getActivePlayers(engine, filteredGames[i].activeGame.worldId, mapParsedData.maxPlayers);
+                        if (isActivePlayersStatus(result)) {
+                            activeplayers = result.activeplayers;
+                            newplayerEntityPda = result.newplayerEntityPda;
+                        }else{
+                            console.log("Error fetching player status");
+                        }
+                        /*
+                        const retrievedMyPlayers = localStorage.getItem('myplayers');
+                        if (retrievedMyPlayers) {
+                            const myplayers = JSON.parse(retrievedMyPlayers);
+                            console.log('myplayers', myplayers);
+                            const worldIdIndex = myplayers.findIndex((player: any) => player.worldId === filteredGames[i].activeGame.worldId.toNumber().toString());
+                            if (worldIdIndex !== -1) {
+                                const playerEntityPda = myplayers[worldIdIndex].playerEntityPda;
+                                const playerComponentPda = FindComponentPda({
+                                    componentId: COMPONENT_PLAYER_ID,
+                                    entity: new PublicKey(playerEntityPda),
+                                });
+                                const result = await getMyPlayerStatusFast(engine, filteredGames[i].activeGame.worldId, playerComponentPda);
+                                console.log('result', result);
+                                if (isMyPlayerStatus(result)) {
+                                    //activeplayers = result.activeplayers;
+                                    need_to_delegate = result.need_to_delegate;
+                                    need_to_undelegate = result.need_to_undelegate;
+                                    playerStatus = result.playerStatus;
+                                    newplayerEntityPda = new PublicKey(playerEntityPda);
+                                }else{
+                                    console.log("Error fetching player status");
+                                }
+                            }
+                        }*/
                     }
 
                     const newgame: FetchedGame = {
@@ -435,6 +479,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             min_buyin: min_buyin,
                             max_buyin: max_buyin,
                             endpoint: filteredGames[i].activeGame.endpoint,
+                            ping: pingResults.find((ping: any) => ping.endpoint === filteredGames[i].activeGame.endpoint)?.pingTime || 0,
                         } as ActiveGame, 
                         playerInfo: {
                             playerStatus: playerStatus,
@@ -447,43 +492,17 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     const mergedGames = [...filteredGames];
                     mergedGames[i] = newgame;
                     filteredGames = mergedGames;
+                    activeGamesRef.current.forEach((game, index) => {
+                        if (game.activeGame.worldId.toString() === filteredGames[i].activeGame.worldId.toString()) {
+                            if ((filteredGames[i].activeGame.ping == 0 && !firstLoad)
+                                || (activeGamesRef.current[i].activeGame.ping == 0 && firstLoad)
+                            ) {
+                                activeGamesRef.current[index] = filteredGames[i];
+                            }                       
+                        }
+                    });
                     setActiveGamesLoaded(mergedGames);
-
-                    /* 
-                    setActiveGamesLoaded((prevActiveGames: FetchedGame[]) => {
-                        const updatedGames = prevActiveGames.map((game : FetchedGame, index) =>
-                            game.activeGame.worldId === activeGamesLoaded[i].activeGame.worldId &&
-                            game.activeGame.worldPda.toString() === activeGamesList[i].activeGame.worldPda.toString()
-                                ? {
-                                    ...game,
-                                    activeGame: {
-                                        ...game.activeGame,
-                                        isLoaded: true,
-                                        name: mapParsedData.name,
-                                        active_players: activeplayers,
-                                        max_players: mapParsedData.maxPlayers,
-                                        size: mapParsedData.width,
-                                        image: token_image,
-                                        token: token_name,
-                                        base_buyin: base_buyin,
-                                        min_buyin: min_buyin,
-                                        max_buyin: max_buyin,
-                                        endpoint: activeGamesList[index].activeGame.endpoint,
-                                        ping: Math.round(pingTime),
-                                    },
-                                    playerInfo: {
-                                        playerStatus: playerStatus,
-                                        need_to_delegate: need_to_delegate,
-                                        need_to_undelegate: need_to_undelegate,
-                                        newplayerEntityPda: newplayerEntityPda
-                                    }
-                                }
-                                : game,
-                        );
-                        return updatedGames;
-                    }); */
                     console.log('fetchAndLogMapData', i, performance.now() - startTime);
-                    console.log(filteredGames)
                     console.log(
                         `No account info found for game ID ${filteredGames[i].activeGame.worldId}`,
                     );
@@ -494,24 +513,17 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     error,
                 );
             }
+        } catch (error) {
+            //console.log("Error fetching map data:", error);
+        }
         }
     };
-
-    useEffect(() => {
-        setTimeout(() => {
-            try {
-                fetchAndLogMapData(activeGamesLoaded); 
-            } catch (error) {
-                console.log("Error fetching map data:", error);
-            }
-        }, 2000);
-    }, [engine]);
 
     const handlePlayButtonClick = async (game: FetchedGame) => {
         engine.setEndpointEphemRpc(game.activeGame.endpoint);
         setSelectedGame(game.activeGame);
         setSelectedGamePlayerInfo(game.playerInfo);
-
+        console.log('game.playerInfo', game.playerInfo)
         if (game.playerInfo.need_to_delegate){
             try {
                 const playerComponentPda = FindComponentPda({
@@ -542,6 +554,9 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 seed: stringToUint8Array("ante")
             });
             const cashoutTx = await gameSystemCashOut(engine, game.activeGame, anteEntityPda, game.playerInfo.newplayerEntityPda);
+            if(cashoutTx){
+                fetchAndLogMapData(engine, activeGamesRef.current, selectedServer.current);
+            }
         }
         if (game.playerInfo.playerStatus === "bought_in") {
             try {
@@ -553,20 +568,89 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 });
                 const joinsig = await gameSystemJoin(engine, game.activeGame, game.playerInfo.newplayerEntityPda, mapEntityPda, "unnamed");
                 setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
-                navigate("/game");
+                navigate(`/game?id=${mapEntityPda.toString()}`);
               } catch (joinError) {
                 console.log("error", joinError);
               }
         }
         if (game.playerInfo.playerStatus === "in_game") {
             setMyPlayerEntityPda(game.playerInfo.newplayerEntityPda);
-            navigate("/game");
+            navigate(`/game?id=${game.activeGame.worldPda.toString()}`);
         }
         if(game.playerInfo.playerStatus === "error"){
             console.log("error joining game");
         }
     }
-    
+
+    const pingEndpoints = async () => {
+        const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
+            const pingTimes = await Promise.all([
+                pingEndpoint(endpoint),
+                pingEndpoint(endpoint),
+                pingEndpoint(endpoint),
+            ]);
+            const bestPingTime = Math.min(...pingTimes);
+            return {  endpoint: endpoint, pingTime: bestPingTime, region: options[endpoints.indexOf(endpoint)] };
+        }));
+        const lowestPingEndpoint = pingResults.reduce((a, b) =>
+            a.pingTime < b.pingTime ? a : b
+        );
+        //const index = endpoints.indexOf(lowestPingEndpoint.endpoint);        
+        return {pingResults: pingResults, lowestPingEndpoint: lowestPingEndpoint};
+    }
+    useEffect(() => {
+        const handleEngineStable = debounce(() => {
+            if (selectedServer.current === "") {
+                setIsLoadingCurrentGames(true); // Ensure loading state is set to true at the start
+                pingEndpoints().then((pingResults: any) => {
+                    pingResultsRef.current = pingResults.pingResults;
+                    const thisServer = pingResults.lowestPingEndpoint.region;
+                    selectedServer.current = thisServer;
+                    engine.setEndpointEphemRpc(pingResults.lowestPingEndpoint.endpoint);
+                    try {
+                        const checkActiveGamesLoaded = setInterval(async () => {
+                            if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == 0) {
+                                await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
+                            } else {
+                                clearInterval(checkActiveGamesLoaded);
+                                setIsLoadingCurrentGames(false); // Set loading state to false when games are loaded
+                            }
+                        }, pingResults.lowestPingEndpoint.pingTime * 5);
+                    } catch (error) {
+                        //console.log("Error fetching map data:", error);
+                        selectedServer.current = ""
+                    }
+                }).finally(() => {
+                    if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length > 0) {
+                        selectedServer.current = getRegion(activeGamesRef.current[0].activeGame.endpoint);   
+                        setIsLoadingCurrentGames(false); // Ensure loading state is set to false if games are already loaded
+                    }
+                });
+            }else{
+                setIsLoadingCurrentGames(false);
+            }
+        }, 500); 
+
+        handleEngineStable();
+
+        return () => {
+            handleEngineStable.cancel();
+        };
+    }, [engine]);
+
+    function debounce(func: Function, wait: number) {
+        let timeout: NodeJS.Timeout;
+        const debounced = (...args: any[]) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(...args), wait);
+        };
+        debounced.cancel = () => {
+            clearTimeout(timeout);
+            setIsLoadingCurrentGames(false);
+        }
+        return debounced;
+    }
+
     return (
         <div className="main-container">
             <MenuBar />
@@ -580,17 +664,92 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             )}
             <div className="home-container">
                 <div className="home-header">
-                    <div>
+                    <div className="flex flex-row">
                         <input type="text" className="search-game-input" placeholder="Search Game by ID"
                                     value={inputValue}
                                     onChange={handleInputChange}
                                     onKeyDown={handleKeyPress}
                         >          
                         </input>
-                        { isSearchingGame && <Spinner /> }
+                        <span style={{opacity: isSearchingGame.current ? '1' : '0', alignSelf: 'center', marginRight: '10px'}}><Spinner /></span>
+                    </div>
+                    <div className="w-[54%] mr-[auto]">
+                        <div>
+                            <div className="region-buttons flex flex-row flex-start w-[fit-content] h-[100%] items-center justify-center">
+                            Server: 
+                            {pingResultsRef.current.map((item) => (
+                                <button
+                                className={`region-button mr-1 ml-1 text-white pl-2 pr-2 py-1 rounded-md ${
+                                    isLoadingCurrentGames ? "cursor-not-allowed" : "cursor-pointer"
+                                } transition-colors ${
+                                    selectedServer.current === item.region ? "bg-[#666] hover:bg-[#555]" : "bg-[#444] hover:bg-[#555]"
+                                }`}
+
+                                onClick={async () => {
+                                    console.log('isLoadingCurrentGames', isLoadingCurrentGames)
+                                    setIsLoadingCurrentGames(true); 
+                                    
+                                    const clearPingGames = [...activeGamesRef.current];
+                                    for (let i = 0; i < clearPingGames.length; i++) {
+                                        const prewnewgame: FetchedGame = {
+                                            activeGame: {
+                                                ...clearPingGames[i].activeGame,
+                                                active_players: -1,
+                                                ping: 0,
+                                            } as ActiveGame, 
+                                            playerInfo: {
+                                                playerStatus: "new_player",
+                                                need_to_delegate: false,
+                                                need_to_undelegate: false,
+                                                newplayerEntityPda: new PublicKey(0)
+                                            } as PlayerInfo
+                                        }
+                                        clearPingGames[i] = prewnewgame;
+                                    }
+                                    activeGamesRef.current = clearPingGames;
+                                    setActiveGamesLoaded(clearPingGames); 
+                                    const thisServer = item.region;
+                                    selectedServer.current = thisServer;
+                                    let pingResults = await pingEndpoints();
+                                    pingResultsRef.current = pingResults.pingResults;
+                                    engine.setEndpointEphemRpc(item.endpoint);
+                                    try {
+                                        await fetchAndLogMapData(engine, clearPingGames, thisServer, true, pingResults.pingResults, true);
+                                        const checkActiveGamesLoaded = setInterval(async () => {
+                                            if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == 0) {
+                                                await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
+                                            } else {
+                                                clearInterval(checkActiveGamesLoaded);
+                                                setIsLoadingCurrentGames(false);
+                                            }
+                                        }, pingResults.lowestPingEndpoint.pingTime * 5);
+                                    } catch (error) {
+                                        console.log("Error fetching map data:", error);
+                                        //setIsLoadingCurrentGames(false);
+                                    } finally {
+                                        if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == activeGamesRef.current.length) {
+                                            setIsLoadingCurrentGames(false); // Ensure loading state is set to false if games are already loaded
+                                        }
+                                    }
+                                }}
+
+                                disabled={isLoadingCurrentGames}
+                                >           
+                                    <div>                                 
+                                        <span>{item.region}</span>
+                                        {/* item.pingTime >= 0 && (
+                                            <span className="text-xs" style={{ color: getPingColor(item.pingTime) }}>
+                                                ({item.pingTime}ms)
+                                            </span>
+                                        ) */}
+                                    </div>
+                                </button>
+                            ))}
+                            </div>
+                        </div>
                     </div>
                     <div className="header-buttons">
-                        <button className="btn-outlined btn-orange" disabled>How to Play</button>
+                        <button className="btn-outlined btn-orange" onClick={() => navigate("/about")}>How to Play</button>
                         <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
                             + Create Game
                         </button>
@@ -610,13 +769,19 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                 <th>Ping</th>
                                 <th>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '10%' }}>
-                                        <span className="flex-row justify-center items-center inline-flex m-0 w-[100%] mr-[20%]">Ready?</span>
+                                        <span className="flex-row justify-center items-center inline-flex m-0 w-[100%] mr-[20%]">Status</span>
                                         <div className="tooltip-container" style={{ position: 'absolute', display: 'inline-block', marginTop: '3px' }}>
                                             <button
                                                 className="inline-flex m-0"
-                                                onClick={() => { fetchAndLogMapData(activeGamesRef.current) }}
+                                                onClick={async () => {
+                                                    setIsLoadingCurrentGames(true);
+                                                    let pingResults = await pingEndpoints();
+                                                    pingResultsRef.current = pingResults.pingResults;
+                                                    await fetchAndLogMapData(engine, activeGamesRef.current, selectedServer.current, true, pingResults.pingResults); 
+                                                    setIsLoadingCurrentGames(false);
+                                                }}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg"  className="refresh-icon" style={{ color: "white" }} fill="none" viewBox="-0.5 -0.5 16 16" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" stroke-width="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" stroke-width="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" stroke-width="1"></path></svg>                                       
+                                                <svg xmlns="http://www.w3.org/2000/svg" className={`${isLoadingCurrentGames && loadingGameNum == -1 ? 'refresh-icon' : ''}`} style={{ color: "white" }} fill="none" viewBox="-0.5 -0.5 16 16" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" stroke-width="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" stroke-width="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" stroke-width="1"></path></svg>                                       
                                             </button>
                                             <span className="tooltip-text">Refresh All</span>
                                         </div>
@@ -625,7 +790,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             </tr>
                         </thead>
                         <tbody>
-                            {activeGamesLoaded.filter(row => row.activeGame.ping > 0).length == 0 && <tr><td colSpan={10}><Spinner /> {' '} Loading games, please wait. </td></tr>}
+                            {activeGamesLoaded.filter(row => row.activeGame.ping > 0).length == 0 && <tr><td colSpan={10} style={{textAlign: 'center'}}> {/*<Spinner />*/} {' '} 
+                            {selectedServer.current !== "" ? `Loading ${selectedServer.current} games, please wait...` : "Finding nearest server..."}</td></tr>}
                             {activeGamesLoaded.map((row, idx) => (
                                 <tr key={idx} style={{display: row.activeGame.ping <= 0 ? 'none' : 'table-row'}}>
                                     <td>{row.activeGame.isLoaded ? row.activeGame.name : <Spinner />}</td>
@@ -657,11 +823,17 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                     </button>
                                     <div className="tooltip-container" style={{ position: 'absolute', display: 'inline-block', marginTop: '8px' }}>
                                         <button
-                                            onClick={() => {
-                                                handleRefresh(row, idx);
+                                            onClick={async() => {
+                                                try {
+                                                    setLoadingGameNum(idx);
+                                                    await handleRefresh(engine, activeGamesLoaded, row, idx);
+                                                    setLoadingGameNum(-1);
+                                                } catch (error) {
+                                                    console.log("Error refreshing game:", error);
+                                                }   
                                             }}
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="refresh-icon" style={{marginLeft:"20px", color: "white"}} fill="none" viewBox="-0.5 -0.5 16 16" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" stroke-width="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" stroke-width="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" stroke-width="1"></path></svg>                                       
+                                            <svg xmlns="http://www.w3.org/2000/svg" className={`${loadingGameNum === idx ? 'refresh-icon' : ''}`} style={{marginLeft:"20px", color: "white"}} fill="none" viewBox="-0.5 -0.5 16 16" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" stroke-width="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" stroke-width="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" stroke-width="1"></path></svg>                                       
                                         </button>
                                         <span className="tooltip-text">Refresh</span>
                                     </div>

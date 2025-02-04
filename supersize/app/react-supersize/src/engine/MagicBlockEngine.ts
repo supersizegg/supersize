@@ -24,9 +24,11 @@ const TRANSACTION_COST_LAMPORTS = 5000;
 const connectionChain = new Connection(ENDPOINT_CHAIN_RPC, {
   wsEndpoint: ENDPOINT_CHAIN_WS,
 });
+/*
 let connectionEphem = new Connection("https://supersize-sin.magicblock.app", {
   wsEndpoint: "wss://supersize-sin.magicblock.app",
 });
+*/
 
 interface SessionConfig {
   minLamports: number;
@@ -43,6 +45,7 @@ export class MagicBlockEngine {
   private sessionKey: Keypair;
   private sessionConfig: SessionConfig;
   private endpointEphemRpc: string;
+  private connectionEphem: Connection;
   private provider: AnchorProvider;
   private providerEphemeralRollup: AnchorProvider;
 
@@ -55,7 +58,9 @@ export class MagicBlockEngine {
     this.sessionKey = sessionKey;
     this.sessionConfig = sessionConfig;
     this.endpointEphemRpc = "https://supersize-sin.magicblock.app";
-
+    this.connectionEphem = new Connection(this.endpointEphemRpc, {
+      wsEndpoint: this.endpointEphemRpc.replace("http", "ws"),
+    });
     this.provider = new AnchorProvider(
       connectionChain,
       new NodeWallet(this.sessionKey),
@@ -65,7 +70,7 @@ export class MagicBlockEngine {
     anchor.setProvider(this.provider); 
 
     this.providerEphemeralRollup = new AnchorProvider(
-      connectionEphem,
+      this.connectionEphem,
       new NodeWallet(this.sessionKey),
       { preflightCommitment: "processed" }
     );
@@ -73,11 +78,11 @@ export class MagicBlockEngine {
 
   public setEndpointEphemRpc(endpoint: string): void {
     this.endpointEphemRpc = endpoint;
-    connectionEphem = new Connection(endpoint, {
+    this.connectionEphem = new Connection(endpoint, {
       wsEndpoint: endpoint.replace("http", "ws"),
     });
     this.providerEphemeralRollup = new AnchorProvider(
-      connectionEphem,
+      this.connectionEphem,
       new NodeWallet(this.sessionKey),
       { preflightCommitment: "processed" }
     );
@@ -98,7 +103,7 @@ export class MagicBlockEngine {
     return connectionChain;
   }
   getConnectionEphem(): Connection {
-    return connectionEphem;
+    return this.connectionEphem;
   }
 
   getWalletConnected() {
@@ -170,7 +175,7 @@ export class MagicBlockEngine {
   ): Promise<string> {
     console.log(name, "sending");
     // transaction.compileMessage;
-    const signature = await connectionEphem.sendTransaction(
+    const signature = await this.connectionEphem.sendTransaction(
       transaction,
       [this.sessionKey],
       { skipPreflight: true }
@@ -178,7 +183,7 @@ export class MagicBlockEngine {
     await this.waitSignatureConfirmation(
       name,
       signature,
-      connectionEphem,
+      this.connectionEphem,
       "finalized"
     );
     return signature;
@@ -189,7 +194,7 @@ export class MagicBlockEngine {
     transaction: Transaction
   ): Promise<string> {
     // transaction.compileMessage;
-    const signature = await connectionEphem.sendTransaction(
+    const signature = await this.connectionEphem.sendTransaction(
       transaction,
       [this.sessionKey],
       { skipPreflight: true }
@@ -288,7 +293,7 @@ export class MagicBlockEngine {
   }
 
   getEphemAccountInfo(address: PublicKey) {
-    return connectionEphem.getAccountInfo(address);
+    return this.connectionEphem.getAccountInfo(address);
   }
 
   subscribeToChainAccountInfo(
@@ -307,7 +312,7 @@ export class MagicBlockEngine {
     onAccountChange: (accountInfo?: AccountInfo<Buffer>) => void
   ) {
     return this.subscribeToAccountInfo(
-      connectionEphem,
+      this.connectionEphem,
       address,
       onAccountChange
     );

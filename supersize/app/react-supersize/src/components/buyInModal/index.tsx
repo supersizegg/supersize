@@ -4,13 +4,14 @@ import "./BuyInModal.css";
 import { useNavigate } from "react-router-dom";
 import { gameExecuteJoin } from "../../states/gameExecuteJoin";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { getMyPlayerStatus, stringToUint8Array } from "@utils/helper";
-import { anchor, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
+import { anchor, createDelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { gameSystemJoin } from "@states/gameSystemJoin";
 import { PlayerInfo } from "@utils/types";
 import { playerFetchOnChain } from "@states/gameFetch";
 import { COMPONENT_PLAYER_ID } from "@states/gamePrograms";
+import { gameSystemCashOut } from "@states/gameSystemCashOut";
 
 
 type BuyInModalProps = {
@@ -31,8 +32,9 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
 
   const [buyIn, setBuyIn] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [retryModalView, setRetryModalView] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+  const [retryModalView, setRetryModalView] = useState(0);
+  const statusMessageRef = useRef("");
+  const errorMessageRef = useRef("");
   const selectedPlayerGameInfoRef = useRef<PlayerInfo>(selectedGamePlayerInfo);
 
   useEffect(() => {
@@ -66,7 +68,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    setStatusMessage("Submitting buy-in transaction...");
+    statusMessageRef.current = "Submitting buy-in transaction...";
 
     try {
       const playerEntityPda = selectedPlayerGameInfoRef.current.newplayerEntityPda;
@@ -76,9 +78,49 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
          entity: playerEntityPda,
       });
       const thisPlayerStatus = await playerFetchOnChain(engine, playerComponentPda);
-      if(thisPlayerStatus?.authority !== null){
-        console.log("player already claimed by another player");
+      console.log('thisPlayerStatus', thisPlayerStatus, thisPlayerStatus?.authority !== null)
+      console.log('statusMessageRef.current', statusMessageRef.current, statusMessageRef.current !== "")
+      let retryModalViewNum = 0
+      if(thisPlayerStatus?.authority !== null || errorMessageRef.current !== ""){
         const result = await getMyPlayerStatus(engine, activeGame.worldId, activeGame.max_players);
+        if (isPlayerStatus(result)) {
+            console.log('result', result)
+            if (result.need_to_delegate){
+                try {
+                    const playerComponentPda = FindComponentPda({
+                        componentId: COMPONENT_PLAYER_ID,
+                        entity: selectedPlayerGameInfoRef.current.newplayerEntityPda,
+                    });
+                    const playerdelegateIx = createDelegateInstruction({
+                        entity: selectedPlayerGameInfoRef.current.newplayerEntityPda,
+                        account: playerComponentPda,
+                        ownerProgram: COMPONENT_PLAYER_ID,
+                        payer: engine.getWalletPayer(),
+                    });
+                    const deltx = new Transaction().add(playerdelegateIx);
+                    const playerdelsignature = await engine.processWalletTransaction("playerdelegate", deltx);
+                    console.log(`delegation signature: ${playerdelsignature}`);
+                } catch (error) {
+                    console.log('Error delegating:', error);
+                }
+            }
+            if(result.playerStatus == "cashing_out"){
+                //retryModalViewNum = 2;
+                statusMessageRef.current = "Need to cash out!";
+                return;
+            }
+            else if(result.playerStatus == "in_game"){
+                statusMessageRef.current = "Already in game, rejoining...";
+                setTimeout(() => {
+                    setMyPlayerEntityPda(result.newplayerEntityPda);
+                    navigate("/game");
+                }, 1000);
+                return;
+            }
+            else if(result.playerStatus == "bought_in"){
+                retryModalViewNum = 1;
+            }
+        }
         let activeplayers = 0;
         let need_to_delegate = false;
         let need_to_undelegate = false;
@@ -103,23 +145,25 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
       if(retrievedUser){
           myusername = JSON.parse(retrievedUser).name;
       }
+      console.log('selectedPlayerGameInfoRef.current', selectedPlayerGameInfoRef.current.newplayerEntityPda.toString())
       const result = await gameExecuteJoin(engine, activeGame, buyIn, myusername, selectedPlayerGameInfoRef.current, setMyPlayerEntityPda);
 
       if (result.success) {
-        setStatusMessage("success");
+        statusMessageRef.current = "success";
         navigate("/game");
       } else {
-        setStatusMessage(result.error || "Failed to join the game. Please try again.");
+        errorMessageRef.current = result.error || "Failed to join the game. Please try again.";
         if(result.message == "buyin_failed"){
-            setStatusMessage("Buy in failed, please try again");
+            statusMessageRef.current = "Buy in failed, please try again";
         }
         if(result.message == "join_failed"){
-            setRetryModalView(true);
+            retryModalViewNum = 1;       
         }
       }
+      setRetryModalView(retryModalViewNum);
     } catch (error) {
       console.error("Error executing join:", error);
-      setStatusMessage("An unexpected error occurred. Please try again.");
+      statusMessageRef.current = "An unexpected error occurred. Please try again.";
     } finally {
       setIsSubmitting(false);
       // setStatusMessage("");
@@ -127,7 +171,9 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
   };
 
   const handleRetry = async () => {
-    try {
+    let retrySuccess = false;
+    if(retryModalView == 1){    
+      try {
         const mapseed = "origin";
         const mapEntityPda = FindEntityPda({
           worldId: activeGame.worldId,
@@ -135,20 +181,120 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
           seed: stringToUint8Array(mapseed),
         });
         const joinsig = await gameSystemJoin(engine, activeGame, selectedPlayerGameInfoRef.current.newplayerEntityPda, mapEntityPda, "unnamed");
+        retrySuccess = true;
         setMyPlayerEntityPda(selectedPlayerGameInfoRef.current.newplayerEntityPda);
         navigate("/game");
       } catch (joinError) {
         console.log("error", joinError);
+        statusMessageRef.current = "Failed to join the game. Please try again.";
       }
-      setRetryModalView(false);
+    }
+    else if(retryModalView == 2){
+        try {
+            const anteEntityPda = FindEntityPda({
+                worldId: activeGame.worldId,
+                entityId: new anchor.BN(0),
+                seed: stringToUint8Array("ante")
+            });
+            const cashoutTx = await gameSystemCashOut(engine, activeGame, anteEntityPda, selectedPlayerGameInfoRef.current.newplayerEntityPda);       
+            if(cashoutTx){
+                retrySuccess = true;
+                statusMessageRef.current = "Cash out successful";
+            }
+        } catch (cashoutError) {
+            console.log("error", cashoutError);
+            statusMessageRef.current = "Failed to cash out. Please try again.";
+        }
+    }
+
+    if(!retrySuccess){
+        const result = await getMyPlayerStatus(engine, activeGame.worldId, activeGame.max_players);
+        if (isPlayerStatus(result)) {
+            if (result.need_to_delegate){
+                try {
+                    const playerComponentPda = FindComponentPda({
+                        componentId: COMPONENT_PLAYER_ID,
+                        entity: selectedPlayerGameInfoRef.current.newplayerEntityPda,
+                    });
+                    const playerdelegateIx = createDelegateInstruction({
+                        entity: selectedPlayerGameInfoRef.current.newplayerEntityPda,
+                        account: playerComponentPda,
+                        ownerProgram: COMPONENT_PLAYER_ID,
+                        payer: engine.getWalletPayer(),
+                    });
+                    const deltx = new Transaction().add(playerdelegateIx);
+                    const playerdelsignature = await engine.processWalletTransaction("playerdelegate", deltx);
+                    console.log(`delegation signature: ${playerdelsignature}`);
+                } catch (error) {
+                    console.log('Error delegating:', error);
+                }
+            }
+            console.log('result', result)
+            if(result.playerStatus == "cashing_out"){
+                //setRetryModalView(2);
+                statusMessageRef.current = "Need to cash out!";
+                return;
+            }
+            else if(result.playerStatus == "in_game"){
+                statusMessageRef.current = "Already in game, rejoining...";
+                setTimeout(() => {
+                    setMyPlayerEntityPda(result.newplayerEntityPda);
+                    navigate("/game");
+                }, 1000);
+            }
+            else if(result.playerStatus == "bought_in"){
+                setRetryModalView(1);
+            }
+            else if(result.playerStatus == "new_player"){
+                setRetryModalView(0);
+            }
+        }
+        let activeplayers = 0;
+        let need_to_delegate = false;
+        let need_to_undelegate = false;
+        let newplayerEntityPda = new PublicKey(0);
+        let playerStatus = "new_player";
+        if (isPlayerStatus(result)) {
+            activeplayers = result.activeplayers;
+            need_to_delegate = result.need_to_delegate;
+            need_to_undelegate = result.need_to_undelegate;
+            newplayerEntityPda = result.newplayerEntityPda;
+            playerStatus = result.playerStatus;
+            selectedPlayerGameInfoRef.current = {
+                playerStatus: playerStatus,
+                need_to_delegate: need_to_delegate,
+                need_to_undelegate: need_to_undelegate,
+                newplayerEntityPda: newplayerEntityPda,
+            };
+        }
+    }
   }
 
 
   return (
     <div className="modal-overlay">
       <div className="modal-container">
-        <h1 className="modal-title">{retryModalView ? "Buy in successful, retry joining" : "Choose Buy In"}</h1>
-        {!retryModalView ? (
+        {retryModalView !== 0 && (
+          <button
+            className="close-button"
+            onClick={() => setIsBuyInModalOpen(false)}
+            style={{
+              alignSelf: 'flex-end',
+              top: '-15px',
+              right: '-10px',
+              position: 'relative',
+              border: 'none',
+              fontSize: '15px',
+              cursor: 'pointer',
+            }}
+          >
+            X
+          </button>
+        )}
+        <h1 className="modal-title" style={{marginTop: retryModalView !== 0 ? '-30px' : '0', marginBottom: retryModalView !== 0 ? '8px' : '0'}}>
+          {retryModalView == 0 ? "Choose Buy In" : retryModalView == 1 ? "Buy In Success! Retry Spawn" : "Need to Cash Out"}
+        </h1>
+        {retryModalView == 0 ? (
         <>
         <div className="buyInField">
           <div className="buyInInfoGroup">
@@ -192,12 +338,15 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
           </button>
         </div>
 
-        {statusMessage !== "" && <div className="status-message">{statusMessage}</div>}
+        {statusMessageRef.current !== "" && <div className="status-message">{statusMessageRef.current}</div>}
         </>
         ) : (
+        <>
           <div className="retry-modal-view" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <button className="cancel-button" onClick={handleRetry} style={{width: 'fit-content'}}>Retry Join Game</button>
+            <button className="cancel-button" onClick={handleRetry} style={{width: 'fit-content'}}>Retry {retryModalView == 1 ? "Spawn Player" : "Cash Out"}</button>
           </div>
+          {statusMessageRef.current !== "" && <div className="status-message">{statusMessageRef.current}</div>}
+        </>
         )}
       </div>
     </div>

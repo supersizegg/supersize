@@ -178,6 +178,18 @@ export async function gameSystemCashOut(
             const cashouttx = new anchor.web3.Transaction()
                 .add(applyCashOutSystem.transaction);
 
-            return await engine.processWalletTransaction("playercashout", cashouttx);
+            let cashoutsig = await engine.processWalletTransaction("playercashout", cashouttx);
+            console.log('cashoutsig', cashoutsig);
+            if (cashoutsig){
+                /*const retrievedMyPlayers = localStorage.getItem('myplayers');
+                if (retrievedMyPlayers){
+                    let myplayers = JSON.parse(retrievedMyPlayers).filter((player: any) => player.worldId !== gameInfo.worldId.toNumber().toString());
+                    localStorage.setItem('myplayers', JSON.stringify(myplayers));
+                }*/
+                return cashoutsig;
+            }
+            else{
+                return null;
+            }
     }   
 }

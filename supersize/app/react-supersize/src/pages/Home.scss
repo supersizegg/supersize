@@ -112,7 +112,14 @@
     }
   }
 }
-
+.region-buttons{
+    background-color: #333;
+    border-radius: 8px;
+    padding: 0.5rem 0.5rem;
+}
+.region-button{
+    border-radius: 8px;
+}
 .ping-cell {
   display: flex;
   align-items: center;
@@ -164,7 +171,7 @@
     padding: 5px;
     margin-left: 5px;
 }
-.refresh-icon:hover {
+.refresh-icon {
     animation: spin 1s linear infinite;
 }
 @keyframes spin {

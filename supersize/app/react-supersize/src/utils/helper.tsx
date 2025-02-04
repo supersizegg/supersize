@@ -333,57 +333,171 @@ export const getMyPlayerStatus = async (
     newplayerEntityPda: PublicKey;
     activeplayers: number;
 } | "error"> => {
-  const playerEntityPdas: PublicKey[] = [];
-  let newplayerEntityPda: PublicKey | null = null;
+    const playerEntityPdas: PublicKey[] = [];
+    let newplayerEntityPda: PublicKey | null = null;
+    let playerStatus = "new_player";
+    let need_to_undelegate = false;
+    let need_to_delegate = false; 
+    let activeplayers = 0;
+    // Prepare promises for fetching data
+    const fetchPromises = [];
+    for (let i = 1; i < maxplayer + 1; i++) {
+        const playerentityseed = "player" + i.toString();
+        const playerEntityPda = FindEntityPda({
+            worldId: worldId,
+            entityId: new anchor.BN(0),
+            seed: stringToUint8Array(playerentityseed),
+        });
+        playerEntityPdas.push(playerEntityPda);
+
+        const playersComponentPda = FindComponentPda({
+            componentId: COMPONENT_PLAYER_ID,
+            entity: playerEntityPda,
+        });
+
+        fetchPromises.push(
+            Promise.all([
+                engine.getChainAccountInfo(playersComponentPda),
+                playerFetchOnChain(engine, playersComponentPda),
+                playerFetchOnEphem(engine, playersComponentPda)
+            ]).then(([playersacc, playersParsedData, playersParsedDataER]) => ({
+                playersComponentPda,
+                playersacc,
+                playersParsedData,
+                playersParsedDataER,
+                playerEntityPda
+            }))
+        );
+    }
+
+    // Execute all fetches in parallel
+    const results = await Promise.all(fetchPromises);
+
+    // Process the results
+    for (const { playersComponentPda, playersacc, playersParsedData, playersParsedDataER, playerEntityPda } of results) {
+        if (!playersacc || !playersParsedData) {
+            continue;
+        }
+
+        if (playersParsedData.authority != null) {
+            activeplayers += 1;
+        }
+
+        if (playersParsedData.authority == null) {
+            if (newplayerEntityPda == null) {
+                newplayerEntityPda = playerEntityPda;
+                if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+                    need_to_undelegate = true;
+                    need_to_delegate = false;
+                } else {
+                    need_to_undelegate = false;
+                    need_to_delegate = false;
+                }
+            }
+            break;
+        } else if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
+            console.log('playersParsedData', playersComponentPda.toString(), playersParsedData, playersParsedDataER, worldId.toNumber().toString());
+            if (playersParsedData.mass.toNumber() == 0 && playersParsedData.score == 0) {
+                playerStatus = "bought_in";
+            } else if (playersParsedDataER && 
+                playersParsedDataER.authority &&
+                playersParsedDataER.authority.toString() == engine.getSessionPayer().toString() &&
+                playersParsedDataER.mass.toNumber() == 0 &&
+                playersParsedDataER.score !== 0
+            ) {
+                playerStatus = "cashing_out";
+            } else { 
+                playerStatus = "in_game";
+            }
+
+            if (playerStatus == "bought_in" || playerStatus == "in_game") {
+                if (playersacc.owner.toString() !== "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+                    need_to_delegate = true;
+                    need_to_undelegate = false;
+                } else {
+                    need_to_delegate = false;
+                    need_to_undelegate = false;
+                }
+            }
+            if (playerStatus == "cashing_out") {
+                if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+                    need_to_undelegate = true;
+                    need_to_delegate = false;
+                } else {
+                    need_to_undelegate = false;
+                    need_to_delegate = false;
+                }
+            }
+            newplayerEntityPda = playerEntityPda;
+        } else if (
+            playersParsedDataER && 
+            playersParsedDataER.authority == null &&
+            playersParsedData.authority !== null &&
+            playersParsedDataER.x == 50000 &&
+            playersParsedDataER.y == 50000 &&
+            playersParsedDataER.score == 0 &&
+            newplayerEntityPda == null
+        ) {
+            const startTime = playersParsedDataER.joinTime.toNumber() * 1000;
+            const currentTime = Date.now();
+            const elapsedTime = currentTime - startTime;
+            if (elapsedTime >= 10000) {
+                newplayerEntityPda = playerEntityPda;
+                if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
+                    need_to_undelegate = true;
+                    need_to_delegate = false;
+                } else {
+                    need_to_undelegate = false;
+                    need_to_delegate = false;
+                }
+            }
+        } else {
+            continue;
+        }
+    }
+
+    if (newplayerEntityPda == null) return "error";
+    return {
+        playerStatus: playerStatus,
+        need_to_delegate: need_to_delegate,
+        need_to_undelegate: need_to_undelegate,
+        newplayerEntityPda: newplayerEntityPda,
+        activeplayers: activeplayers,
+    };
+};
+
+
+
+export const getMyPlayerStatusFast = async (
+    engine: MagicBlockEngine,
+    worldId: BN,
+    playersComponentPda: PublicKey,
+): Promise<{
+    playerStatus: string;
+    need_to_delegate: boolean;
+    need_to_undelegate: boolean;
+} | "error"> => {
   let playerStatus = "new_player";
   let need_to_undelegate = false;
   let need_to_delegate = false; 
   let activeplayers = 0;
-  for (let i = 1; i < maxplayer + 1; i++) {
-    const playerentityseed = "player" + i.toString();
-
-    const playerEntityPda = FindEntityPda({
-      worldId: worldId,
-      entityId: new anchor.BN(0),
-      seed: stringToUint8Array(playerentityseed),
-    });
-    playerEntityPdas.push(playerEntityPda);
-
-    const playersComponentPda = FindComponentPda({
-      componentId: COMPONENT_PLAYER_ID,
-      entity: playerEntityPda,
-    });
 
     const playersacc = await engine.getChainAccountInfo(playersComponentPda);
     if (!playersacc) { 
-        continue;
+        return "error";
     }
     const playersParsedData = await playerFetchOnChain(engine, playersComponentPda);
     if (!playersParsedData) {
-        continue;
+        return "error";
+    }
+    if (playersParsedData.authority == null) {
+        return "error";
     }
     const playersParsedDataER = await playerFetchOnEphem(engine, playersComponentPda);
+    console.log('undelegate info', playersacc.owner.toString() !== "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh", playersacc.owner.toString())
+    console.log('playersParsedData', playersComponentPda.toString(), playersParsedData, playersParsedDataER, worldId.toNumber().toString())
 
-    
-    
-
-    if(playersParsedData.authority != null) {
-        activeplayers = activeplayers + 1;
-    }
-
-    if (playersParsedData.authority == null) {
-        if( newplayerEntityPda == null){
-            newplayerEntityPda = playerEntityPda;
-            if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
-                need_to_undelegate = true;
-                need_to_delegate = false;
-            }else{
-                need_to_undelegate = false;
-                need_to_delegate = false;
-            }
-        }
-    } 
-    else if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
+    if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
 
         if(playersParsedData.mass.toNumber() == 0 && playersParsedData.score == 0){
             playerStatus = "bought_in";
@@ -417,41 +531,65 @@ export const getMyPlayerStatus = async (
                 need_to_delegate = false;
             }
         }
-        newplayerEntityPda = playerEntityPda;
+    }else{
+        return "error";
     }
-    else if ( 
-        playersParsedDataER && 
-        playersParsedDataER.authority == null &&
-        playersParsedData.authority !== null &&
-        playersParsedDataER.x == 50000 &&
-        playersParsedDataER.y == 50000 &&
-        playersParsedDataER.score == 0 &&
-        newplayerEntityPda == null
-      ) {
-        const startTime = playersParsedDataER.joinTime.toNumber() * 1000;
-        const currentTime = Date.now();
-        const elapsedTime = currentTime - startTime;
-        if (elapsedTime >= 10000) {
-          newplayerEntityPda = playerEntityPda;
-        if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
-            need_to_undelegate = true;
-            need_to_delegate = false;
-        }else{
-            need_to_undelegate = false;
-            need_to_delegate = false;
-        }
-        }
-    }
-    else{
-        continue;
-    }
-    }
-    if(newplayerEntityPda == null) return "error";
+    
     return {
         playerStatus: playerStatus,
         need_to_delegate: need_to_delegate,
         need_to_undelegate: need_to_undelegate,
-        newplayerEntityPda: newplayerEntityPda,
-        activeplayers: activeplayers,
     };
+};
+
+
+export const getActivePlayers = async (
+    engine: MagicBlockEngine,
+    worldId: BN,
+    maxplayer: number,
+): Promise<{
+    activeplayers: number;
+    newplayerEntityPda: PublicKey | null;
+} | "error"> => {
+  let activeplayers = 0;
+  let newplayerEntityPda: PublicKey | null = null;
+
+  const playerPromises = Array.from({ length: maxplayer }, (_, i) => {
+    const playerentityseed = "player" + (i + 1).toString();
+
+    const playerEntityPda = FindEntityPda({
+      worldId: worldId,
+      entityId: new anchor.BN(0),
+      seed: stringToUint8Array(playerentityseed),
+    });
+
+    const playersComponentPda = FindComponentPda({
+      componentId: COMPONENT_PLAYER_ID,
+      entity: playerEntityPda,
+    });
+
+    return playerFetchOnChain(engine, playersComponentPda).then(data => ({
+      data,
+      playerEntityPda
+    }));
+  });
+
+  const playersData = await Promise.all(playerPromises);
+
+  for (const { data: playersParsedData, playerEntityPda } of playersData) {
+    if (!playersParsedData) {
+      continue;
+    }
+    if (playersParsedData.authority != null) {
+      activeplayers += 1;
+    } else {
+      newplayerEntityPda = playerEntityPda;
+      break;
+    }
+  }
+
+  return {
+    activeplayers: activeplayers,
+    newplayerEntityPda: newplayerEntityPda,
+  };
 };

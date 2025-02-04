@@ -157,6 +157,30 @@ export async function gameExecuteJoin(
     if (!buyInResult.success) {
         return { success: false, error: buyInResult.error, message: "buyin_failed" };
     }
+    /*
+    else{
+        const retrievedMyPlayers = localStorage.getItem('myplayers');
+        let myplayers = [{ playerEntityPda: newplayerEntityPda.toString(), worldId: gameInfo.worldId.toNumber().toString()}];
+        if (retrievedMyPlayers) {
+            let index = -1;
+            const players = JSON.parse(retrievedMyPlayers);
+            for (let i = 0; i < players.length; i++) {
+                if (players[i].worldId == gameInfo.worldId.toNumber().toString()) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index !== -1) {
+                myplayers = JSON.parse(retrievedMyPlayers);
+                myplayers[index] = { playerEntityPda: newplayerEntityPda.toString(), worldId: gameInfo.worldId.toNumber().toString()};
+            }
+            else{
+                myplayers = [...JSON.parse(retrievedMyPlayers), { playerEntityPda: newplayerEntityPda.toString(), worldId: gameInfo.worldId.toNumber().toString()}];
+            }
+        }
+        console.log('myplayers', myplayers)
+        localStorage.setItem('myplayers', JSON.stringify(myplayers));
+    }*/
   } catch (buyInError) {
     console.error("Buy-in error:", buyInError);
     return { success: false, error: `Buy-in transaction failed: ${(buyInError as Error)?.message}`, message: "buyin_failed" };
@@ -164,8 +188,8 @@ export async function gameExecuteJoin(
  
   try {
     const joinsig = await gameSystemJoin(engine, selectGameId, newplayerEntityPda, mapEntityPda, playerName);
-    setMyPlayerEntityPda(newplayerEntityPda);
     if(joinsig){
+      setMyPlayerEntityPda(newplayerEntityPda);
       return { success: true, transactionSignature: joinsig };
     }
     else{
