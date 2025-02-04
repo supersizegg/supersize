@@ -619,7 +619,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                 {gameEnded === 1 && (
                     <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black z-[9999]">
                         <div className="bg-black flex flex-col items-center justify-center">
-                            <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
+                            <p className=" p-0 m-1 text-center text-white text-xl inline">
                                 You got eaten!
                             </p>
                             <button
@@ -635,19 +635,19 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                 {(gameEnded === 2 || gameEnded === 3) && (
                     <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black z-[9999]">
                         <div className="bg-black flex flex-col items-center justify-center select-text">
-                            <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
+                            <p className=" p-0 m-1 text-center text-white text-xl inline">
                                 Final score: {currentPlayer ? 
                                 getRoundedAmount(currentPlayer.score + currentPlayer.tax, gameInfo.base_buyin / 1000) : ''}
                             </p>
-                            <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
+                            <p className=" p-0 m-1 text-center text-white text-xl inline">
                                 Exit tax:{" "}
                                 {currentPlayer ?
                                 getRoundedAmount(currentPlayer.tax + currentPlayer.score * 0.02, gameInfo.base_buyin / 1000)
                                  : ''}
                             </p>
-                            <p className="font-terminus p-0 m-1 text-center text-white text-xl inline">
-                                Payout: {currentPlayer ? 
-                                getRoundedAmount(currentPlayer.score * 0.98, gameInfo.base_buyin / 1000) : ''}
+                            <p className=" p-0 m-1 text-center text-white text-xl inline">
+                                <b>Payout: {currentPlayer ? 
+                                getRoundedAmount(currentPlayer.score * 0.98, gameInfo.base_buyin / 1000) : ''}</b>
                             </p>
                             <div
                                 className="flex items-center justify-center"
@@ -656,72 +656,42 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                                 <pre style={{ margin: "20px 0" }}>
                                     {cashoutTx !== null &&
                                     cashoutTx !== "error" ? (
+                                        <>✅ 
                                         <a
-                                            className="font-terminus p-0 m-1 text-center text-white text-xl inline"
+                                            className=" p-0 m-1 text-center text-white text-xl inline"
                                             href={`https://explorer.solana.com/tx/${cashoutTx}?cluster=mainnet`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             style={{textDecoration: 'underline'}}
                                         >
                                             Cashout transaction
-                                        </a>
+                                        </a></>
                                     ) : (
                                         <span className="warning-alert">Confirm the cashout TX in your wallet</span>
                                     )}
                                 </pre>
                                 {cashoutTx != null ? (
-                                    <>
-                                        {cashoutTx != "error" ? (
-                                            <svg
-                                                className="w-5 h-5 rounded-full inline-block stroke-[2px] stroke-[#15bd12] stroke-miter-10 shadow-inner ml-[5px] mt-[2px]"
-                                                style={{
-                                                    animation:
-                                                        "fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;",
-                                                }}
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 52 52"
-                                            >
-                                                <circle
-                                                    className="stroke-[2px] stroke-[#15bd12] stroke-miter-10 fill-[#15bd12]"
-                                                    style={{
-                                                        strokeDasharray:
-                                                            "166; stroke-dashoffset: 166; animation: stroke 0.6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;",
-                                                    }}
-                                                    cx="26"
-                                                    cy="26"
-                                                    r="25"
-                                                    fill="none"
-                                                />
-                                                <path
-                                                    className="stroke-[white] stroke-dasharray-[48] stroke-dashoffset-[48] transform-origin-[50%_50%] animation-stroke"
-                                                    fill="none"
-                                                    d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                                                />
-                                            </svg>
-                                        ) : (
-                                            <button
-                                                className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white font-[Conthrax] text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
-                                                onClick={async () => {
-                                                    if(anteroomEntity.current && currentPlayerEntity.current && currentPlayer) {
-                                                        setCashoutTx(null);
-                                                        try {   
-                                                            let cashouttx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current);
-                                                            if(cashouttx) {
-                                                                setCashoutTx(cashouttx);
-                                                            } else {
-                                                                setCashoutTx("error");
-                                                            }
-                                                        }
-                                                        catch(error) {
+                                    (cashoutTx == "error" && <button
+                                            className="w-full bg-white flex items-center justify-center h-[3em] rounded-[1em] border border-white text-black text-base cursor-pointer transition-all duration-300 z-[10] hover:bg-black hover:text-[#eee] hover:border-white"
+                                            onClick={async () => {
+                                                if(anteroomEntity.current && currentPlayerEntity.current && currentPlayer) {
+                                                    setCashoutTx(null);
+                                                    try {   
+                                                        let cashouttx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current);
+                                                        if(cashouttx) {
+                                                            setCashoutTx(cashouttx);
+                                                        } else {
                                                             setCashoutTx("error");
                                                         }
                                                     }
-                                                }}
-                                            >
-                                                Retry
-                                            </button>
-                                        )}
-                                    </>
+                                                    catch(error) {
+                                                        setCashoutTx("error");
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            Retry
+                                        </button>)
                                 ) : (
                                     <svg
                                         className="inline ml-[5px] mt-[2px] h-[20px] w-[20px] stroke-[white]"

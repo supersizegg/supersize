@@ -118,7 +118,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
   const foodRef = useRef(visibleFood);
   const newTargetRef = useRef(newTarget);
 
-  const timeStep = 40.0; // any value >50 works, testing ~90 
+  const timeStep = 60.0; // any value >50 works, testing ~90 
 
   const previousTime = useRef(0.0);
   const accumulator = useRef(0.0);
