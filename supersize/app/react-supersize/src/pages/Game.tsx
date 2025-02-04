@@ -704,13 +704,15 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                                                 onClick={async () => {
                                                     if(anteroomEntity.current && currentPlayerEntity.current && currentPlayer) {
                                                         setCashoutTx(null);
-                                                        let cashouttx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current).catch((error) => {
-                                                            console.log('error', error);
-                                                            setCashoutTx("error");
-                                                        });
-                                                        if(cashouttx) {
-                                                            setCashoutTx(cashouttx);
-                                                        } else {
+                                                        try {   
+                                                            let cashouttx = await gameSystemCashOut(engine, gameInfo, anteroomEntity.current, currentPlayerEntity.current);
+                                                            if(cashouttx) {
+                                                                setCashoutTx(cashouttx);
+                                                            } else {
+                                                                setCashoutTx("error");
+                                                            }
+                                                        }
+                                                        catch(error) {
                                                             setCashoutTx("error");
                                                         }
                                                     }

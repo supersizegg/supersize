@@ -75,7 +75,7 @@ export async function gameSystemCashOut(
         const mint_of_token_being_sent = anteAccount.token;
         const owner_token_account = anteAccount.gamemasterTokenAccount;
         if (!mint_of_token_being_sent || !owner_token_account || !vault_token_account) {
-            return;
+            throw new Error('Cash out failed');
         }
         const supersize_token_account = await getAssociatedTokenAddress(
             mint_of_token_being_sent,
@@ -180,16 +180,14 @@ export async function gameSystemCashOut(
 
             let cashoutsig = await engine.processWalletTransaction("playercashout", cashouttx);
             console.log('cashoutsig', cashoutsig);
-            if (cashoutsig){
-                /*const retrievedMyPlayers = localStorage.getItem('myplayers');
-                if (retrievedMyPlayers){
-                    let myplayers = JSON.parse(retrievedMyPlayers).filter((player: any) => player.worldId !== gameInfo.worldId.toNumber().toString());
-                    localStorage.setItem('myplayers', JSON.stringify(myplayers));
-                }*/
-                return cashoutsig;
+            if (!cashoutsig){
+                throw new Error('Cash out failed');
             }
-            else{
-                return null;
-            }
+            /*const retrievedMyPlayers = localStorage.getItem('myplayers');
+            if (retrievedMyPlayers){
+                let myplayers = JSON.parse(retrievedMyPlayers).filter((player: any) => player.worldId !== gameInfo.worldId.toNumber().toString());
+                localStorage.setItem('myplayers', JSON.stringify(myplayers));
+            }*/
+            return cashoutsig;
     }   
 }

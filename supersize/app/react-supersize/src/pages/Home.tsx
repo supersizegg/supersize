@@ -533,14 +533,20 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             setIsBuyInModalOpen(true);
         }
         if (game.playerInfo.playerStatus === "cashing_out") {
-            const anteEntityPda = FindEntityPda({
-                worldId: game.activeGame.worldId,
-                entityId: new anchor.BN(0),
-                seed: stringToUint8Array("ante")
-            });
-            const cashoutTx = await gameSystemCashOut(engine, game.activeGame, anteEntityPda, game.playerInfo.newplayerEntityPda);
-            if(cashoutTx){
-                fetchAndLogMapData(engine, activeGamesRef.current, selectedServer.current);
+            try {
+                const anteEntityPda = FindEntityPda({
+                    worldId: game.activeGame.worldId,
+                    entityId: new anchor.BN(0),
+                    seed: stringToUint8Array("ante")
+                });
+                const cashoutTx = await gameSystemCashOut(engine, game.activeGame, anteEntityPda, game.playerInfo.newplayerEntityPda);
+                /*
+                //never loads correctly  
+                if(cashoutTx){
+                    await fetchAndLogMapData(engine, activeGamesRef.current, selectedServer.current);
+                }  */                   
+            } catch (cashoutError) {
+                console.log("error", cashoutError);
             }
         }
         if (game.playerInfo.playerStatus === "bought_in") {
