@@ -673,7 +673,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                         </input>
                         <span style={{opacity: isSearchingGame.current ? '1' : '0', alignSelf: 'center', marginRight: '10px'}}><Spinner /></span>
                     </div>
-                    <div className="w-[54%] mr-[auto]">
+                    <div className="mr-[auto]">
                         <div>
                             <div className="region-buttons flex flex-row flex-start w-[fit-content] h-[100%] items-center justify-center">
                             Server: 
