@@ -238,12 +238,12 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
 
     const handleRefresh = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], reloadActiveGame: FetchedGame, index: number) => {
         setIsLoadingCurrentGames(true);
-        const playerComponentPda = FindComponentPda({
-            componentId: COMPONENT_PLAYER_ID,
-            entity: reloadActiveGame.playerInfo.newplayerEntityPda,
-        });
         try {
-                        
+            const playerComponentPda = FindComponentPda({
+                componentId: COMPONENT_PLAYER_ID,
+                entity: reloadActiveGame.playerInfo.newplayerEntityPda,
+            });
+
             const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
                 const pingTimes = await Promise.all([
                     pingEndpoint(endpoint),
@@ -324,15 +324,6 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             pingResults = await pingEndpoints();
             pingResults = pingResults.pingResults;
         }
-        /* const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
-            const pingTimes = await Promise.all([
-                pingEndpoint(endpoint),
-                pingEndpoint(endpoint),
-                pingEndpoint(endpoint),
-            ]);
-            const bestPingTime = Math.min(...pingTimes);
-            return { endpoint, pingTime: bestPingTime };
-        })); */
         const gameCopy = [...activeGamesLoaded];
         let filteredGames = gameCopy.filter((game, i) => {
             return endpoints[options.indexOf(server)] === game.activeGame.endpoint;
@@ -428,7 +419,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             newplayerEntityPda = result.newplayerEntityPda;
                             playerStatus = result.playerStatus;
                         } else {
-                            console.error("Error fetching player status");
+                            console.log("Error fetching player status");
                         }
                     }else{
                         const result = await getActivePlayers(engine, filteredGames[i].activeGame.worldId, mapParsedData.maxPlayers);
@@ -599,34 +590,37 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         return {pingResults: pingResults, lowestPingEndpoint: lowestPingEndpoint};
     }
     useEffect(() => {
-        const handleEngineStable = debounce(() => {
+        const handleEngineStable = debounce(async () => {
             if (selectedServer.current === "") {
-                setIsLoadingCurrentGames(true); // Ensure loading state is set to true at the start
-                pingEndpoints().then((pingResults: any) => {
+                setIsLoadingCurrentGames(true); 
+                
+                try {
+                    const pingResults = await pingEndpoints();
                     pingResultsRef.current = pingResults.pingResults;
                     const thisServer = pingResults.lowestPingEndpoint.region;
                     selectedServer.current = thisServer;
                     engine.setEndpointEphemRpc(pingResults.lowestPingEndpoint.endpoint);
-                    try {
-                        const checkActiveGamesLoaded = setInterval(async () => {
-                            if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == 0) {
-                                await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
-                            } else {
-                                clearInterval(checkActiveGamesLoaded);
-                                setIsLoadingCurrentGames(false); // Set loading state to false when games are loaded
-                            }
-                        }, pingResults.lowestPingEndpoint.pingTime * 5);
-                    } catch (error) {
-                        //console.log("Error fetching map data:", error);
-                        selectedServer.current = ""
-                    }
-                }).finally(() => {
+                    await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
+
+                    const checkActiveGamesLoaded = setInterval(async () => {
+                        if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length === 0) {
+                            await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
+                        } else {
+                            clearInterval(checkActiveGamesLoaded);
+                            setIsLoadingCurrentGames(false);
+                        }
+                    }, pingResults.lowestPingEndpoint.pingTime * 5);
+
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                    //selectedServer.current = "";
+                } finally {
                     if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length > 0) {
-                        selectedServer.current = getRegion(activeGamesRef.current[0].activeGame.endpoint);   
-                        setIsLoadingCurrentGames(false); // Ensure loading state is set to false if games are already loaded
+                        //selectedServer.current = getRegion(activeGamesRef.current[0].activeGame.endpoint);   
+                        setIsLoadingCurrentGames(false);
                     }
-                });
-            }else{
+                }
+            } else {
                 setIsLoadingCurrentGames(false);
             }
         }, 500); 
@@ -831,6 +825,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                                     setLoadingGameNum(-1);
                                                 } catch (error) {
                                                     console.log("Error refreshing game:", error);
+                                                    setLoadingGameNum(-1);
                                                 }   
                                             }}
                                         >
