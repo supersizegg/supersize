@@ -236,12 +236,12 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         return typeof result === 'object';
     }
 
-    const handleRefresh = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], reloadActiveGame: FetchedGame, index: number) => {
+    const handleRefresh = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], index: number) => {
         setIsLoadingCurrentGames(true);
         try {
             const playerComponentPda = FindComponentPda({
                 componentId: COMPONENT_PLAYER_ID,
-                entity: reloadActiveGame.playerInfo.newplayerEntityPda,
+                entity: activeGamesLoaded[index].playerInfo.newplayerEntityPda,
             });
 
             const pingResults = await Promise.all(endpoints.map(async (endpoint) => {
@@ -259,13 +259,10 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 activeGame: {
                     ...refreshedGames[index].activeGame,
                     active_players: -1,
-                    ping: pingResults.find(ping => ping.endpoint === reloadActiveGame.activeGame.endpoint)?.pingTime || 0,
+                    ping: pingResults.find(ping => ping.endpoint === activeGamesLoaded[index].activeGame.endpoint)?.pingTime || 0,
                 } as ActiveGame, 
                 playerInfo: {
-                    playerStatus: "new_player",
-                    need_to_delegate: false,
-                    need_to_undelegate: false,
-                    newplayerEntityPda: new PublicKey(0)
+                    ...refreshedGames[index].playerInfo,
                 } as PlayerInfo
             }
 
@@ -274,8 +271,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
 
             //engine.setEndpointEphemRpc(reloadActiveGame.activeGame.endpoint);
 
-            const result = await getMyPlayerStatusFast(engine, reloadActiveGame.activeGame.worldId, playerComponentPda);
-            const active_players = await getActivePlayers(engine, reloadActiveGame.activeGame.worldId, reloadActiveGame.activeGame.max_players);
+            const result = await getMyPlayerStatusFast(engine, activeGamesLoaded[index].activeGame.worldId, playerComponentPda);
+            const active_players = await getActivePlayers(engine, activeGamesLoaded[index].activeGame.worldId, activeGamesLoaded[index].activeGame.max_players);
             let activeplayers = 0;
             if(active_players !== "error"){
                 activeplayers = active_players.activeplayers;
@@ -296,10 +293,10 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
 
             const newgame: FetchedGame = {
                 activeGame: {
-                    ...reloadActiveGame.activeGame,
+                    ...activeGamesLoaded[index].activeGame,
                     isLoaded: true,
                     active_players: activeplayers,
-                    ping: pingResults.find(ping => ping.endpoint === reloadActiveGame.activeGame.endpoint)?.pingTime || 0,
+                    ping: pingResults.find(ping => ping.endpoint === activeGamesLoaded[index].activeGame.endpoint)?.pingTime || 0,
                 } as ActiveGame, 
                 playerInfo: {
                     playerStatus: playerStatus,
@@ -346,10 +343,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     ping: 0,
                 } as ActiveGame,
                 playerInfo: {
-                    playerStatus: "new_player",
-                    need_to_delegate: false,
-                    need_to_undelegate: false,
-                    newplayerEntityPda: new PublicKey(0)
+                    ...filteredGames[i].playerInfo,
                 } as PlayerInfo
             }
 
@@ -693,10 +687,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                                 ping: 0,
                                             } as ActiveGame, 
                                             playerInfo: {
-                                                playerStatus: "new_player",
-                                                need_to_delegate: false,
-                                                need_to_undelegate: false,
-                                                newplayerEntityPda: new PublicKey(0)
+                                                ...clearPingGames[i].playerInfo,
                                             } as PlayerInfo
                                         }
                                         clearPingGames[i] = prewnewgame;
@@ -821,7 +812,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                             onClick={async() => {
                                                 try {
                                                     setLoadingGameNum(idx);
-                                                    await handleRefresh(engine, activeGamesLoaded, row, idx);
+                                                    await handleRefresh(engine, activeGamesRef.current.filter(row => row.activeGame.ping > 0), idx);
                                                     setLoadingGameNum(-1);
                                                 } catch (error) {
                                                     console.log("Error refreshing game:", error);
