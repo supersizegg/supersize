@@ -679,6 +679,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             Server: 
                             {pingResultsRef.current.map((item) => (
                                 <button
+                                key={`region-${item.region}`}
                                 className={`region-button mr-1 ml-1 text-white pl-2 pr-2 py-1 rounded-md ${
                                     isLoadingCurrentGames ? "cursor-not-allowed" : "cursor-pointer"
                                 } transition-colors ${
@@ -760,8 +761,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     <table className="lobby-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Server</th>
+                                {/* <th>Name</th> */}
+                                {/* <th>Server</th> */}
                                 <th>Game ID</th>
                                 <th>Token</th>
                                 <th>Buy In</th>
@@ -781,7 +782,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                                     setIsLoadingCurrentGames(false);
                                                 }}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className={`${isLoadingCurrentGames && loadingGameNum == -1 ? 'refresh-icon' : ''}`} style={{ color: "white" }} fill="none" viewBox="-0.5 -0.5 16 16" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" stroke-width="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" stroke-width="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" stroke-width="1"></path></svg>                                       
+                                                <svg xmlns="http://www.w3.org/2000/svg" className={`${isLoadingCurrentGames && loadingGameNum == -1 ? 'refresh-icon' : ''}`} style={{ color: "white" }} fill="none" viewBox="-0.5 -0.5 16 16" strokeLinecap="round" strokeLinejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" strokeWidth="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" strokeWidth="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" strokeWidth="1"></path></svg>                                       
                                             </button>
                                             <span className="tooltip-text">Refresh All</span>
                                         </div>
@@ -794,8 +795,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             {selectedServer.current !== "" ? `Loading ${selectedServer.current} games, please wait...` : "Finding nearest server..."}</td></tr>}
                             {activeGamesLoaded.map((row, idx) => (
                                 <tr key={idx} style={{display: row.activeGame.ping <= 0 ? 'none' : 'table-row'}}>
-                                    <td>{row.activeGame.isLoaded ? row.activeGame.name : <Spinner />}</td>
-                                    <td>{getRegion(activeGamesLoaded[idx].activeGame.endpoint)}</td>
+                                    {/* <td>{row.activeGame.isLoaded ? row.activeGame.name : <Spinner />}</td> */}
+                                    {/* <td>{getRegion(activeGamesLoaded[idx].activeGame.endpoint)}</td> */}
                                     <td>{row.activeGame.worldId.toString()}</td>
                                     <td>{row.activeGame.isLoaded ? row.activeGame.token : <Spinner />}</td>
                                     <td>{row.activeGame.isLoaded ? row.activeGame.min_buyin + " - " + row.activeGame.max_buyin : <Spinner />}</td>
@@ -833,7 +834,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                                 }   
                                             }}
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className={`${loadingGameNum === idx ? 'refresh-icon' : ''}`} style={{marginLeft:"20px", color: "white"}} fill="none" viewBox="-0.5 -0.5 16 16" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" stroke-width="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" stroke-width="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" stroke-width="1"></path></svg>                                       
+                                            <svg xmlns="http://www.w3.org/2000/svg" className={`${loadingGameNum === idx ? 'refresh-icon' : ''}`} style={{marginLeft:"20px", color: "white"}} fill="none" viewBox="-0.5 -0.5 16 16" strokeLinecap="round" strokeLinejoin="round" stroke="#FFFFFF" id="Refresh--Streamline-Mynaui" height="20" width="20"><path d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375" strokeWidth="1"></path><path d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625" strokeWidth="1"></path><path d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475" strokeWidth="1"></path></svg>                                       
                                         </button>
                                         <span className="tooltip-text">Refresh</span>
                                     </div>
