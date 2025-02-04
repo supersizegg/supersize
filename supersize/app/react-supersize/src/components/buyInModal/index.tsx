@@ -30,6 +30,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
   const navigate = useNavigate();
   const engine = useMagicBlockEngine();
 
+  const [hasInsufficientTokenBalance, setHasInsufficientTokenBalance] = useState(false);
   const [buyIn, setBuyIn] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryModalView, setRetryModalView] = useState(0);
@@ -41,6 +42,39 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
   useEffect(() => {
     selectedPlayerGameInfoRef.current = selectedGamePlayerInfo;
   }, [selectedGamePlayerInfo]);
+
+  useEffect(() => {
+    if (!activeGame || !activeGame.tokenMint) return;
+    const connection = engine.getConnectionChain();
+    const wallet = engine.getWalletPayer();
+    if (!wallet) return;
+
+    const fetchTokenBalance = async () => {
+      try {
+        if (!activeGame.tokenMint) return;
+        const tokenMint = new PublicKey(activeGame.tokenMint);
+
+        const tokenAccounts = await connection.getTokenAccountsByOwner(wallet, {
+          mint: tokenMint,
+        });
+        let balance = 0;
+        if (tokenAccounts.value.length > 0) {
+          const accountInfo = tokenAccounts.value[0].pubkey;
+          const balanceInfo = await connection.getTokenAccountBalance(accountInfo);
+          balance = balanceInfo.value.uiAmount || 0;
+        }
+        if (balance < activeGame.min_buyin) {
+          setHasInsufficientTokenBalance(true);
+        } else {
+          setHasInsufficientTokenBalance(false);
+        }
+      } catch (error) {
+        console.log("Error fetching token balance:", error);
+      }
+    };
+
+    fetchTokenBalance();
+  }, [activeGame, engine]);
 
   function isPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } {
     return typeof result === 'object' && 'activeplayers' in result;
@@ -349,6 +383,12 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
             onChange={handleSliderChange}
           />
         </div>
+
+        {hasInsufficientTokenBalance && (
+          <div className="balance-warning">
+            Your token balance is below the minimum buy-in amount. <a href={`https://jup.ag/swap/SOL-${activeGame.tokenMint?.toString()}`} target="_blank" rel="noopener noreferrer">Buy some on Jupiter.</a>
+          </div>
+        )}
 
         <div className="button-group">
           <button className="cancel-button" onClick={() => setIsBuyInModalOpen(false)} disabled={isSubmitting}>

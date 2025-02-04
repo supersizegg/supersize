@@ -35,6 +35,7 @@ export type ActiveGame = {
     size: number;
     image: string;
     token: string;
+    tokenMint?: PublicKey;
     base_buyin: number;
     min_buyin: number;
     max_buyin: number;

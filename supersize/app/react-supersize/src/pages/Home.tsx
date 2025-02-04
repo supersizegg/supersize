@@ -144,6 +144,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                     );
                                     newGameInfo.image = image;
                                     newGameInfo.token = name;
+                                    newGameInfo.tokenMint = mint_of_token_being_sent;
                                 } catch (error) {
                                     console.error("Error fetching token data:", error);
                                 }
@@ -360,6 +361,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             try {
                 let token_image = `${process.env.PUBLIC_URL}/token.png`;
                 let token_name = "LOADING";
+                let token_mint = new PublicKey(0);
                 let base_buyin = 0;
                 let min_buyin = 0;
                 let max_buyin = 0;
@@ -386,6 +388,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                         );
                         token_image = image;
                         token_name = name;
+                        token_mint = mint_of_token_being_sent;
                     } catch (error) {
                         console.error("Error fetching token data:", error);
                     }
@@ -454,6 +457,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                             size: mapParsedData.width,
                             image: token_image,
                             token: token_name,
+                            tokenMint: token_mint,
                             base_buyin: base_buyin,
                             min_buyin: min_buyin,
                             max_buyin: max_buyin,
