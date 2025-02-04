@@ -118,7 +118,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
   const foodRef = useRef(visibleFood);
   const newTargetRef = useRef(newTarget);
 
-  const timeStep = 90.0; // any value >50 works, testing ~90 
+  const timeStep = 40.0; // any value >50 works, testing ~90 
 
   const previousTime = useRef(0.0);
   const accumulator = useRef(0.0);
@@ -443,7 +443,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
 };
 
   return (
-      <canvas id="gamecanvas" ref={canvasRef} style={{ position: "relative", width: "100%", height: "100%",display: "block" }}></canvas>
+      <canvas id="gamecanvas" ref={canvasRef} style={{ position: "relative", width: "100%", height: "100%",display: "block", backgroundImage: "url('/space-bg.jpg')", backgroundSize: "cover" }}></canvas>
   );
 };
 

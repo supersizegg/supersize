@@ -2,9 +2,9 @@
   #status {
     position: absolute;
     padding: 10px;
-    background: rgba(17, 19, 20, 0.4);
+    // background: rgba(17, 19, 20, 0.4);
     color: #FFF;
-    font-family: 'Terminus';
+    font-family: "Open Sans", "Roboto", sans-serif;
     font-size: 16.1px;
     top: 10px;
     right: 10px;
@@ -14,21 +14,21 @@
     border-width: 1px;
     border-style: solid;
     border-color: gray;
-    filter: drop-shadow(gray 0px 0px 5px);
+    // filter: drop-shadow(gray 0px 0px 5px);
 }
 
 #status .title {
-    font-family: 'Terminus';
+    font-family: "Open Sans", "Roboto", sans-serif;
     font-size: 25px;
 }
 
 #status .me {
-    font-family: 'Terminus';
+    font-family: "Open Sans", "Roboto", sans-serif;
     color: #FF8888;
     font-size: 16.1px;
 }
 .exitButton{
-    font-family: 'Terminus';
+    font-family: "Open Sans", "Roboto", sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -87,7 +87,7 @@
 }
 
 #returnButton{
-  font-family: 'Terminus';
+  font-family: "Open Sans", "Roboto", sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@utils/constants";
+import { API_BASE_URL, cachedTokenMetadata } from "@utils/constants";
 import {Blob } from "@utils/types";
 
 import { PublicKey, Keypair } from "@solana/web3.js";
@@ -164,10 +164,15 @@ export async function getPriorityFeeEstimate(
 
 export async function fetchTokenMetadata (
     tokenAddress: string,
+    network?: string,
 ){
+    if (cachedTokenMetadata[tokenAddress]) {
+        return cachedTokenMetadata[tokenAddress];
+    }
+
     try {
         const response = await fetch(
-            "https://devnet.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937",
+            `https://${network || 'devnet'}.helius-rpc.com/?api-key=07a045b7-c535-4d6f-852b-e7290408c937`,
             {
                 method: "POST",
                 headers: {

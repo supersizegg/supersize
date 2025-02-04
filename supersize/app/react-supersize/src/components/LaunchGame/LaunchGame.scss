@@ -1,0 +1,64 @@
+.launch-game-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.launch-game-content {
+  width: 60%;
+  margin: 2vw 0 2vw 1.5vw;
+}
+
+.launch-game-description {
+  font-family: "Open Sans", "Roboto", sans-serif;
+  border-bottom: 1px solid #282b30;
+  margin-bottom: 20px;
+}
+
+.options-container {
+  display: flex;
+  justify-content: space-around;
+  font-size: 16px;
+  margin-bottom: 1rem;
+}
+
+.option-card {
+  margin-right: 5px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  width: 150px;
+  padding: 5px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  background-color: #0b0b0d;
+  border: 1px solid #272b30;
+  transition: all 0.3s;
+}
+
+.option-card.selected {
+  border: 1px solid #67f4b6;
+}
+
+.server-selection-label {
+  margin-bottom: 0.5rem;
+}
+
+.info-text {
+  background-color: #fef3c7;
+  border: 1px solid #facc15;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 2rem;
+  color: #000;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.create-game-form-container {
+  margin-right: 1.5vw;
+  margin-top: 1vw;
+}
