@@ -76,3 +76,40 @@
   border: 1px solid #2c2d2d;
   border-radius: 8px;
 }
+
+@media (max-width: 768px) {
+  .how-to-play-container {
+    width: 90vw;
+    padding: 1rem;
+    margin: 2rem auto;
+  }
+
+  .top-blocks-row {
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
+
+  .block {
+    margin: 0.5rem 0;
+  }
+
+  .block3 {
+    flex-direction: column;
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .block3-image {
+    position: relative;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .block3-image img {
+    position: relative;
+    right: 0;
+    top: 0;
+    transform: none;
+    width: 100%;
+  }
+}

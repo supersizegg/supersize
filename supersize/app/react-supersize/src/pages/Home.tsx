@@ -651,6 +651,74 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
         return debounced;
     }
 
+    const renderRegionButtons = () => {
+        return (
+            <div className="region-buttons flex flex-row flex-start w-[fit-content] h-[100%] items-center justify-center">
+            <span className="desktop-only">Server: </span>
+            {pingResultsRef.current.map((item) => (
+                <button
+                key={`region-${item.region}`}
+                className={`region-button mr-1 ml-1 text-white pl-2 pr-2 py-1 rounded-md ${
+                    isLoadingCurrentGames ? "cursor-not-allowed" : "cursor-pointer"
+                } transition-colors ${
+                    selectedServer.current === item.region ? "bg-[#666] hover:bg-[#555]" : "bg-[#444] hover:bg-[#555]"
+                }`}
+
+                onClick={async () => {
+                    console.log('isLoadingCurrentGames', isLoadingCurrentGames)
+                    setIsLoadingCurrentGames(true); 
+                    
+                    const clearPingGames = [...activeGamesRef.current];
+                    for (let i = 0; i < clearPingGames.length; i++) {
+                        const prewnewgame: FetchedGame = {
+                            activeGame: {
+                                ...clearPingGames[i].activeGame,
+                                active_players: -1,
+                                ping: 0,
+                            } as ActiveGame, 
+                            playerInfo: {
+                                ...clearPingGames[i].playerInfo,
+                            } as PlayerInfo
+                        }
+                        clearPingGames[i] = prewnewgame;
+                    }
+                    activeGamesRef.current = clearPingGames;
+                    setActiveGamesLoaded(clearPingGames); 
+                    const thisServer = item.region;
+                    selectedServer.current = thisServer;
+                    let pingResults = await pingEndpoints();
+                    pingResultsRef.current = pingResults.pingResults;
+                    engine.setEndpointEphemRpc(item.endpoint);
+                    try {
+                        await fetchAndLogMapData(engine, clearPingGames, thisServer, true, pingResults.pingResults, true);
+                        const checkActiveGamesLoaded = setInterval(async () => {
+                            if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == 0) {
+                                await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
+                            } else {
+                                clearInterval(checkActiveGamesLoaded);
+                                setIsLoadingCurrentGames(false);
+                            }
+                        }, pingResults.lowestPingEndpoint.pingTime * 5);
+                    } catch (error) {
+                        console.log("Error fetching map data:", error);
+                    } finally {
+                        if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == activeGamesRef.current.length) {
+                            setIsLoadingCurrentGames(false);
+                        }
+                    }
+                }}
+
+                disabled={isLoadingCurrentGames}
+                >           
+                    <div>                                 
+                        <span>{item.region}</span>
+                    </div>
+                </button>
+            ))}
+            </div>
+        );
+      };
+    
     return (
         <div className="main-container">
             <MenuBar />
@@ -664,7 +732,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             )}
             <div className="home-container">
                 <div className="home-header">
-                    <div className="flex flex-row">
+                    <div className="flex flex-row desktop-only">
                         <input type="text" className="search-game-input" placeholder="Search Game by ID"
                                     value={inputValue}
                                     onChange={handleInputChange}
@@ -675,80 +743,13 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     </div>
                     <div className="mr-[auto]">
                         <div>
-                            <div className="region-buttons flex flex-row flex-start w-[fit-content] h-[100%] items-center justify-center">
-                            Server: 
-                            {pingResultsRef.current.map((item) => (
-                                <button
-                                key={`region-${item.region}`}
-                                className={`region-button mr-1 ml-1 text-white pl-2 pr-2 py-1 rounded-md ${
-                                    isLoadingCurrentGames ? "cursor-not-allowed" : "cursor-pointer"
-                                } transition-colors ${
-                                    selectedServer.current === item.region ? "bg-[#666] hover:bg-[#555]" : "bg-[#444] hover:bg-[#555]"
-                                }`}
-
-                                onClick={async () => {
-                                    console.log('isLoadingCurrentGames', isLoadingCurrentGames)
-                                    setIsLoadingCurrentGames(true); 
-                                    
-                                    const clearPingGames = [...activeGamesRef.current];
-                                    for (let i = 0; i < clearPingGames.length; i++) {
-                                        const prewnewgame: FetchedGame = {
-                                            activeGame: {
-                                                ...clearPingGames[i].activeGame,
-                                                active_players: -1,
-                                                ping: 0,
-                                            } as ActiveGame, 
-                                            playerInfo: {
-                                                ...clearPingGames[i].playerInfo,
-                                            } as PlayerInfo
-                                        }
-                                        clearPingGames[i] = prewnewgame;
-                                    }
-                                    activeGamesRef.current = clearPingGames;
-                                    setActiveGamesLoaded(clearPingGames); 
-                                    const thisServer = item.region;
-                                    selectedServer.current = thisServer;
-                                    let pingResults = await pingEndpoints();
-                                    pingResultsRef.current = pingResults.pingResults;
-                                    engine.setEndpointEphemRpc(item.endpoint);
-                                    try {
-                                        await fetchAndLogMapData(engine, clearPingGames, thisServer, true, pingResults.pingResults, true);
-                                        const checkActiveGamesLoaded = setInterval(async () => {
-                                            if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == 0) {
-                                                await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
-                                            } else {
-                                                clearInterval(checkActiveGamesLoaded);
-                                                setIsLoadingCurrentGames(false);
-                                            }
-                                        }, pingResults.lowestPingEndpoint.pingTime * 5);
-                                    } catch (error) {
-                                        console.log("Error fetching map data:", error);
-                                        //setIsLoadingCurrentGames(false);
-                                    } finally {
-                                        if (activeGamesRef.current.filter(row => row.activeGame.ping > 0).length == activeGamesRef.current.length) {
-                                            setIsLoadingCurrentGames(false); // Ensure loading state is set to false if games are already loaded
-                                        }
-                                    }
-                                }}
-
-                                disabled={isLoadingCurrentGames}
-                                >           
-                                    <div>                                 
-                                        <span>{item.region}</span>
-                                        {/* item.pingTime >= 0 && (
-                                            <span className="text-xs" style={{ color: getPingColor(item.pingTime) }}>
-                                                ({item.pingTime}ms)
-                                            </span>
-                                        ) */}
-                                    </div>
-                                </button>
-                            ))}
-                            </div>
+                        {renderRegionButtons()}
+                            
                         </div>
                     </div>
                     <div className="header-buttons">
-                        <button className="btn-outlined btn-orange" onClick={() => navigate("/about")}>How to Play</button>
-                        <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
+                        <button className="btn-outlined btn-orange" onClick={() => navigate("/about")}><span className="desktop-only">How to Play</span><span className="mobile-only">About</span></button>
+                        <button className="btn-outlined btn-green desktop-only" onClick={() => navigate("/create-game")}>
                             + Create Game
                         </button>
                     </div>
@@ -768,7 +769,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                 <th>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '10%' }}>
                                         <span className="flex-row justify-center items-center inline-flex m-0 w-[100%] mr-[20%]">Status</span>
-                                        <div className="tooltip-container" style={{ position: 'absolute', display: 'inline-block', marginTop: '3px' }}>
+                                        <div className="tooltip-container desktop-only" style={{ position: 'absolute', display: 'inline-block', marginTop: '3px' }}>
                                             <button
                                                 className="inline-flex m-0"
                                                 onClick={async () => {
@@ -801,7 +802,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                     <td>
                                         <div className="ping-cell">
                                             <span className="ping-circle" style={{ backgroundColor: getPingColor(row.activeGame.ping) }} />
-                                            <span style={{color: getPingColor(row.activeGame.ping)}}>{row.activeGame.ping >= 0 ? `${row.activeGame.ping}ms` : 'Timeout'}</span>
+                                            <span style={{color: getPingColor(row.activeGame.ping)}}>{row.activeGame.ping >= 0 ? ` ${row.activeGame.ping}ms` : 'Timeout'}</span>
                                         </div>
                                     </td>
                                     <td>
@@ -819,7 +820,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                                 "in_game": "Resume"
                                             }[row.playerInfo.playerStatus] || row.playerInfo.playerStatus}
                                     </button>
-                                    <div className="tooltip-container" style={{ position: 'absolute', display: 'inline-block', marginTop: '8px' }}>
+                                    <div className="tooltip-container desktop-only" style={{ position: 'absolute', display: 'inline-block', marginTop: '8px' }}>
                                         <button
                                             onClick={async() => {
                                                 try {

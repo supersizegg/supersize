@@ -4,6 +4,10 @@ import { MenuWallet } from "./MenuWallet";
 import "./MenuBar.scss";
 
 export function MenuBar() {
+  const [isMobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const toggleMobileMenu = () => setMobileMenuOpen(!isMobileMenuOpen);
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
   return (
     <header className="menu-bar">
       <div className="menu-bar-left">
@@ -21,7 +25,26 @@ export function MenuBar() {
           <NavLink to="/leaderboard">Leaderboard</NavLink>
           <NavLink to="/profile">Profile</NavLink>
         </nav>
+
+        <button className="burger-menu" onClick={toggleMobileMenu} aria-label="Toggle navigation">
+          <img src="/icons/bars-solid.svg" alt="Menu" />
+        </button>
+
         <MenuWallet />
+      </div>
+
+      <div className={`mobile-nav-backdrop ${isMobileMenuOpen ? "open" : ""}`} onClick={closeMobileMenu}>
+        <nav className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+          <NavLink to="/" end onClick={closeMobileMenu}>
+            Lobby
+          </NavLink>
+          <NavLink to="/leaderboard" onClick={closeMobileMenu}>
+            Leaderboard
+          </NavLink>
+          <NavLink to="/profile" onClick={closeMobileMenu}>
+            Profile
+          </NavLink>
+        </nav>
       </div>
     </header>
   );
