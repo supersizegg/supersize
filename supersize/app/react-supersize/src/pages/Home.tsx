@@ -8,7 +8,7 @@ import "./Home.scss";
 import { ActiveGame } from "@utils/types";
 import { activeGamesList, NETWORK, options } from "@utils/constants";
 
-import { fetchTokenMetadata, getActivePlayers, getMyPlayerStatus, getMyPlayerStatusFast } from "@utils/helper";
+import { fetchTokenMetadata, getActivePlayers, getMyPlayerStatus, getMyPlayerStatusFast, formatBuyIn } from "@utils/helper";
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
@@ -792,7 +792,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                     {/* <td>{getRegion(activeGamesLoaded[idx].activeGame.endpoint)}</td> */}
                                     <td>{row.activeGame.worldId.toString()}</td>
                                     <td>{row.activeGame.isLoaded ? <><img src={row.activeGame.image} alt={row.activeGame.name} className="token-image"/><span>{row.activeGame.token}</span></> : <Spinner />}</td>
-                                    <td style={{color: '#898989'}}>{row.activeGame.isLoaded ? row.activeGame.min_buyin + "-" + row.activeGame.max_buyin : <Spinner />}</td>
+                                    <td style={{color: '#898989'}}>{row.activeGame.isLoaded ? formatBuyIn(row.activeGame.min_buyin) + " - " + formatBuyIn(row.activeGame.max_buyin) : <Spinner />}</td>
                                     <td>{row.activeGame.isLoaded && row.activeGame.active_players >= 0 ? row.activeGame.active_players + "/" + row.activeGame.max_players : <Spinner />}</td>
                                     {/* <td>
                                         <div className="ping-cell">

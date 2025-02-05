@@ -17,6 +17,18 @@ export const stringToUint8Array = (str: string): Uint8Array => {
     return new TextEncoder().encode(str);
 };
 
+export const formatBuyIn = (amount: number): string => {
+    if (amount < 1000) {
+        return amount.toString();
+    } else if (amount < 1000000) {
+        return (amount / 1000) + "K";
+    } else if (amount < 1000000000) {
+        return (amount / 1000000) + "M";
+    } else {
+        return (amount / 1000000000) + "B";
+    }
+};
+
 export const deriveSeedFromPublicKey = (
     userPublicKey: PublicKey,
 ): Uint8Array => {

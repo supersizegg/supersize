@@ -32,6 +32,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
 
   const [hasInsufficientTokenBalance, setHasInsufficientTokenBalance] = useState(false);
   const [buyIn, setBuyIn] = useState(0);
+  const [tokenBalance, setTokenBalance] = useState(-1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryModalView, setRetryModalView] = useState(0);
   const [retryModalStatus, setRetryModalStatus] = useState("");
@@ -62,6 +63,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
           const accountInfo = tokenAccounts.value[0].pubkey;
           const balanceInfo = await connection.getTokenAccountBalance(accountInfo);
           balance = balanceInfo.value.uiAmount || 0;
+          setTokenBalance(balance);
         }
         if (balance < activeGame.min_buyin) {
           setHasInsufficientTokenBalance(true);
@@ -384,9 +386,9 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
           />
         </div>
 
-        {hasInsufficientTokenBalance && (
+        {(hasInsufficientTokenBalance || (tokenBalance !== -1 && tokenBalance < buyIn)) && (
           <div className="balance-warning">
-            Your token balance is below the minimum buy-in amount. <a href={`https://jup.ag/swap/SOL-${activeGame.tokenMint?.toString()}`} target="_blank" rel="noopener noreferrer">Buy some on Jupiter.</a>
+            Your token balance <b>{tokenBalance >= 0 ? tokenBalance : ""}</b> is below the buy-in amount. <a href={`https://jup.ag/swap/SOL-${activeGame.tokenMint?.toString()}`} target="_blank" rel="noopener noreferrer">Buy some on Jupiter.</a>
           </div>
         )}
 
