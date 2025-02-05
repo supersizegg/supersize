@@ -18,6 +18,7 @@ import {
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
+import { Tooltip } from "react-tooltip";
 
 import { MenuBar } from "@components/menu/MenuBar";
 import BuyInModal from "@components/buyInModal";
@@ -797,86 +798,58 @@ const Home = ({
           <table className="lobby-table">
             <thead>
               <tr>
-                {/* <th>Name</th> */}
-                {/* <th>Server</th> */}
                 <th>Game ID</th>
                 <th>Token</th>
                 <th>Buy In</th>
                 <th>Players</th>
+                <th>Status</th>
                 <th>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginRight: "0.5rem" }}>
-                    <span className="flex-row justify-center items-center inline-flex m-0 w-[100%] mr-[20%]">
-                      Status
-                    </span>
-                    <div
-                      className="tooltip-container desktop-only"
-                      style={{ position: "absolute", display: "inline-block", marginTop: "3px" }}
-                    >
-                      <button
-                        className="inline-flex m-0"
-                        onClick={async () => {
-                          setIsLoadingCurrentGames(true);
-                          let pingResults = await pingEndpoints();
-                          pingResultsRef.current = pingResults.pingResults;
-                          await fetchAndLogMapData(
-                            engine,
-                            activeGamesRef.current,
-                            selectedServer.current,
-                            true,
-                            pingResults.pingResults,
-                          );
-                          setIsLoadingCurrentGames(false);
-                        }}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className={`${isLoadingCurrentGames && loadingGameNum == -1 ? "refresh-icon" : ""}`}
-                          style={{ color: "white" }}
-                          fill="none"
-                          viewBox="-0.5 -0.5 16 16"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          stroke="#FFFFFF"
-                          id="Refresh--Streamline-Mynaui"
-                          height="20"
-                          width="20"
-                        >
-                          <path
-                            d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375"
-                            strokeWidth="1"
-                          ></path>
-                          <path
-                            d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625"
-                            strokeWidth="1"
-                          ></path>
-                          <path
-                            d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475"
-                            strokeWidth="1"
-                          ></path>
-                        </svg>
-                      </button>
-                      <span className="tooltip-text">Refresh All</span>
-                    </div>
-                  </div>
+                  <button
+                    data-tooltip-id="refresh-all-games"
+                    data-tooltip-content="Refresh all games"
+                    className="desktop-only"
+                    onClick={async () => {
+                      setIsLoadingCurrentGames(true);
+                      let pingResults = await pingEndpoints();
+                      pingResultsRef.current = pingResults.pingResults;
+                      await fetchAndLogMapData(
+                        engine,
+                        activeGamesRef.current,
+                        selectedServer.current,
+                        true,
+                        pingResults.pingResults,
+                      );
+                      setIsLoadingCurrentGames(false);
+                    }}
+                  >
+                    <img
+                      src="/icons/arrows-rotate.svg"
+                      width={18}
+                      className={`${isLoadingCurrentGames && loadingGameNum == -1 ? "refresh-icon" : ""}`}
+                    />
+                  </button>
+                  <Tooltip id="refresh-all-games" />
                 </th>
               </tr>
             </thead>
             <tbody>
               {activeGamesLoaded.filter((row) => row.activeGame.ping > 0).length == 0 && (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: "center" }}>
-                    {" "}
-                    {/*<Spinner />*/}{" "}
-                    {selectedServer.current !== ""
-                      ? `Loading ${selectedServer.current} games, please wait...`
-                      : "Finding nearest server..."}
+                  <td colSpan={10} style={{ textAlign: "center", verticalAlign: "middle", lineHeight: "20px" }}>
+                    {selectedServer.current !== "" ? (
+                      <>
+                        <Spinner /> Loading {selectedServer.current} games, please wait...
+                      </>
+                    ) : (
+                      <>
+                        <Spinner /> Finding nearest server...
+                      </>
+                    )}
                   </td>
                 </tr>
               )}
               {activeGamesLoaded.map((row, idx) => (
                 <tr key={idx} style={{ display: row.activeGame.ping <= 0 ? "none" : "table-row" }}>
-                  {/* <td>{row.activeGame.isLoaded ? row.activeGame.name : <Spinner />}</td> */}
-                  {/* <td>{getRegion(activeGamesLoaded[idx].activeGame.endpoint)}</td> */}
                   <td>{row.activeGame.worldId.toString()}</td>
                   <td>
                     {row.activeGame.isLoaded ? (
@@ -902,12 +875,7 @@ const Home = ({
                       <Spinner />
                     )}
                   </td>
-                  {/* <td>
-                                        <div className="ping-cell">
-                                            <span className="ping-circle" style={{ backgroundColor: getPingColor(row.activeGame.ping) }} />
-                                            <span style={{color: getPingColor(row.activeGame.ping)}}>{row.activeGame.ping >= 0 ? ` ${row.activeGame.ping}ms` : 'Timeout'}</span>
-                                        </div>
-                                    </td> */}
+
                   <td>
                     <button
                       className="btn-play"
@@ -925,55 +893,34 @@ const Home = ({
                         in_game: "Resume",
                       }[row.playerInfo.playerStatus] || row.playerInfo.playerStatus}
                     </button>
-                    <div
-                      className="tooltip-container desktop-only"
-                      style={{ position: "absolute", display: "inline-block", marginTop: "8px" }}
+                  </td>
+                  <td>
+                    <button
+                      data-tooltip-id={`refresh-game-${idx}`}
+                      data-tooltip-content="Refresh game"
+                      className="desktop-only"
+                      onClick={async () => {
+                        try {
+                          setLoadingGameNum(idx);
+                          await handleRefresh(
+                            engine,
+                            activeGamesRef.current.filter((row) => row.activeGame.ping > 0),
+                            idx,
+                          );
+                          setLoadingGameNum(-1);
+                        } catch (error) {
+                          console.log("Error refreshing game:", error);
+                          setLoadingGameNum(-1);
+                        }
+                      }}
                     >
-                      <button
-                        onClick={async () => {
-                          try {
-                            setLoadingGameNum(idx);
-                            await handleRefresh(
-                              engine,
-                              activeGamesRef.current.filter((row) => row.activeGame.ping > 0),
-                              idx,
-                            );
-                            setLoadingGameNum(-1);
-                          } catch (error) {
-                            console.log("Error refreshing game:", error);
-                            setLoadingGameNum(-1);
-                          }
-                        }}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className={`${loadingGameNum === idx ? "refresh-icon" : ""}`}
-                          style={{ marginLeft: "20px", color: "white" }}
-                          fill="none"
-                          viewBox="-0.5 -0.5 16 16"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          stroke="#FFFFFF"
-                          id="Refresh--Streamline-Mynaui"
-                          height="20"
-                          width="20"
-                        >
-                          <path
-                            d="M12.8125 5c-0.8699999999999999 -1.986875 -3.0143750000000002 -3.125 -5.32625 -3.125C4.561875000000001 1.875 2.158125 4.095 1.875 6.9375"
-                            strokeWidth="1"
-                          ></path>
-                          <path
-                            d="M10.305625000000001 5.25h2.48125a0.3375 0.3375 0 0 0 0.3375 -0.3375V2.4375M2.1875 10c0.8699999999999999 1.986875 3.0143750000000002 3.125 5.32625 3.125 2.9243750000000004 0 5.328125 -2.22 5.61125 -5.0625"
-                            strokeWidth="1"
-                          ></path>
-                          <path
-                            d="M4.694375 9.75h-2.48125a0.3375 0.3375 0 0 0 -0.338125 0.3375v2.475"
-                            strokeWidth="1"
-                          ></path>
-                        </svg>
-                      </button>
-                      <span className="tooltip-text">Refresh</span>
-                    </div>
+                      <img
+                        src="/icons/arrows-rotate.svg"
+                        width={18}
+                        className={`${loadingGameNum === idx ? "refresh-icon" : ""}`}
+                      />
+                    </button>
+                    <Tooltip id={`refresh-game-${idx}`} />
                   </td>
                 </tr>
               ))}

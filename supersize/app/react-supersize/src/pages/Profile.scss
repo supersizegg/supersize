@@ -54,6 +54,22 @@
   flex-direction: column;
   gap: 1.5rem;
 
+  .input-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .input-label {
+    font-size: 0.85rem;
+    color: #bbb;
+    text-align: left;
+    margin-left: 5px;
+    font-weight: 500;
+    margin-bottom: -1rem;
+  }
+  
+
   .row-inline {
     display: flex;
     align-items: center;
@@ -83,7 +99,7 @@
     }
     input {
       max-width: auto;
-      text-align: center;
+      text-align: left;
     }
   }
 
@@ -104,9 +120,27 @@
     }
   }
 
-  .btn-create-referral {
-    margin-top: 0.5rem;
-    width: fit-content;
+  .info-box {
+    background-color: #fef3c7;
+    border: 1px solid #facc15;
+    border-radius: 8px;
+    padding: 0.75rem;
+    color: #000;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .info-box a {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .post-on-x-button {
+    color: gold;
+  }
+  .post-on-x-button img {
+    width: 24px;
+    display: inline-block;
   }
 }
 

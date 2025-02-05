@@ -7,7 +7,6 @@ import { getMemberPDA, useBuddyLink } from "buddy.link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Invite from "../components/buddyInvite";
 import CopyLink from "../components/buddyReferral";
-import TweetLink from "../components/buddyTweet";
 import {
   anchor,
   ApplySystem,
@@ -77,11 +76,13 @@ function GeneralTab() {
   const [referrerInput, setReferrerInput] = useState<string>("");
   const { referrer, member } = useBuddyLink();
   const [joinedOrg, setJoinedOrg] = useState<boolean>(false);
+  const [usernameSaved, setUsernameSaved] = useState(false);
 
   const setInputUsername = (inputUsername: React.SetStateAction<string>) => {
     const user = { name: inputUsername, referrer: referrer, referral_done: false };
     localStorage.setItem("user", JSON.stringify(user));
     setUsername(inputUsername);
+    setUsernameSaved(true);
   };
 
   useEffect(() => {
@@ -146,27 +147,46 @@ function GeneralTab() {
 
       <hr className="divider" />
 
-      <div className="row-inline">
-        <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <button className="btn-save" onClick={() => setInputUsername(username)}>
-          Save
-        </button>
+      <label className="input-label">Username</label>
+      <div className="row-inline input-group">
+        <input
+          type="text"
+          placeholder="Enter your username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        {!usernameSaved && (
+          <button className="btn-save" onClick={() => setInputUsername(username)}>
+            Save
+          </button>
+        )}
       </div>
 
-      <div className="row-inline referral-row">
-        <label>Referral code</label>
-        <input type="text" readOnly value={joinedOrg ? referrerInput : referrer} />
+      <label className="input-label">Referral link</label>
+      <div className="row-inline referral-row input-group">
+        <input type="text" readOnly value={joinedOrg ? `https://supersize.gg/?r=${referrerInput}` : referrer} />
         {joinedOrg ? (
           <>
             <button className="btn-copy">
-              <CopyLink handleCreateClick={() => {}} />{" "}
+              <CopyLink handleCreateClick={() => {}} />
             </button>
-            <TweetLink />{" "}
           </>
         ) : (
           <button className="btn-create-referral">
             <Invite />
           </button>
+        )}
+      </div>
+      <div className="info-box">
+        <span>Receive a 0.2% fee from your referrals earnings in the game. </span>
+        {joinedOrg && (
+          <a
+            href={`https://x.com/intent/tweet?text=Try out on-chain gaming with me on Supersize. https://supersize.gg/?r=${referrerInput}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Share ref link on X
+          </a>
         )}
       </div>
     </div>
@@ -215,7 +235,7 @@ function QuestsTab() {
     <div className="quests-tab">
       <div className="quest-item">
         <span>Join referral program + play free USDC game</span>
-        <button>{joinedOrg ? "Complete" : "TODO"}</button>
+        <button>{joinedOrg ? "Completed" : "Pending"}</button>
       </div>
     </div>
   );
