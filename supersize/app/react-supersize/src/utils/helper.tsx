@@ -266,11 +266,11 @@ export const checkPlayerDistances = (
 ) => {
   if (currentPlayer?.radius && currentPlayer?.authority) {
     for (const player of visiblePlayers) {
-      if(player.authority && (currentPlayer?.authority.toString() != player.authority.toString())){
+      if (player.authority && currentPlayer?.authority.toString() != player.authority.toString()) {
         const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
         const sizeAdjust = 1000 / player.mass;
         if (distance < currentPlayer.radius * sizeAdjust) {
-            return player.authority;
+          return player.authority;
         }
       }
     }
@@ -392,9 +392,7 @@ export const getMyPlayerStatus = async (
         playerStatus = "in_game";
       }
 
-      if(playersParsedDataER &&
-        playersParsedDataER.authority == null &&
-        playersParsedDataER.score == 0){
+      if (playersParsedDataER && playersParsedDataER.authority == null && playersParsedDataER.score == 0) {
         playerStatus = "new_player";
       }
       if (playerStatus == "bought_in" || playerStatus == "in_game") {

@@ -317,20 +317,20 @@ const Home = ({
             activeplayers = active_players.activeplayers;
           }
       }else{ */
-        const result = await getMyPlayerStatus(
-            engine,
-            activeGamesLoaded[index].activeGame.worldId,
-            activeGamesLoaded[index].activeGame.max_players,
-          );
-          if (isPlayerStatus(result)) {
-            need_to_delegate = result.need_to_delegate;
-            need_to_undelegate = result.need_to_undelegate;
-            playerStatus = result.playerStatus;
-            activeplayers = result.activeplayers;
-            newplayerEntityPda = result.newplayerEntityPda;
-          } else {
-            console.log("Error fetching player status");
-          }
+      const result = await getMyPlayerStatus(
+        engine,
+        activeGamesLoaded[index].activeGame.worldId,
+        activeGamesLoaded[index].activeGame.max_players,
+      );
+      if (isPlayerStatus(result)) {
+        need_to_delegate = result.need_to_delegate;
+        need_to_undelegate = result.need_to_undelegate;
+        playerStatus = result.playerStatus;
+        activeplayers = result.activeplayers;
+        newplayerEntityPda = result.newplayerEntityPda;
+      } else {
+        console.log("Error fetching player status");
+      }
       //}
 
       const newgame: FetchedGame = {
