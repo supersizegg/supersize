@@ -11,13 +11,12 @@ interface ShareProps {
 const TweetLink: React.FC<ShareProps> = React.memo(
   ({
     baseUrl = "https%3A%2F%2Fsupersize.gg",
-    message = "Try%20out%20onchain%20gamin%20with%20me%20on%20Supersize!",
-    buttonLabel = "Share on X",
+    message = "Try%20out%20onchain%20gaming%20with%20me%20on%20Supersize!",
+    buttonLabel = "Share ref link on X",
     forceShareState = false,
   }: ShareProps) => {
     const [member] = useBuddyState(BUDDY_MEMBER);
     const [isTweeting, setIsTweeting] = useState(false); //Control loading state, prevent duplicate clicks
-    const [isHovered, setIsHovered] = useState(false);
 
     const shareLink = useMemo(() => {
       const accountName = member?.[0]?.account?.name;
@@ -37,7 +36,7 @@ const TweetLink: React.FC<ShareProps> = React.memo(
     const handleTweetLink = useCallback(() => {
       setIsTweeting(true);
       try {
-        window.open(`https://www.twitter.com/intent/tweet?text=${message}%20${shareLink}`);
+        window.open(`https://x.com/intent/tweet?text=${message}%20${shareLink}`);
       } catch {
         console.error("Failed to copy URL");
       } finally {
@@ -49,19 +48,15 @@ const TweetLink: React.FC<ShareProps> = React.memo(
       <>
         {(member && member?.length > 0) || forceShareState ? (
           <div
-            className={`bg-boost-navy-background text-boost-secondary-pink text-s rounded-md font-avenir-bold active:scale-95 uppercase px-4 py-1 text-nowrap`}
+            className={`post-on-x-button`}
             onClick={() => {
               if (!isTweeting) {
                 handleTweetLink();
               }
             }}
-            style={{ color: isHovered ? "#FFEF8A" : "inherit" }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
           >
-            <p className="mt-0.5" style={{ textAlign: "right" }}>
-              {buttonLabel}
-            </p>
+            <img src="/coin.png" width="24" />
+            <span>{buttonLabel}</span>
           </div>
         ) : null}
       </>

@@ -60,26 +60,8 @@ const CopyLink: React.FC<ShareProps> = React.memo(
                 handleCopyLink();
               }
             }}
-            style={{ marginBottom: "5px" }}
           >
-            <div className="inline-flex items-center gap-2">
-              <p
-                className="m-0"
-                style={{
-                  lineHeight: "1",
-                  marginBottom: "0",
-                  verticalAlign: "middle",
-                  display: "inline",
-                  textAlign: "right",
-                  color: isHovered ? "#FFEF8A" : "inherit",
-                }}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-              >
-                {textContet}
-              </p>
-              {/* <Copy size={20} style={{ verticalAlign: 'middle', display:"inline" }} />  */}
-            </div>
+            <div className="inline-flex items-center gap-2">{textContet}</div>
           </div>
         ) : (
           <span className="px-4" onClick={handleCreateClick}>
