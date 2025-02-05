@@ -14,7 +14,6 @@ const CopyLink: React.FC<ShareProps> = React.memo(
 
     const [isCopying, setIsCopying] = useState(false); //Control loading state, prevent duplicate clicks
     const [textContet, setTextContent] = useState("Copy");
-    const [isHovered, setIsHovered] = useState(false);
     const shareLink = useMemo(() => {
       const accountName = member?.[0]?.account?.name;
 

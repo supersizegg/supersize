@@ -32,6 +32,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
     "react-scripts": "^5.0.1",
+    "react-tooltip": "^5.28.0",
     "three": "^0.172.0",
     "typescript": "^5.4.3",
     "web-vitals": "^2.1.4"
