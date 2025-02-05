@@ -490,7 +490,6 @@ export const getMyPlayerStatusFast = async (
   let playerStatus = "new_player";
   let need_to_undelegate = false;
   let need_to_delegate = false; 
-  let activeplayers = 0;
 
     const playersacc = await engine.getChainAccountInfo(playersComponentPda);
     if (!playersacc) { 
