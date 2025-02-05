@@ -647,7 +647,6 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
     const renderRegionButtons = () => {
         return (
             <div className="region-buttons flex flex-row flex-start w-[fit-content] h-[100%] items-center justify-center">
-            <span className="desktop-only">Server: </span>
             {pingResultsRef.current.map((item) => (
                 <button
                 key={`region-${item.region}`}
@@ -704,7 +703,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 disabled={isLoadingCurrentGames}
                 >           
                     <div>                                 
-                        <span>{item.region}</span>
+                        <span>{item.region} </span> <span style={{fontSize: '10px', color: getPingColor(item.pingTime)}}>({item.pingTime}ms)</span>
                     </div>
                 </button>
             ))}
@@ -725,20 +724,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             )}
             <div className="home-container">
                 <div className="home-header">
-                    <div className="flex flex-row desktop-only">
-                        <input type="text" className="search-game-input" placeholder="Search Game by ID"
-                                    value={inputValue}
-                                    onChange={handleInputChange}
-                                    onKeyDown={handleKeyPress}
-                        >          
-                        </input>
-                        <span style={{opacity: isSearchingGame.current ? '1' : '0', alignSelf: 'center', marginRight: '10px'}}><Spinner /></span>
-                    </div>
-                    <div className="mr-[auto]">
-                        <div>
+                    <div>
                         {renderRegionButtons()}
-                            
-                        </div>
                     </div>
                     <div className="header-buttons">
                         <button className="btn-outlined btn-orange" onClick={() => navigate("/about")}><span className="desktop-only">How to Play</span><span className="mobile-only">About</span></button>
@@ -749,6 +736,17 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                 </div>
 
                 <div className="table-container">
+                    <div className="filters-header">
+                        <input type="text" className="search-game-input" placeholder="Search Game by ID"
+                                    value={inputValue}
+                                    onChange={handleInputChange}
+                                    onKeyDown={handleKeyPress}
+                        >          
+                        </input>
+                        <div className="flex flex-row desktop-only">
+                            <span style={{opacity: isSearchingGame.current ? '1' : '0', alignSelf: 'center', marginRight: '10px'}}><Spinner /></span>
+                        </div>
+                    </div>
                     <table className="lobby-table">
                         <thead>
                             <tr>
@@ -758,9 +756,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                 <th>Token</th>
                                 <th>Buy In</th>
                                 <th>Players</th>
-                                <th>Ping</th>
                                 <th>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '10%' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '0.5rem' }}>
                                         <span className="flex-row justify-center items-center inline-flex m-0 w-[100%] mr-[20%]">Status</span>
                                         <div className="tooltip-container desktop-only" style={{ position: 'absolute', display: 'inline-block', marginTop: '3px' }}>
                                             <button
@@ -792,12 +789,12 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                     <td>{row.activeGame.isLoaded ? row.activeGame.token : <Spinner />}</td>
                                     <td>{row.activeGame.isLoaded ? row.activeGame.min_buyin + " - " + row.activeGame.max_buyin : <Spinner />}</td>
                                     <td>{row.activeGame.isLoaded && row.activeGame.active_players >= 0 ? row.activeGame.active_players + "/" + row.activeGame.max_players : <Spinner />}</td>
-                                    <td>
+                                    {/* <td>
                                         <div className="ping-cell">
                                             <span className="ping-circle" style={{ backgroundColor: getPingColor(row.activeGame.ping) }} />
                                             <span style={{color: getPingColor(row.activeGame.ping)}}>{row.activeGame.ping >= 0 ? ` ${row.activeGame.ping}ms` : 'Timeout'}</span>
                                         </div>
-                                    </td>
+                                    </td> */}
                                     <td>
                                     <button
                                             className="btn-play"
