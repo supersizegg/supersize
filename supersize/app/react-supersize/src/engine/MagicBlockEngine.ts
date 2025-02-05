@@ -5,6 +5,7 @@ import { WalletName } from "@solana/wallet-adapter-base";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import * as anchor from "@coral-xyz/anchor";
 import { endpoints, NETWORK, RPC_CONNECTION } from "@utils/constants";
+import { log, warn } from "../utils/logger";
 
 const ENDPOINT_CHAIN_RPC = RPC_CONNECTION[NETWORK]; //"https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
 const ENDPOINT_CHAIN_WS = ENDPOINT_CHAIN_RPC.replace("http", "ws"); //"wss://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
@@ -116,21 +117,21 @@ export class MagicBlockEngine {
   }
 
   async processWalletTransaction(name: string, transaction: Transaction): Promise<string> {
-    console.log(name, "sending");
+    log(name, "sending");
     const signature = await this.walletContext.sendTransaction(transaction, connectionChain);
     await this.waitSignatureConfirmation(name, signature, connectionChain, "confirmed");
     return signature;
   }
 
   async processSessionChainTransaction(name: string, transaction: Transaction): Promise<string> {
-    console.log(name, "sending");
+    log(name, "sending");
     const signature = await connectionChain.sendTransaction(transaction, [this.sessionKey], { skipPreflight: true });
     await this.waitSignatureConfirmation(name, signature, connectionChain, "confirmed");
     return signature;
   }
 
   async processSessionEphemTransaction(name: string, transaction: Transaction): Promise<string> {
-    console.log(name, "sending");
+    log(name, "sending");
     // transaction.compileMessage;
     const signature = await this.connectionEphem.sendTransaction(transaction, [this.sessionKey], {
       skipPreflight: true,
@@ -153,12 +154,12 @@ export class MagicBlockEngine {
     connection: Connection,
     commitment: Commitment,
   ): Promise<void> {
-    console.log(name, "sent", signature);
+    log(name, "sent", signature);
     return new Promise((resolve, reject) => {
       connection.onSignature(
         signature,
         (result) => {
-          console.log(name, commitment, signature, result.err);
+          log(name, commitment, signature, result.err);
           if (result.err) {
             this.debugError(name, signature, connection);
             reject(result.err);
@@ -173,7 +174,7 @@ export class MagicBlockEngine {
 
   async debugError(name: string, signature: string, connection: Connection) {
     const transaction = await connection.getParsedTransaction(signature);
-    console.log("debugError", name, signature, transaction);
+    log("debugError", name, signature, transaction);
   }
 
   async getSessionFundingMissingLamports() {
@@ -253,14 +254,14 @@ export class MagicBlockEngine {
           return;
         }
         if (!accountInfo) {
-          console.warn("Account info is null");
+          warn("Account info is null");
           onAccountChange(undefined);
           return;
         }
         onAccountChange(accountInfo);
       },
       (error) => {
-        console.log("Error fetching accountInfo", error);
+        log("Error fetching accountInfo", error);
         onAccountChange(undefined);
       },
     );

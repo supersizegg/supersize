@@ -29,7 +29,9 @@ const InitBuddyLinkWrapper = () => {
 
   // TODO: Fix this
   // eslint-disable-next-line
-  useInitBuddyLink(connection as any, wallet, organization, { debug: true });
+  useInitBuddyLink(connection as any, wallet, organization, {
+    debug: process.env.NODE_ENV !== "production" ? true : false,
+  });
 
   return null;
 };

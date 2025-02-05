@@ -71,7 +71,7 @@ export const getTopLeftCorner = (index: number, mapSize: number): { x: number; y
 export const pingEndpoint = async (url: string): Promise<number> => {
   const startTime = performance.now();
   try {
-    await fetch(url, { method: "HEAD" });
+    await fetch(url, { method: "OPTIONS" });
   } catch (error) {
     console.error(`Failed to ping ${url}:`, error);
   }

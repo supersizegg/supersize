@@ -8,13 +8,7 @@ import "./Home.scss";
 import { ActiveGame } from "@utils/types";
 import { NETWORK, options } from "@utils/constants";
 
-import {
-  fetchTokenMetadata,
-  getActivePlayers,
-  getMyPlayerStatus,
-  getMyPlayerStatusFast,
-  formatBuyIn,
-} from "@utils/helper";
+import { fetchTokenMetadata, getActivePlayers, getMyPlayerStatus, formatBuyIn } from "@utils/helper";
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
@@ -245,11 +239,11 @@ const Home = ({
   ) {
     return typeof result === "object" && "activeplayers" in result;
   }
-  function isMyPlayerStatus(
-    result: { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean } | "error",
-  ) {
-    return typeof result === "object";
-  }
+  // function isMyPlayerStatus(
+  //   result: { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean } | "error",
+  // ) {
+  //   return typeof result === "object";
+  // }
   function isActivePlayersStatus(result: { activeplayers: number; newplayerEntityPda: PublicKey | null } | "error") {
     return typeof result === "object";
   }
@@ -258,10 +252,10 @@ const Home = ({
     console.log("handleRefresh", activeGamesLoaded[index].playerInfo.newplayerEntityPda);
     setIsLoadingCurrentGames(true);
     try {
-      const playerComponentPda = FindComponentPda({
-        componentId: COMPONENT_PLAYER_ID,
-        entity: activeGamesLoaded[index].playerInfo.newplayerEntityPda,
-      });
+      // const playerComponentPda = FindComponentPda({
+      //   componentId: COMPONENT_PLAYER_ID,
+      //   entity: activeGamesLoaded[index].playerInfo.newplayerEntityPda,
+      // });
 
       const pingResults = await Promise.all(
         endpoints[NETWORK].map(async (endpoint) => {
