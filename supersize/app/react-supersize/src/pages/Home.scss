@@ -220,6 +220,10 @@ img.token-image {
 }
 
 @media (max-width: 768px) {
+  .home-container {
+    margin-top: 0;
+  }
+  
   .table-container {
     width: 100%;
   }
@@ -286,5 +290,12 @@ img.token-image {
   .btn-play {
     width: 100%;
     background-color: #0077ff87;
+  }
+
+  .mobile-alert {
+    text-align: center;
+    background: #00c5ff40;
+    padding: 10px;
+    border-radius: 8px;
   }
 }

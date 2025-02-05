@@ -727,6 +727,7 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
             /> 
             )}
             <div className="home-container">
+                <div className="mobile-only mobile-alert">For the best experience, use a desktop or laptop.</div>
                 <div className="home-header">
                     <div>
                         {renderRegionButtons()}
