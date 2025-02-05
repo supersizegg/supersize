@@ -2,7 +2,7 @@
 name = "buy-in"
 version = "0.2.0"
 description = "Created with Bolt"
-edition = "2025"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]

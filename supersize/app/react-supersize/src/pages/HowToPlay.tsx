@@ -17,8 +17,8 @@ const HowToPlay: React.FC = () => {
           <div className="block block1">
             <h2>Join a Game</h2>
             <p>
-              Every Supersize game has a token and a buy-in range. Choose your buy-in, pay, then spawn as a blob with
-              size equal to your buy-in.
+              Every Supersize game uses a specific token and buy-in range. Choose your buy-in, pay, then spawn as a blob
+              with size equal to your buy-in.
             </p>
           </div>
 

@@ -64,9 +64,11 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
   const lastMousePosition = useRef({ x: 0, y: 0 });
   const currentIsMouseDownRef = useRef<boolean>(false);
   const allplayersRef = useRef<Blob[]>([]);
+
   useEffect(() => {
     allplayersRef.current = allplayers;
   }, [allplayers]);
+
   useEffect(() => {
     if (currentPlayer?.removal) {
       playerRemovalTimeRef.current = currentPlayer.removal;
@@ -461,7 +463,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
 
   useEffect(() => {
     if (currentPlayer) {
-      const playersWithAuthority = allplayers.filter(
+      const playersWithAuthority = allplayersRef.current.filter(
         (player) =>
           player.authority !== null && player.x !== 50000 && player.y !== 50000 && Math.sqrt(player.mass) !== 0,
       );
@@ -517,7 +519,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
         entityMatch.current &&
         foodEntities.current &&
         playerEntities.current &&
-        players &&
+        allplayersRef.current &&
         foodListLen
       ) {
         gameSystemMove(

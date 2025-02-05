@@ -71,8 +71,10 @@ export async function gameSystemMove(
 
     const playerstoeat = checkPlayerDistances(players, currentPlayer);
     if (playerstoeat) {
+      console.log("playerstoeat", playerstoeat.toString(), players);
       const playersListIndex = findListIndex(playerstoeat, players);
       if (playersListIndex != null) {
+        console.log("playersListIndex", playersListIndex);
         const eatPlayerTx = await ApplySystem({
           authority: engine.getSessionPayer(),
           world: gameInfo.worldPda,

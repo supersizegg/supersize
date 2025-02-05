@@ -287,33 +287,50 @@ const Home = ({
       setActiveGamesLoaded(refreshedGames);
 
       //engine.setEndpointEphemRpc(reloadActiveGame.activeGame.endpoint);
-
-      const result = await getMyPlayerStatusFast(
-        engine,
-        activeGamesLoaded[index].activeGame.worldId,
-        playerComponentPda,
-      );
-      const active_players = await getActivePlayers(
-        engine,
-        activeGamesLoaded[index].activeGame.worldId,
-        activeGamesLoaded[index].activeGame.max_players,
-      );
       let activeplayers = 0;
-      if (active_players !== "error") {
-        activeplayers = active_players.activeplayers;
-      }
       let need_to_delegate = false;
       let need_to_undelegate = false;
       let newplayerEntityPda = new PublicKey(0);
       let playerStatus = "new_player";
-
-      if (isMyPlayerStatus(result)) {
-        need_to_delegate = result.need_to_delegate;
-        need_to_undelegate = result.need_to_undelegate;
-        playerStatus = result.playerStatus;
-      } else {
-        console.log("Error fetching player status");
-      }
+      /*
+      if(activeGamesLoaded[index].playerInfo.newplayerEntityPda !== newplayerEntityPda){
+        newplayerEntityPda = activeGamesLoaded[index].playerInfo.newplayerEntityPda;
+        const result = await getMyPlayerStatusFast(
+            engine,
+            activeGamesLoaded[index].activeGame.worldId,
+            playerComponentPda,
+          );
+          if (isMyPlayerStatus(result)) {
+            need_to_delegate = result.need_to_delegate;
+            need_to_undelegate = result.need_to_undelegate;
+            playerStatus = result.playerStatus;
+          } else {
+            console.log("Error fetching player status");
+          }
+        const active_players = await getActivePlayers(
+            engine,
+            activeGamesLoaded[index].activeGame.worldId,
+            activeGamesLoaded[index].activeGame.max_players,
+          ); 
+          if (active_players !== "error") {
+            activeplayers = active_players.activeplayers;
+          }
+      }else{ */
+        const result = await getMyPlayerStatus(
+            engine,
+            activeGamesLoaded[index].activeGame.worldId,
+            activeGamesLoaded[index].activeGame.max_players,
+          );
+          if (isPlayerStatus(result)) {
+            need_to_delegate = result.need_to_delegate;
+            need_to_undelegate = result.need_to_undelegate;
+            playerStatus = result.playerStatus;
+            activeplayers = result.activeplayers;
+            newplayerEntityPda = result.newplayerEntityPda;
+          } else {
+            console.log("Error fetching player status");
+          }
+      //}
 
       const newgame: FetchedGame = {
         activeGame: {
@@ -502,7 +519,7 @@ const Home = ({
             });
             setActiveGamesLoaded(mergedGames);
             console.log("fetchAndLogMapData", i, performance.now() - startTime);
-            console.log(`No account info found for game ID ${filteredGames[i].activeGame.worldId}`);
+            console.log(filteredGames[i].playerInfo);
           }
         } catch (error) {
           console.log(`Error fetching map data for game ID ${filteredGames[i].activeGame.worldId}:`, error);

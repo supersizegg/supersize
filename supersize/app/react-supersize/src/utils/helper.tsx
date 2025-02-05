@@ -264,11 +264,14 @@ export const checkPlayerDistances = (
   currentPlayer: Blob,
   // screenSize: { width: number; height: number },
 ) => {
-  if (currentPlayer?.radius) {
+  if (currentPlayer?.radius && currentPlayer?.authority) {
     for (const player of visiblePlayers) {
-      const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
-      if (distance < currentPlayer.radius * 3) {
-        return player.authority;
+      if(player.authority && (currentPlayer?.authority.toString() != player.authority.toString())){
+        const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
+        const sizeAdjust = 1000 / player.mass;
+        if (distance < currentPlayer.radius * sizeAdjust) {
+            return player.authority;
+        }
       }
     }
   }
@@ -367,7 +370,6 @@ export const getMyPlayerStatus = async (
           need_to_delegate = false;
         }
       }
-      break;
     } else if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
       console.log(
         "playersParsedData",
@@ -390,6 +392,11 @@ export const getMyPlayerStatus = async (
         playerStatus = "in_game";
       }
 
+      if(playersParsedDataER &&
+        playersParsedDataER.authority == null &&
+        playersParsedDataER.score == 0){
+        playerStatus = "new_player";
+      }
       if (playerStatus == "bought_in" || playerStatus == "in_game") {
         if (playersacc.owner.toString() !== "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
           need_to_delegate = true;
@@ -399,7 +406,7 @@ export const getMyPlayerStatus = async (
           need_to_undelegate = false;
         }
       }
-      if (playerStatus == "cashing_out") {
+      if (playerStatus == "cashing_out" || playerStatus == "new_player") {
         if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
           need_to_undelegate = true;
           need_to_delegate = false;
@@ -409,12 +416,11 @@ export const getMyPlayerStatus = async (
         }
       }
       newplayerEntityPda = playerEntityPda;
+      console.log("newplayerEntityPda", newplayerEntityPda.toString(), playerStatus);
     } else if (
       playersParsedDataER &&
       playersParsedDataER.authority == null &&
       playersParsedData.authority !== null &&
-      playersParsedDataER.x == 50000 &&
-      playersParsedDataER.y == 50000 &&
       playersParsedDataER.score == 0 &&
       newplayerEntityPda == null
     ) {
