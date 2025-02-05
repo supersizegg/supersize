@@ -1,7 +1,7 @@
 .how-to-play-container {
-  width: 90vw;
-  max-width: 1300px;
-  margin: 5rem auto;
+  width: 100%;
+  max-width: 800px;
+  margin: 2rem auto 2rem auto;
   border-radius: 8px;
   padding: 2rem;
   color: #fff;
@@ -14,15 +14,21 @@
   justify-content: space-between;
   margin-bottom: 1rem;
 }
+
+.top-blocks-row.row-even .block {
+  background: #0000005e;
+}
+
 .head-block {
+  width: 50vw;
   font-size: 1.5rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: fit-content;
   margin: auto;
   margin-bottom: 1rem;
-  opacity: 0.7;
+  font-weight: bold;
+  text-align: center;
 }
 
 .block {
@@ -68,15 +74,16 @@
 }
 
 .block3-text {
-  flex: 1;
+  // flex: 1;
 }
 
 .block3-image {
-  width: 55%;
+  width: 50%;
   position: relative;
 }
 
 .block3-image img {
+  width: 100%;
   display: block;
   position: absolute;
   right: -40px;
@@ -88,7 +95,7 @@
 
 @media (max-width: 768px) {
   .how-to-play-container {
-    width: 90vw;
+    width: 100%;
     padding: 1rem;
     margin: 2rem auto;
     margin-top: 0;
@@ -102,7 +109,6 @@
     width: fit-content;
     margin: auto;
     margin-bottom: 0.5rem;
-    opacity: 0.7;
   }
 
   .top-blocks-row {

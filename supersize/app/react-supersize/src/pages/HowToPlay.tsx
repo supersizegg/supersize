@@ -29,7 +29,22 @@ const HowToPlay: React.FC = () => {
               boost forward. Use the <b>left click to boost</b>.
             </p>
           </div>
+        </div>
 
+        <div className="top-blocks-row row-even">
+          <div className="block block1">
+            <h2>Eat Food</h2>
+            <p>
+              When a new player joins a game, free tokens are added to the map in the form of food. Eat food to grow in
+              size.
+            </p>
+          </div>
+          <div className="block block2">
+            <h2>Eat Players</h2>
+            <p>Bigger players can eat smaller players to gain their mass and steal their tokens.</p>
+          </div>
+        </div>
+        <div className="top-blocks-row">
           <div className="block block3">
             <div className="block3-text">
               <h2>Size Matters</h2>
@@ -40,20 +55,7 @@ const HowToPlay: React.FC = () => {
             </div>
           </div>
         </div>
-
         <div className="top-blocks-row">
-          <div className="block block1">
-            <h2>Eat Food</h2>
-            <p>
-              When a new player joins a game, free tokens are added to the map in the form of food. Eat food to grow.
-            </p>
-          </div>
-
-          <div className="block block2">
-            <h2>Eat Players</h2>
-            <p>Bigger players can eat smaller players to gain their mass and steal their tokens.</p>
-          </div>
-
           <div className="block block2">
             <h2>Cash Out</h2>
             <p>

@@ -254,13 +254,20 @@ img.token-image {
     background-color: #141516;
   }
 
+  .lobby-table tbody tr th {
+    text-align: left;
+    color: #fff;
+  }
+
   .lobby-table tbody tr td {
+    color: #fff;
     display: block;
     width: 100%;
     border: none;
     padding: 0.5rem;
     position: relative;
     font-size: 0.9rem;
+    text-align: left;
   }
 
   .lobby-table tbody tr td:nth-of-type(1)::before {
