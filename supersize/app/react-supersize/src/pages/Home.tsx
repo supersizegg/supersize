@@ -243,11 +243,11 @@ const Home = ({
   ) {
     return typeof result === "object" && "activeplayers" in result;
   }
-  function isMyPlayerStatus(
-    result: { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean } | "error",
-  ) {
-    return typeof result === "object";
-  }
+  // function isMyPlayerStatus(
+  //   result: { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean } | "error",
+  // ) {
+  //   return typeof result === "object";
+  // }
   function isActivePlayersStatus(result: { activeplayers: number; newplayerEntityPda: PublicKey | null } | "error") {
     return typeof result === "object";
   }
@@ -255,10 +255,10 @@ const Home = ({
   const handleRefresh = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], index: number) => {
     setIsLoadingCurrentGames(true);
     try {
-      const playerComponentPda = FindComponentPda({
-        componentId: COMPONENT_PLAYER_ID,
-        entity: activeGamesLoaded[index].playerInfo.newplayerEntityPda,
-      });
+      // const playerComponentPda = FindComponentPda({
+      //   componentId: COMPONENT_PLAYER_ID,
+      //   entity: activeGamesLoaded[index].playerInfo.newplayerEntityPda,
+      // });
 
       const pingResults = await Promise.all(
         endpoints[NETWORK].map(async (endpoint) => {

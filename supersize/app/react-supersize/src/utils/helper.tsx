@@ -71,7 +71,7 @@ export const getTopLeftCorner = (index: number, mapSize: number): { x: number; y
 export const pingEndpoint = async (url: string): Promise<number> => {
   const startTime = performance.now();
   try {
-    await fetch(url, { method: "HEAD" });
+    await fetch(url, { method: "OPTIONS" });
   } catch (error) {
     console.error(`Failed to ping ${url}:`, error);
   }
@@ -269,7 +269,7 @@ export const checkPlayerDistances = (
         const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
         const sizeAdjust = 1000 / player.mass;
         if (distance < currentPlayer.radius * sizeAdjust) {
-            return player.authority;
+          return player.authority;
         }
     }
   }
@@ -383,9 +383,7 @@ export const getMyPlayerStatus = async (
         playerStatus = "in_game";
       }
 
-      if(playersParsedDataER &&
-        playersParsedDataER.authority == null &&
-        playersParsedDataER.score == 0){
+      if (playersParsedDataER && playersParsedDataER.authority == null && playersParsedDataER.score == 0) {
         playerStatus = "new_player";
       }
       if (playerStatus == "bought_in" || playerStatus == "in_game") {
