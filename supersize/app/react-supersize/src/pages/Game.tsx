@@ -50,7 +50,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
 
   const [leaderboard, setLeaderboard] = useState<Blob[]>([]);
   const [allplayers, setAllPlayers] = useState<Blob[]>([]);
-  const [players, setPlayers] = useState<Blob[]>([]);
+  //const [players, setPlayers] = useState<Blob[]>([]);
   const [allFood, setAllFood] = useState<Food[][]>([]);
   const [visibleFood, setVisibleFood] = useState<Food[][]>([]);
   const [foodListLen, setFoodListLen] = useState<number[]>([]);
@@ -64,6 +64,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
   const lastMousePosition = useRef({ x: 0, y: 0 });
   const currentIsMouseDownRef = useRef<boolean>(false);
   const allplayersRef = useRef<Blob[]>([]);
+  const playersRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     allplayersRef.current = allplayers;
@@ -192,7 +193,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
         foodEntities.current,
       );
     } catch (error) {
-      console.log("Transaction failed", error);
+      //console.log("Transaction failed", error);
     }
   };
 
@@ -292,13 +293,12 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
 
   const endGame = async () => {
     if (currentPlayer && Math.sqrt(currentPlayer.mass) == 0 && currentPlayerEntity.current && anteroomEntity.current) {
-      console.log("endGame", currentPlayer);
       if (currentPlayer.score > 0) {
         //gameended == 2
         playersComponentSubscriptionId.current = [];
         entityMatch.current = null;
         foodEntities.current = [];
-        setPlayers([]);
+        playersRef.current = [];
         setAllFood([]);
         setFoodListLen([]);
         try {
@@ -348,7 +348,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
         currentPlayerEntity.current = null;
         entityMatch.current = null;
         foodEntities.current = [];
-        setPlayers([]);
+        playersRef.current = [];
         setAllFood([]);
         setFoodListLen([]);
       }
@@ -499,7 +499,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
         }
         return accumulator;
       }, []);
-      setPlayers(newVisiblePlayers);
+      playersRef.current = newVisiblePlayers;
     }
   }, [currentPlayer]);
 
@@ -531,6 +531,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
           foodEntities.current,
           playerEntities.current,
           allplayersRef.current,
+          playersRef.current,
           foodListLen,
           currentMousePositionRef.current.x,
           currentMousePositionRef.current.y,
@@ -607,7 +608,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
         }}
       >
         <GameComponent
-          players={players}
+          players={playersRef.current}
           visibleFood={visibleFood.flat()}
           currentPlayer={currentPlayer}
           screenSize={screenSize}

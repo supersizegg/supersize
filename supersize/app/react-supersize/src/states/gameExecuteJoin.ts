@@ -60,7 +60,6 @@ export async function gameExecuteJoin(
     componentId: COMPONENT_PLAYER_ID,
     entity: newplayerEntityPda,
   });
-  console.log("component pda", playerComponentPda.toString());
 
   if (need_to_undelegate) {
     try {
@@ -104,14 +103,12 @@ export async function gameExecuteJoin(
   mint_of_token_being_sent = anteParsedData.token;
 
   const { name } = await fetchTokenMetadata(mint_of_token_being_sent.toString());
-  console.log("token", name, mint_of_token_being_sent.toString());
 
   try {
     const response = await axios.post("https://supersize.lewisarnsten.workers.dev/create-contest", {
       name: name,
       tokenAddress: mint_of_token_being_sent.toString(),
     });
-    console.log(response);
   } catch (error) {
     console.log("error", error);
   }
@@ -126,7 +123,6 @@ export async function gameExecuteJoin(
       name: username,
       contestId: name,
     });
-    console.log(response);
   } catch (error) {
     console.log("error", error);
   }

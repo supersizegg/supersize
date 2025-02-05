@@ -5,7 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection } from "@solana/web3.js";
 import { initBuddyState, initialBuddyLink, useInitBuddyLink, BUDDY_MINTS } from "buddy.link";
 import { MagicBlockEngineProvider } from "./engine/MagicBlockEngineProvider";
-import { RPC_CONNECTION } from "@utils/constants";
+import { RPC_CONNECTION, NETWORK } from "@utils/constants";
 
 // eslint-disable-next-line
 require("@solana/wallet-adapter-react-ui/styles.css");
@@ -29,7 +29,7 @@ const InitBuddyLinkWrapper = () => {
 
   // TODO: Fix this
   // eslint-disable-next-line
-  useInitBuddyLink(connection as any, wallet, organization, { debug: true });
+  useInitBuddyLink(connection as any, wallet, organization, { debug: NETWORK !== "mainnet" ? true : false });
 
   return null;
 };

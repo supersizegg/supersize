@@ -129,7 +129,6 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
       let retryModalViewNum = 0;
       if (thisPlayerStatus?.authority !== null || errorMessageRef.current !== "") {
         const result = await getMyPlayerStatus(engine, activeGame.worldId, activeGame.max_players);
-        console.log("result", result);
         if (isPlayerStatus(result)) {
           if (result.need_to_delegate) {
             try {
@@ -191,7 +190,6 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
       if (retrievedUser) {
         myusername = JSON.parse(retrievedUser).name;
       }
-      console.log("selectedPlayerGameInfoRef.current", selectedPlayerGameInfoRef.current.newplayerEntityPda.toString());
       if (retryModalViewNum == 0) {
         const result = await gameExecuteJoin(
           engine,
@@ -285,7 +283,6 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
         setRetryModalStatus("Failed to cash out. Please try again.");
       }
     }
-    console.log("retrySuccess", retrySuccess, statusMessageRef.current);
 
     if (!retrySuccess) {
       const result = await getMyPlayerStatus(engine, activeGame.worldId, activeGame.max_players);
@@ -309,7 +306,6 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
             console.log("Error delegating:", error);
           }
         }
-        console.log("result", result);
         if (result.playerStatus == "cashing_out") {
           setRetryModalView(2);
           statusMessageRef.current = "Need to cash out!";

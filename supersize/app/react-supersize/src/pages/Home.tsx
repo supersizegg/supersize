@@ -10,9 +10,7 @@ import { NETWORK, options } from "@utils/constants";
 
 import {
   fetchTokenMetadata,
-  getActivePlayers,
   getMyPlayerStatus,
-  getMyPlayerStatusFast,
   formatBuyIn,
 } from "@utils/helper";
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
@@ -255,7 +253,6 @@ const Home = ({
   }
 
   const handleRefresh = async (engine: MagicBlockEngine, activeGamesLoaded: FetchedGame[], index: number) => {
-    console.log("handleRefresh", activeGamesLoaded[index].playerInfo.newplayerEntityPda);
     setIsLoadingCurrentGames(true);
     try {
       const playerComponentPda = FindComponentPda({
@@ -293,30 +290,7 @@ const Home = ({
       let need_to_undelegate = false;
       let newplayerEntityPda = new PublicKey(0);
       let playerStatus = "new_player";
-      /*
-      if(activeGamesLoaded[index].playerInfo.newplayerEntityPda !== newplayerEntityPda){
-        newplayerEntityPda = activeGamesLoaded[index].playerInfo.newplayerEntityPda;
-        const result = await getMyPlayerStatusFast(
-            engine,
-            activeGamesLoaded[index].activeGame.worldId,
-            playerComponentPda,
-          );
-          if (isMyPlayerStatus(result)) {
-            need_to_delegate = result.need_to_delegate;
-            need_to_undelegate = result.need_to_undelegate;
-            playerStatus = result.playerStatus;
-          } else {
-            console.log("Error fetching player status");
-          }
-        const active_players = await getActivePlayers(
-            engine,
-            activeGamesLoaded[index].activeGame.worldId,
-            activeGamesLoaded[index].activeGame.max_players,
-          ); 
-          if (active_players !== "error") {
-            activeplayers = active_players.activeplayers;
-          }
-      }else{ */
+
         const result = await getMyPlayerStatus(
             engine,
             activeGamesLoaded[index].activeGame.worldId,
@@ -331,7 +305,6 @@ const Home = ({
           } else {
             console.log("Error fetching player status");
           }
-      //}
 
       const newgame: FetchedGame = {
         activeGame: {
@@ -362,7 +335,6 @@ const Home = ({
     engine: MagicBlockEngine,
     activeGamesLoaded: FetchedGame[],
     server: string,
-    reloadPlayerComponents: boolean = true,
     pingList: any = null,
     firstLoad: boolean = false,
   ) => {
@@ -449,7 +421,6 @@ const Home = ({
             let newplayerEntityPda: PublicKey | null = new PublicKey(0);
             let playerStatus = "new_player";
 
-            if (reloadPlayerComponents) {
               const result = await getMyPlayerStatus(
                 engine,
                 filteredGames[i].activeGame.worldId,
@@ -464,19 +435,6 @@ const Home = ({
               } else {
                 console.log("Error fetching player status");
               }
-            } else {
-              const result = await getActivePlayers(
-                engine,
-                filteredGames[i].activeGame.worldId,
-                mapParsedData.maxPlayers,
-              );
-              if (isActivePlayersStatus(result)) {
-                activeplayers = result.activeplayers;
-                newplayerEntityPda = result.newplayerEntityPda;
-              } else {
-                console.log("Error fetching player status");
-              }
-            }
 
             const newgame: FetchedGame = {
               activeGame: {
@@ -519,8 +477,6 @@ const Home = ({
               }
             });
             setActiveGamesLoaded(mergedGames);
-            console.log("fetchAndLogMapData", i, performance.now() - startTime);
-            console.log(filteredGames[i].playerInfo);
           }
         } catch (error) {
           console.log(`Error fetching map data for game ID ${filteredGames[i].activeGame.worldId}:`, error);
@@ -535,7 +491,6 @@ const Home = ({
     engine.setEndpointEphemRpc(game.activeGame.endpoint);
     setSelectedGame(game.activeGame);
     setSelectedGamePlayerInfo(game.playerInfo);
-    console.log("game.playerInfo", game.playerInfo);
     if (game.playerInfo.need_to_delegate) {
       try {
         const playerComponentPda = FindComponentPda({
@@ -568,11 +523,11 @@ const Home = ({
         });
         await gameSystemCashOut(engine, game.activeGame, anteEntityPda, game.playerInfo.newplayerEntityPda);
         /*
-                    // never loads correctly  
-                    if(cashoutTx){
-                        await fetchAndLogMapData(engine, activeGamesRef.current, selectedServer.current);
-                    }  
-                */
+            // never loads correctly  
+            if(cashoutTx){
+                await fetchAndLogMapData(engine, activeGamesRef.current, selectedServer.current);
+            }  
+         */
       } catch (cashoutError) {
         console.log("error", cashoutError);
       }
@@ -633,11 +588,11 @@ const Home = ({
           const thisServer = pingResults.lowestPingEndpoint.region;
           selectedServer.current = thisServer;
           engine.setEndpointEphemRpc(pingResults.lowestPingEndpoint.endpoint);
-          await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
+          await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, pingResults.pingResults, true);
 
           const checkActiveGamesLoaded = setInterval(async () => {
             if (activeGamesRef.current.filter((row) => row.activeGame.ping > 0).length === 0) {
-              await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, true, pingResults.pingResults, true);
+              await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, pingResults.pingResults, true);
             } else {
               clearInterval(checkActiveGamesLoaded);
               setIsLoadingCurrentGames(false);
@@ -689,7 +644,6 @@ const Home = ({
               selectedServer.current === item.region ? "bg-[#666] hover:bg-[#555]" : "bg-[#444] hover:bg-[#555]"
             }`}
             onClick={async () => {
-              console.log("isLoadingCurrentGames", isLoadingCurrentGames);
               setIsLoadingCurrentGames(true);
 
               const clearPingGames = [...activeGamesRef.current];
@@ -714,14 +668,13 @@ const Home = ({
               pingResultsRef.current = pingResults.pingResults;
               engine.setEndpointEphemRpc(item.endpoint);
               try {
-                await fetchAndLogMapData(engine, clearPingGames, thisServer, true, pingResults.pingResults, true);
+                await fetchAndLogMapData(engine, clearPingGames, thisServer, pingResults.pingResults, true);
                 const checkActiveGamesLoaded = setInterval(async () => {
                   if (activeGamesRef.current.filter((row) => row.activeGame.ping > 0).length == 0) {
                     await fetchAndLogMapData(
                       engine,
                       activeGamesRef.current,
                       thisServer,
-                      true,
                       pingResults.pingResults,
                       true,
                     );
@@ -816,7 +769,6 @@ const Home = ({
                         engine,
                         activeGamesRef.current,
                         selectedServer.current,
-                        true,
                         pingResults.pingResults,
                       );
                       setIsLoadingCurrentGames(false);

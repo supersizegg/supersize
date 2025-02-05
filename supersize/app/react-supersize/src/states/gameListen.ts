@@ -75,7 +75,6 @@ export function updateMyPlayer(
   gameEnded: number,
   setGameEnded: (gameEnded: number) => void,
 ) {
-  //console.log("updateMyPlayer", player);
   if (Math.sqrt(player.mass) == 0 && player.score == 0.0 && gameEnded == 0) {
     const startTime = player.joinTime.toNumber() * 1000;
     const currentTime = Date.now();
@@ -142,7 +141,6 @@ export function handlePlayersComponentChange(
   engine: MagicBlockEngine,
   setAllPlayers: (callback: (prevAllPlayers: Blob[]) => Blob[]) => void,
 ) {
-  //console.log("handlePlayersComponentChange", accountInfo);
   const coder = getComponentPlayerOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("player", accountInfo.data);
   updatePlayers(parsedData, index, setAllPlayers);

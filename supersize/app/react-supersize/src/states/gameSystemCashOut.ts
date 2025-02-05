@@ -51,7 +51,6 @@ export async function gameSystemCashOut(
       "undelPlayer:" + myplayerComponent.toString(),
       undeltx,
     );
-    console.log("undelegate", playerundelsignature);
   } catch (error) {
     console.log("error", error);
   }
@@ -64,11 +63,7 @@ export async function gameSystemCashOut(
   });
   const anteAccount = await anteroomFetchOnChain(engine, anteComponentPda);
 
-  console.log("cashing out", anteComponentPda.toString(), myplayerComponent.toString());
-
-  console.log("anteAccount", anteAccount);
   if (anteAccount) {
-    console.log("anteAccount", anteAccount);
     const vault_token_account = anteAccount.vaultTokenAccount;
     const mint_of_token_being_sent = anteAccount.token;
     const owner_token_account = anteAccount.gamemasterTokenAccount;
@@ -172,7 +167,6 @@ export async function gameSystemCashOut(
     const cashouttx = new anchor.web3.Transaction().add(applyCashOutSystem.transaction);
 
     let cashoutsig = await engine.processWalletTransaction("playercashout", cashouttx);
-    console.log("cashoutsig", cashoutsig);
     if (!cashoutsig) {
       throw new Error("Cash out failed");
     }

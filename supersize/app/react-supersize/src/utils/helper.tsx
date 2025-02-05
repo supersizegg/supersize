@@ -266,13 +266,11 @@ export const checkPlayerDistances = (
 ) => {
   if (currentPlayer?.radius && currentPlayer?.authority) {
     for (const player of visiblePlayers) {
-      if(player.authority && (currentPlayer?.authority.toString() != player.authority.toString())){
         const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
         const sizeAdjust = 1000 / player.mass;
         if (distance < currentPlayer.radius * sizeAdjust) {
             return player.authority;
         }
-      }
     }
   }
   return null;
@@ -371,13 +369,6 @@ export const getMyPlayerStatus = async (
         }
       }
     } else if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
-      console.log(
-        "playersParsedData",
-        playersComponentPda.toString(),
-        playersParsedData,
-        playersParsedDataER,
-        worldId.toNumber().toString(),
-      );
       if (playersParsedData.mass.toNumber() == 0 && playersParsedData.score == 0) {
         playerStatus = "bought_in";
       } else if (
@@ -416,7 +407,6 @@ export const getMyPlayerStatus = async (
         }
       }
       newplayerEntityPda = playerEntityPda;
-      console.log("newplayerEntityPda", newplayerEntityPda.toString(), playerStatus);
     } else if (
       playersParsedDataER &&
       playersParsedDataER.authority == null &&
@@ -449,144 +439,5 @@ export const getMyPlayerStatus = async (
     need_to_undelegate: need_to_undelegate,
     newplayerEntityPda: newplayerEntityPda,
     activeplayers: activeplayers,
-  };
-};
-
-export const getMyPlayerStatusFast = async (
-  engine: MagicBlockEngine,
-  worldId: BN,
-  playersComponentPda: PublicKey,
-): Promise<
-  | {
-      playerStatus: string;
-      need_to_delegate: boolean;
-      need_to_undelegate: boolean;
-    }
-  | "error"
-> => {
-  let playerStatus = "new_player";
-  let need_to_undelegate = false;
-  let need_to_delegate = false;
-
-  const playersacc = await engine.getChainAccountInfo(playersComponentPda);
-  if (!playersacc) {
-    return "error";
-  }
-  const playersParsedData = await playerFetchOnChain(engine, playersComponentPda);
-  if (!playersParsedData) {
-    return "error";
-  }
-  if (playersParsedData.authority == null) {
-    return "error";
-  }
-  const playersParsedDataER = await playerFetchOnEphem(engine, playersComponentPda);
-  console.log(
-    "undelegate info",
-    playersacc.owner.toString() !== "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh",
-    playersacc.owner.toString(),
-  );
-  console.log(
-    "playersParsedData",
-    playersComponentPda.toString(),
-    playersParsedData,
-    playersParsedDataER,
-    worldId.toNumber().toString(),
-  );
-
-  if (playersParsedData.authority.toString() == engine.getSessionPayer().toString()) {
-    if (playersParsedData.mass.toNumber() == 0 && playersParsedData.score == 0) {
-      playerStatus = "bought_in";
-    } else if (
-      playersParsedDataER &&
-      playersParsedDataER.authority &&
-      playersParsedDataER.authority.toString() == engine.getSessionPayer().toString() &&
-      playersParsedDataER.mass.toNumber() == 0 &&
-      playersParsedDataER.score !== 0
-    ) {
-      playerStatus = "cashing_out";
-    } else {
-      playerStatus = "in_game";
-    }
-
-    if (playerStatus == "bought_in" || playerStatus == "in_game") {
-      if (playersacc.owner.toString() !== "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
-        need_to_delegate = true;
-        need_to_undelegate = false;
-      } else {
-        need_to_delegate = false;
-        need_to_undelegate = false;
-      }
-    }
-    if (playerStatus == "cashing_out") {
-      if (playersacc.owner.toString() === "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh") {
-        need_to_undelegate = true;
-        need_to_delegate = false;
-      } else {
-        need_to_undelegate = false;
-        need_to_delegate = false;
-      }
-    }
-  } else {
-    return "error";
-  }
-
-  return {
-    playerStatus: playerStatus,
-    need_to_delegate: need_to_delegate,
-    need_to_undelegate: need_to_undelegate,
-  };
-};
-
-export const getActivePlayers = async (
-  engine: MagicBlockEngine,
-  worldId: BN,
-  maxplayer: number,
-): Promise<
-  | {
-      activeplayers: number;
-      newplayerEntityPda: PublicKey | null;
-    }
-  | "error"
-> => {
-  let activeplayers = 0;
-  let newplayerEntityPda: PublicKey | null = null;
-
-  const playerPromises = Array.from({ length: maxplayer }, (_, i) => {
-    const playerentityseed = "player" + (i + 1).toString();
-
-    const playerEntityPda = FindEntityPda({
-      worldId: worldId,
-      entityId: new anchor.BN(0),
-      seed: stringToUint8Array(playerentityseed),
-    });
-
-    const playersComponentPda = FindComponentPda({
-      componentId: COMPONENT_PLAYER_ID,
-      entity: playerEntityPda,
-    });
-
-    return playerFetchOnChain(engine, playersComponentPda).then((data) => ({
-      data,
-      playerEntityPda,
-    }));
-  });
-
-  const playersData = await Promise.all(playerPromises);
-
-  for (const { data: playersParsedData, playerEntityPda } of playersData) {
-    if (!playersParsedData) {
-      continue;
-    }
-    if (playersParsedData.authority != null) {
-      activeplayers += 1;
-    } else {
-      newplayerEntityPda = playerEntityPda;
-      break;
-    }
-  }
-
-  return {
-    activeplayers: activeplayers,
-    newplayerEntityPda: newplayerEntityPda,
   };
 };
