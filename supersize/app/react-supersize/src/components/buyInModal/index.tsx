@@ -78,7 +78,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
     fetchTokenBalance();
   }, [activeGame, engine]);
 
-  function isPlayerStatus(result: any): result is { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } {
+  function isPlayerStatus(result: { playerStatus: string; need_to_delegate: boolean; need_to_undelegate: boolean; newplayerEntityPda: PublicKey; activeplayers: number; } | "error") {
     return typeof result === 'object' && 'activeplayers' in result;
     }
 
@@ -161,13 +161,11 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
                 setRetryModalStatus("Already bought in, need to join...");
             }
         }
-        let activeplayers = 0;
         let need_to_delegate = false;
         let need_to_undelegate = false;
         let newplayerEntityPda = new PublicKey(0);
         let playerStatus = "new_player";
         if (isPlayerStatus(result)) {
-            activeplayers = result.activeplayers;
             need_to_delegate = result.need_to_delegate;
             need_to_undelegate = result.need_to_undelegate;
             newplayerEntityPda = result.newplayerEntityPda;
@@ -225,7 +223,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
           entityId: new anchor.BN(0),
           seed: stringToUint8Array(mapseed),
         });
-        const joinsig = await gameSystemJoin(engine, activeGame, selectedPlayerGameInfoRef.current.newplayerEntityPda, mapEntityPda, "unnamed");
+        await gameSystemJoin(engine, activeGame, selectedPlayerGameInfoRef.current.newplayerEntityPda, mapEntityPda, "unnamed");
         retrySuccess = true;
         setMyPlayerEntityPda(selectedPlayerGameInfoRef.current.newplayerEntityPda);
         navigate("/game");
@@ -248,7 +246,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
                 entityId: new anchor.BN(0),
                 seed: stringToUint8Array("ante")
             });
-            const cashoutTx = await gameSystemCashOut(engine, activeGame, anteEntityPda, selectedPlayerGameInfoRef.current.newplayerEntityPda);   
+            await gameSystemCashOut(engine, activeGame, anteEntityPda, selectedPlayerGameInfoRef.current.newplayerEntityPda);   
             retrySuccess = true; 
             statusMessageRef.current = "Cash out successful!";
             setRetryModalStatus("Cash out successful!");
@@ -304,12 +302,10 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
             else if(result.playerStatus == "new_player"){
                 setRetryModalView(0);
             }
-        let activeplayers = 0;
         let need_to_delegate = false;
         let need_to_undelegate = false;
         let newplayerEntityPda = new PublicKey(0);
         let playerStatus = "new_player";
-        activeplayers = result.activeplayers;
         need_to_delegate = result.need_to_delegate;
         need_to_undelegate = result.need_to_undelegate;
         newplayerEntityPda = result.newplayerEntityPda;

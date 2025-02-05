@@ -12,7 +12,7 @@ import { anchor, ApplySystem, createUndelegateInstruction, FindComponentPda, Fin
 import { ActiveGame } from "@utils/types";
 import { FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { COMPONENT_ANTEROOM_ID, COMPONENT_MAP_ID, COMPONENT_PLAYER_ID, COMPONENT_SECTION_ID, SYSTEM_CASH_OUT_ID } from "@states/gamePrograms";
-import { anteroomFetchOnChain, mapFetchOnChain, mapFetchOnEphem, playerFetchOnChain, playerFetchOnEphem, sectionFetchOnChain, sectionFetchOnEphem } from "@states/gameFetch";
+import { anteroomFetchOnChain, mapFetchOnEphem, playerFetchOnChain, sectionFetchOnChain } from "@states/gameFetch";
 import { useMagicBlockEngine } from "@engine/MagicBlockEngineProvider";
 import { fetchTokenMetadata, pingEndpoint, stringToUint8Array } from "@utils/helper";
 import { AccountMeta, Connection, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
@@ -22,7 +22,6 @@ import { endpoints, NETWORK, RPC_CONNECTION } from "@utils/constants";
 import { Spinner } from "@components/util/Spinner";
 import Graph from "../components/Graph";
 import { Chart, LineElement, PointElement, LinearScale, Title, Tooltip, Legend } from 'chart.js';
-import { ParsedInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
 import { getTopLeftCorner, getRegion } from "@utils/helper";
 import { createTransferInstruction } from "@solana/spl-token";
 
@@ -65,11 +64,10 @@ function GeneralTab() {
   const { publicKey } = useWallet();
   const [username, setUsername] = useState<string>("");
   const [referrerInput, setReferrerInput] = useState<string>("");
-  const myReferrer = useRef<string>("");
-  const { referrer, member, profile } = useBuddyLink();
+  const { referrer, member } = useBuddyLink();
   const [joinedOrg, setJoinedOrg] = useState<boolean>(false);
 
-  const setInputUsername = (inputUsername: any) => {  
+  const setInputUsername = (inputUsername: React.SetStateAction<string>) => {  
       const user = { name: inputUsername, referrer: referrer, referral_done: false};
       localStorage.setItem('user', JSON.stringify(user));
       setUsername(inputUsername);
@@ -161,7 +159,7 @@ function GeneralTab() {
 
 function QuestsTab() {
   const { member } = useBuddyLink();
-  const engine = useMagicBlockEngine();
+
   const [joinedOrg, setJoinedOrg] = useState<boolean>(false);
   const BUDDY_LINK_PROGRAM_ID = new PublicKey("BUDDYtQp7Di1xfojiCSVDksiYLQx511DPdj2nbtG9Yu5");
   let referral_vault_program_id = new PublicKey("CLC46PuyXnSuZGmUrqkFbAh7WwzQm8aBPjSQ3HMP56kp");
@@ -171,7 +169,6 @@ function QuestsTab() {
     const checkMembership = async () => {
       if (member) {
         if (member[0]) {
-          const memberName = member[0].account.name;
           const buddyMemberPdaAccount = getMemberPDA(BUDDY_LINK_PROGRAM_ID, "supersize", member[0].account.name);
           let [refferalPdaAccount] = PublicKey.findProgramAddressSync(
             [Buffer.from("subsidize"), buddyMemberPdaAccount.toBuffer(), new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").toBuffer()],
@@ -214,15 +211,15 @@ function AdminTab() {
   const [tokenBalance, setTokenBalance] = useState<number>(0);
   const [gameTokenAccount, setGameTokenAccount] = useState<string>("");
   const [currentFoodToAdd, setCurrentFoodToAdd] = useState<number>(0);
-  const [inspectAnteParsedData, setAnteParsedData] = useState<any>(null);
-  const [inspectMapParsedData, setMapParsedData] = useState<any>(null);
+  const [inspectAnteParsedData, setAnteParsedData] = useState("");
+  const [inspectMapParsedData, setMapParsedData] = useState("");
   const [foodComponentCheck, setFoodComponentCheck] = useState<string>("");
   const [playerComponentCheck, setPlayerComponentCheck] = useState<string>("");
   const [tokenAddress, setTokenAddress] = useState<string>("");
   const [referralProgramAccount, setReferralProgramAccount] = useState<string>("");
   const [depositValue, setDepositValue] = useState<number>(0);
   const [decimals, setDecimals] = useState<number>(0);
-  const [cashoutStats, setCashoutStats] = useState<any>({
+  const [cashoutStats, setCashoutStats] = useState({
     cashOutSum: 0,
     buyInSum: 0,
     buyInCount: 0,
@@ -447,7 +444,6 @@ function AdminTab() {
       foodcomponents = 64 * 2;
     }
 
-    const foodEntityPdas: PublicKey[] = [];
     let sectionMessage = "";
     for (let i = 1; i < foodcomponents + 1; i++) {
       const foodseed = 'food' + i.toString();
@@ -515,10 +511,6 @@ function AdminTab() {
         maxplayer=100;
     }
 
-    let newplayerEntityPda : any = null;
-    let myPlayerId = '';
-    let myPlayerStatus = 'new_player';
-    let need_to_undelegate = false;
     for (let i = 1; i < maxplayer+1; i++) {
         const playerentityseed = 'player' + i.toString();
         const playerEntityPda =  FindEntityPda({
@@ -533,9 +525,7 @@ function AdminTab() {
         const playersacc = await engine.getChainAccountInfo(
           playersComponentPda
       );
-      const playersaccER = await engine.getEphemAccountInfo(
-          playersComponentPda
-      );
+
         if(playersacc){
           const playersParsedData = await playerFetchOnChain(engine, playersComponentPda);
         if(playersParsedData && playersParsedData.authority !== null){
@@ -572,7 +562,6 @@ function AdminTab() {
         });
         const anteParsedData = await anteroomFetchOnChain(engine, anteComponentPda);
 
-        let sender_token_account = new PublicKey(0);
         let supersize_token_account = new PublicKey(0);
         let vault_program_id = new PublicKey("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
 
@@ -590,7 +579,6 @@ function AdminTab() {
                 [Buffer.from("token_account_owner_pda"), mapComponentPda.toBuffer()],
                 vault_program_id
                 );
-            let referrer_token_account = null;
             
             const extraAccounts = [
               {
@@ -694,7 +682,7 @@ function AdminTab() {
         });
 
         if (transactionDetails) {
-            const { meta, transaction } = transactionDetails;
+            const { meta } = transactionDetails;
             if (meta && meta.preTokenBalances && meta.postTokenBalances) {
               //if supersize wallet receives tokens its a cash out -> amount recieved by supersize goes to fee (unless only supersize, then no fee)
               //otherwise its a buy in -> add amount sent to buy in sum, increment buy in count

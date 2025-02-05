@@ -7,10 +7,10 @@ import { fetchTokenMetadata } from "@utils/helper";
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { gameSystemJoin } from "./gameSystemJoin";
 import { gameSystemBuyIn } from "./gameSystemBuyIn";
-import { COMPONENT_PLAYER_ID, COMPONENT_ANTEROOM_ID, COMPONENT_MAP_ID } from "./gamePrograms";
+import { COMPONENT_PLAYER_ID, COMPONENT_ANTEROOM_ID } from "./gamePrograms";
 
 import * as anchor from "@coral-xyz/anchor";
-import { anteroomFetchOnChain, mapFetchOnChain, playerFetchOnChain, playerFetchOnEphem } from "./gameFetch";
+import { anteroomFetchOnChain } from "./gameFetch";
 import axios from "axios";
 
 import { stringToUint8Array } from "@utils/helper";
@@ -23,11 +23,11 @@ type GameExecuteJoinResult = {
 };
 
 type PlayerInfo = {
-    playerStatus: string;
-    need_to_delegate: boolean;
-    need_to_undelegate: boolean;
-    newplayerEntityPda: PublicKey;
-}
+  playerStatus: string;
+  need_to_delegate: boolean;
+  need_to_undelegate: boolean;
+  newplayerEntityPda: PublicKey;
+};
 
 export async function gameExecuteJoin(
   engine: MagicBlockEngine,
@@ -41,7 +41,6 @@ export async function gameExecuteJoin(
     return { success: false, error: "Game not loaded or invalid game ID", message: "error" };
   }
   const gameInfo = selectGameId;
-  let maxplayer = 20;
 
   const mapseed = "origin";
   const mapEntityPda = FindEntityPda({
@@ -49,26 +48,6 @@ export async function gameExecuteJoin(
     entityId: new anchor.BN(0),
     seed: stringToUint8Array(mapseed),
   });
-
-  const mapComponentPda = FindComponentPda({
-    componentId: COMPONENT_MAP_ID,
-    entity: mapEntityPda,
-  });
-
-  let map_size = 4000;
-  const mapacc = await mapFetchOnChain(engine, mapComponentPda);
-  if (mapacc) {
-    map_size = mapacc.width;
-  }
-  if (map_size == 4000) {
-      maxplayer = 20;
-  }
-  else if (map_size == 6000) {
-      maxplayer = 45;
-  }
-  else if (map_size == 8000) {
-      maxplayer = 80;
-  }
 
   let newplayerEntityPda = selectedGamePlayerInfo.newplayerEntityPda;
   let need_to_undelegate = selectedGamePlayerInfo.need_to_undelegate;
@@ -96,7 +75,7 @@ export async function gameExecuteJoin(
       const playerundelsignature = await engine.processSessionEphemTransaction(
         "undelPlayer:" + playerComponentPda.toString(),
         undeltx,
-      ); 
+      );
       console.log("undelegate", playerundelsignature);
     } catch (error) {
       console.log("Error undelegating:", error);
@@ -155,7 +134,7 @@ export async function gameExecuteJoin(
   try {
     let buyInResult = await gameSystemBuyIn(engine, selectGameId, newplayerEntityPda, anteEntityPda, buyIn);
     if (!buyInResult.success) {
-        return { success: false, error: buyInResult.error, message: "buyin_failed" };
+      return { success: false, error: buyInResult.error, message: "buyin_failed" };
     }
     /*
     else{
@@ -183,16 +162,19 @@ export async function gameExecuteJoin(
     }*/
   } catch (buyInError) {
     console.error("Buy-in error:", buyInError);
-    return { success: false, error: `Buy-in transaction failed: ${(buyInError as Error)?.message}`, message: "buyin_failed" };
+    return {
+      success: false,
+      error: `Buy-in transaction failed: ${(buyInError as Error)?.message}`,
+      message: "buyin_failed",
+    };
   }
- 
+
   try {
     const joinsig = await gameSystemJoin(engine, selectGameId, newplayerEntityPda, mapEntityPda, playerName);
-    if(joinsig){
+    if (joinsig) {
       setMyPlayerEntityPda(newplayerEntityPda);
       return { success: true, transactionSignature: joinsig };
-    }
-    else{
+    } else {
       return { success: false, error: `Error joining the game`, message: "join_failed" };
     }
   } catch (joinError) {
@@ -200,7 +182,7 @@ export async function gameExecuteJoin(
     return {
       success: false,
       error: `Error joining the game: ${(joinError as Error)?.message}`,
-      message: "join_failed"
-    }; 
-  } 
+      message: "join_failed",
+    };
+  }
 }

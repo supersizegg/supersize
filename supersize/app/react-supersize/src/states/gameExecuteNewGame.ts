@@ -5,7 +5,6 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
-  TransactionInstruction,
 } from "@solana/web3.js";
 import {
   createAddEntityInstruction,
@@ -28,7 +27,7 @@ import { gameSystemInitPlayer } from "./gameSystemInitPlayer";
 import { gameSystemInitAnteroom } from "./gameSystemInitAnteroom";
 import { gameSystemInitSection } from "./gameSystemInitSection";
 
-const connection = new Connection(RPC_CONNECTION[NETWORK]); //"https://devnet.helius-rpc.com/?api-key=cba33294-aa96-414c-9a26-03d5563aa676");
+const connection = new Connection(RPC_CONNECTION[NETWORK]);
 
 const CONFIG = {
   computeUnitLimit: 200_000,
@@ -57,7 +56,7 @@ async function retryTransaction(
   transactionId: string,
   transactionFn: () => Promise<void>,
   setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>,
-  showPrompt: (errorMessage: string) => Promise<boolean>
+  showPrompt: (errorMessage: string) => Promise<boolean>,
 ) {
   let retry = true;
   while (retry) {
@@ -71,7 +70,7 @@ async function retryTransaction(
       if (error instanceof Error) {
         message = error.message;
       }
-      //retry = window.confirm(`Transaction ${transactionId} failed: ${message}. Would you like to retry?`);      
+      //retry = window.confirm(`Transaction ${transactionId} failed: ${message}. Would you like to retry?`);
       retry = await showPrompt(`Transaction ${transactionId} failed: ${message}`);
     }
   }
@@ -90,7 +89,7 @@ export async function gameExecuteNewGame(
   setTransactions: React.Dispatch<React.SetStateAction<{ id: string; status: string }[]>>,
   showPrompt: (errorMessage: string) => Promise<boolean>,
   setNewGameId: React.Dispatch<React.SetStateAction<string>>,
-  setGameCreated: React.Dispatch<React.SetStateAction<boolean>>
+  setGameCreated: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
   const base_buyin = Math.sqrt(max_buyin * min_buyin);
   const max_multiple = max_buyin / base_buyin;
@@ -137,18 +136,11 @@ export async function gameExecuteNewGame(
       await engine.processWalletTransaction(solTxnId, solTx);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   const worldTxnId = "init-world";
   await addTransaction(setTransactions, worldTxnId, "pending");
-
-  interface NewWorldResult {
-    instruction: TransactionInstruction;
-    transaction: Transaction;
-    worldPda: PublicKey;
-    worldId: anchor.BN;
-  }
 
   const initNewWorld = await InitializeNewWorld({
     payer: engine.getSessionPayer(),
@@ -157,27 +149,24 @@ export async function gameExecuteNewGame(
 
   setNewGameId(initNewWorld.worldId.toNumber().toString());
 
-  const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
-    units: CONFIG.computeUnitLimit,
-  });
-  //initNewWorld.transaction.add(computeIx);
-  //await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
+  // const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
+  //   units: CONFIG.computeUnitLimit,
+  // });
+  // initNewWorld.transaction.add(computeIx);
+  // await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
 
   await retryTransaction(
     worldTxnId,
     async () => {
-
       const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
         units: CONFIG.computeUnitLimit,
       });
       initNewWorld.transaction.add(computeIx);
       await engine.processSessionChainTransaction(worldTxnId, initNewWorld.transaction);
-
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
-  
 
   if (!initNewWorld) {
     throw new Error("Failed to initialize the new world.");
@@ -212,7 +201,7 @@ export async function gameExecuteNewGame(
       await engine.processSessionChainTransaction(mapTxnId, mapTx);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   const foodEntityPdas = Array.from({ length: foodcomponents }, (_, i) =>
@@ -258,7 +247,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   const playerEntityPdas = Array.from({ length: maxplayer + 1 }, (_, i) =>
@@ -304,7 +293,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   const anteroomTxnId = "create-anteroom";
@@ -335,7 +324,7 @@ export async function gameExecuteNewGame(
       await engine.processSessionChainTransaction(anteroomTxnId, anteroomTx);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Initialize map component
@@ -359,7 +348,7 @@ export async function gameExecuteNewGame(
       console.log(`Init map component signature: ${initMapIx.transaction}`);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Initialize food components
@@ -397,7 +386,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Initialize player components
@@ -435,7 +424,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Initialize anteroom component
@@ -459,7 +448,7 @@ export async function gameExecuteNewGame(
       console.log(`Init anteroom component signature: ${initAnteIx.transaction}`);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   const vaultTxnId = "setup-vault";
@@ -494,7 +483,7 @@ export async function gameExecuteNewGame(
       await engine.processSessionChainTransaction(vaultTxnId, vaultTx);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   const initGameTxnId = "initialize-game";
@@ -516,7 +505,7 @@ export async function gameExecuteNewGame(
       console.log(`Game initialized with signature: ${initGameSig}`);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Initialize players
@@ -544,7 +533,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Initialize anteroom with token info
@@ -567,7 +556,7 @@ export async function gameExecuteNewGame(
       console.log(`Init func anteroom signature: ${initAnteroom}`);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Delegate map component
@@ -594,7 +583,7 @@ export async function gameExecuteNewGame(
       console.log(`Delegation signature map: ${delsignature}`);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Delegate food components
@@ -635,7 +624,7 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Initialize food positions
@@ -675,39 +664,38 @@ export async function gameExecuteNewGame(
       }
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
 
   // Finalize new game setup in active games
   const tokenMetadata = await fetchTokenMetadata(mint_of_token.toString());
   const newGame: FetchedGame = {
     activeGame: {
-        isLoaded: true,
-        worldId: initNewWorld.worldId,
-        worldPda: initNewWorld.worldPda,
-        name: game_name,
-        active_players: 0,
-        max_players: maxplayer,
-        size: game_size,
-        image: tokenMetadata.image || `${process.env.PUBLIC_URL}/default.png`,
-        token: tokenMetadata.name || "TOKEN",
-        base_buyin: base_buyin,
-        min_buyin: min_buyin,
-        max_buyin: max_buyin,
-        endpoint: engine.getEndpointEphemRpc(),
-        ping: 1000,
-    } as ActiveGame, 
+      isLoaded: true,
+      worldId: initNewWorld.worldId,
+      worldPda: initNewWorld.worldPda,
+      name: game_name,
+      active_players: 0,
+      max_players: maxplayer,
+      size: game_size,
+      image: tokenMetadata.image || `${process.env.PUBLIC_URL}/default.png`,
+      token: tokenMetadata.name || "TOKEN",
+      base_buyin: base_buyin,
+      min_buyin: min_buyin,
+      max_buyin: max_buyin,
+      endpoint: engine.getEndpointEphemRpc(),
+      ping: 1000,
+    } as ActiveGame,
     playerInfo: {
-        playerStatus: "new_player",
-        need_to_delegate: false,
-        need_to_undelegate: false,
-        newplayerEntityPda: new PublicKey(0)
-    } as PlayerInfo
-  }
-
+      playerStatus: "new_player",
+      need_to_delegate: false,
+      need_to_undelegate: false,
+      newplayerEntityPda: new PublicKey(0),
+    } as PlayerInfo,
+  };
 
   setActiveGamesLoaded([...activeGamesLoaded, newGame]);
-  console.log('activeGames', activeGamesLoaded, newGame);
+  console.log("activeGames", activeGamesLoaded, newGame);
 
   // Reclaim leftover SOL
   const reclaimSolTxnId = "reclaim-sol";
@@ -727,8 +715,8 @@ export async function gameExecuteNewGame(
       console.log(`Reclaimed leftover SOL.`);
     },
     setTransactions,
-    showPrompt
+    showPrompt,
   );
-  
+
   setGameCreated(true);
 }

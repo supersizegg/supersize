@@ -1,7 +1,7 @@
 .dropdown-container {
     display: flex;
-    flex-direction: row; /* Align items horizontally */
-    gap: 30px; /* Space between boxes */
+    flex-direction: row;
+    gap: 30px;
     height: fit-content;
 }
 
@@ -12,8 +12,8 @@
     display: flex;
     align-items: center;
     transition: background-color 0.3s;
-    background-color: black; /* Default background color */
-    color: white; /* Text color for better contrast */
+    background-color: black;
+    color: white;
     opacity: 0.5;
 }
 

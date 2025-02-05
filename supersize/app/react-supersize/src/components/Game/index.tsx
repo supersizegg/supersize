@@ -165,7 +165,6 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
   
     const dx = target_x - player_x;
     const dy = target_y - player_y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
     const deg = Math.atan2(dy, dx);
   
     let effective_mass = 100.0;
@@ -246,7 +245,7 @@ const GameComponent: React.FC<GameComponentProps> = ({ players, visibleFood, cur
           const interpolatedX = prevPos.x + (currPos.x - prevPos.x) * alpha;
           const interpolatedY = prevPos.y + (currPos.y - prevPos.y) * alpha;
 
-          playersRef.current.forEach((blob, index) => {
+          playersRef.current.forEach((blob) => {
             const adjustedX =
               blob.x - interpolatedX + screenSize.width / 2;
             const adjustedY =

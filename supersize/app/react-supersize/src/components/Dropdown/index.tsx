@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import './Dropdown.scss'; // Assuming you have a CSS file for styling
+import React from 'react';
+import './Dropdown.scss';
 
 type DropdownProps = {
     items: string[];

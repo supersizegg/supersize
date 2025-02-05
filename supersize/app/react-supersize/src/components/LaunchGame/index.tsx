@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CreateGame from "@components/CreateGame";
-import { useWallet } from "@solana/wallet-adapter-react"
-import { MagicBlockEngine } from "../../engine/MagicBlockEngine";
-import { ActiveGame, FetchedGame } from "@utils/types";
+import { FetchedGame } from "@utils/types";
 import Dropdown from "@components/Dropdown";
 import { endpoints, NETWORK } from "@utils/constants";
 import "./LaunchGame.scss";

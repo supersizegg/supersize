@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import LanchGame from "@components/LaunchGame";
 import EarnFees from "@components/EarnFees";
 import ModGame from "@components/ModGame";
-import { ActiveGame } from "@utils/types";
 import { MenuBar } from "@components/menu/MenuBar";
 import FooterLink from "@components/Footer";
 import { FetchedGame } from "@utils/types";

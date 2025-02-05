@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import GameComponent from "@components/Game";
 import { PublicKey } from "@solana/web3.js";
 import { useNavigate } from "react-router-dom";
-import { MAP_COMPONENT, scale } from "@utils/constants";
+import { MAP_COMPONENT } from "@utils/constants";
 import { ActiveGame, Blob, Food } from "@utils/types";
 import { createUndelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { COMPONENT_PLAYER_ID } from "../states/gamePrograms";
@@ -60,7 +60,6 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
     const playersComponentSubscriptionId = useRef<number[] | null>([]);
     const foodComponentSubscriptionId = useRef<number[] | null>([]);
     const myplayerComponentSubscriptionId = useRef<number | null>(null);
-    const mapComponentSubscriptionId= useRef<number | null>(null);
 
     const currentPlayerRef = useRef<Blob | null>(null);
     const currentMousePositionRef = useRef<{ x: number; y: number }>({x: 0, y: 0});
@@ -688,6 +687,7 @@ const Game = ({gameInfo,  myPlayerEntityPda}: gameProps) => {
                                                         }
                                                     }
                                                     catch(error) {
+                                                        console.log('Cashout error', error);
                                                         setCashoutTx("error");
                                                     }
                                                 }

@@ -3,10 +3,8 @@ import { MagicBlockEngine } from "../engine/MagicBlockEngine";
 import { decodeFood } from "@utils/helper";
 import { Food, Blob } from "@utils/types";
 import {
-  COMPONENT_MAP_ID,
   COMPONENT_PLAYER_ID,
   COMPONENT_SECTION_ID,
-  getComponentMapOnEphem,
   getComponentPlayerOnEphem,
   getComponentSectionOnEphem,
 } from "./gamePrograms";
@@ -77,43 +75,35 @@ export function updateMyPlayer(
   gameEnded: number,
   setGameEnded: (gameEnded: number) => void,
 ) {
-  //console.log("updateMyPlayer", player); 
-      if (
-          Math.sqrt(player.mass) == 0 &&
-          player.score == 0.0 &&
-          gameEnded == 0
-      ) {
-          const startTime = player.joinTime.toNumber() * 1000;
-          const currentTime = Date.now();
-          const elapsedTime = currentTime - startTime;
-          if (elapsedTime >= 6000) {
-              setGameEnded(1);
-          }
-      }
-      setCurrentPlayer({
-          name: player.name,
-          authority: player.authority,
-          x: player.x,
-          y: player.y,
-          radius: 4 + Math.sqrt(player.mass / 10) * 6,
-          mass: player.mass,
-          score: player.score,
-          tax: player.tax,
-          speed: player.speed,
-          removal: player.scheduledRemovalTime,
-          target_x: player.targetX,
-          target_y: player.targetY,
-          timestamp: performance.now(),
-      } as Blob);
+  //console.log("updateMyPlayer", player);
+  if (Math.sqrt(player.mass) == 0 && player.score == 0.0 && gameEnded == 0) {
+    const startTime = player.joinTime.toNumber() * 1000;
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - startTime;
+    if (elapsedTime >= 6000) {
+      setGameEnded(1);
+    }
+  }
+  setCurrentPlayer({
+    name: player.name,
+    authority: player.authority,
+    x: player.x,
+    y: player.y,
+    radius: 4 + Math.sqrt(player.mass / 10) * 6,
+    mass: player.mass,
+    score: player.score,
+    tax: player.tax,
+    speed: player.speed,
+    removal: player.scheduledRemovalTime,
+    target_x: player.targetX,
+    target_y: player.targetY,
+    timestamp: performance.now(),
+  } as Blob);
 
-      if (
-          Math.sqrt(player.mass) == 0 &&
-          player.score != 0.0 &&
-          gameEnded == 0
-      ) {
-          setGameEnded(2);
-      }
-};
+  if (Math.sqrt(player.mass) == 0 && player.score != 0.0 && gameEnded == 0) {
+    setGameEnded(2);
+  }
+}
 
 export function updatePlayers(
   player: any,
@@ -164,7 +154,6 @@ export function handleFoodComponentChange(
   engine: MagicBlockEngine,
   setAllFood: (callback: (prevAllFood: any[][]) => any[][]) => void,
   setFoodListLen: (callback: (prevFoodListLen: number[]) => number[]) => void,
-  currentPlayer: Blob,
 ) {
   const coder = getComponentSectionOnEphem(engine).coder;
   const parsedData = coder.accounts.decode("section", accountInfo.data);
@@ -213,7 +202,7 @@ export function subscribeToGame(
             return;
           }
           //const coder = getComponentSectionOnEphem(engine).coder;
-          handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
+          handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen);
         }),
       ];
     } else {
@@ -224,7 +213,7 @@ export function subscribeToGame(
             return;
           }
           //const coder = getComponentSectionOnEphem(engine).coder;
-          handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen, currentPlayer);
+          handleFoodComponentChange(accountInfo, i, engine, setAllFood, setFoodListLen);
         }),
       ];
     }

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
-import { ActiveGame, FetchedGame } from "@utils/types";
+import { FetchedGame } from "@utils/types";
 import TxnModal from "@components/txnModal";
 import { useWallet } from "@solana/wallet-adapter-react"
 import { gameExecuteNewGame } from "../../states/gameExecuteNewGame";

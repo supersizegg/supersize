@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 
 export const FOOD_COMPONENT = new PublicKey(
     "BEox2GnPkZ1upBAdUi7FVqTstjsC4tDjsbTpTiE17bah",
