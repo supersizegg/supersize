@@ -43,7 +43,7 @@ interface GameRow {
 */
 function getPingColor(ping: number) {
     if (ping < 0) return "red";
-    if (ping <= 100) return "green";
+    if (ping <= 100) return "#00d37d"; // green
     if (ping <= 800) return "yellow";
     return "red";
 }
@@ -731,9 +731,9 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                     <div>
                         {renderRegionButtons()}
                     </div>
-                    <div className="header-buttons">
+                    <div className="header-buttons desktop-only">
                         <button className="btn-outlined btn-orange" onClick={() => navigate("/about")}><span className="desktop-only">How to Play</span><span className="mobile-only">About</span></button>
-                        <button className="btn-outlined btn-green desktop-only" onClick={() => navigate("/create-game")}>
+                        <button className="btn-outlined btn-green" onClick={() => navigate("/create-game")}>
                             + Create Game
                         </button>
                     </div>
@@ -790,8 +790,8 @@ const Home = ({selectedGame, setSelectedGame, setMyPlayerEntityPda, activeGamesL
                                     {/* <td>{row.activeGame.isLoaded ? row.activeGame.name : <Spinner />}</td> */}
                                     {/* <td>{getRegion(activeGamesLoaded[idx].activeGame.endpoint)}</td> */}
                                     <td>{row.activeGame.worldId.toString()}</td>
-                                    <td>{row.activeGame.isLoaded ? row.activeGame.token : <Spinner />}</td>
-                                    <td>{row.activeGame.isLoaded ? row.activeGame.min_buyin + " - " + row.activeGame.max_buyin : <Spinner />}</td>
+                                    <td>{row.activeGame.isLoaded ? <><img src={row.activeGame.image} alt={row.activeGame.name} className="token-image"/><span>{row.activeGame.token}</span></> : <Spinner />}</td>
+                                    <td style={{color: '#898989'}}>{row.activeGame.isLoaded ? row.activeGame.min_buyin + "-" + row.activeGame.max_buyin : <Spinner />}</td>
                                     <td>{row.activeGame.isLoaded && row.activeGame.active_players >= 0 ? row.activeGame.active_players + "/" + row.activeGame.max_players : <Spinner />}</td>
                                     {/* <td>
                                         <div className="ping-cell">

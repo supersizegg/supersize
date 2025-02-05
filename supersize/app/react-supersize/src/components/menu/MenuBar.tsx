@@ -38,6 +38,9 @@ export function MenuBar() {
           <NavLink to="/" end onClick={closeMobileMenu}>
             Lobby
           </NavLink>
+          <NavLink to="/about" onClick={closeMobileMenu}>
+            About
+          </NavLink>
           <NavLink to="/leaderboard" onClick={closeMobileMenu}>
             Leaderboard
           </NavLink>
