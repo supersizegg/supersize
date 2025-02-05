@@ -73,7 +73,11 @@ const LeaderboardDropdown = ({ season, setSeason }: LeaderboardDropdownProps) =>
                   setIsDropdownOpen(false);
                 }}
               >
-                <img style={{ width: "24px", height: "24px", marginRight: "0.5em" }} src={option.icon} alt={option.name} />
+                <img
+                  style={{ width: "24px", height: "24px", marginRight: "0.5em" }}
+                  src={option.icon}
+                  alt={option.name}
+                />
                 {option.name}
               </div>
             ))}

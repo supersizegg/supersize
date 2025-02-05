@@ -4,7 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { MenuBar } from "@components/menu/MenuBar";
 import LeaderboardDropdown from "@components/LeaderboardDropdown";
 import Footer from "@components/Footer";
-import { fetchTokenMetadata} from "@utils/helper";
+import { fetchTokenMetadata } from "@utils/helper";
 import { NETWORK } from "@utils/constants";
 import "./Leaderboard.scss";
 
@@ -145,7 +145,7 @@ const Leaderboard: React.FC = () => {
 
           <div className="dropdown-box">
             <p className="stat-label">Select Token</p>
-            <LeaderboardDropdown season={season} setSeason={setSeason}/>
+            <LeaderboardDropdown season={season} setSeason={setSeason} />
           </div>
         </div>
 

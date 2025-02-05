@@ -39,7 +39,7 @@ import * as SpawnFoodIdl from "../backend/target/idl/spawn_food.json";
 import * as SpawnPlayerIdl from "../backend/target/idl/spawn_player.json";
 
 const componentAnteroom = AnteroomIdl as Anteroom;
-const componentMap= MapIdl as Map;
+const componentMap = MapIdl as Map;
 const componentPlayer = PlayerIdl as Player;
 const componentSection = SectionIdl as Section;
 
@@ -49,12 +49,12 @@ const systemEatFood = EatFoodIdl as EatFood;
 const systemEatPlayer = EatPlayerIdl as EatPlayer;
 const systemExitGame = ExitGameIdl as ExitGame;
 const systemInitAnteroom = InitAnteroomIdl as InitAnteroom;
-const systemInitMap= InitMapIdl as InitMap;
+const systemInitMap = InitMapIdl as InitMap;
 const systemInitPlayer = InitPlayerIdl as InitPlayer;
 const systemInitSection = InitSectionIdl as InitSection;
 const systemMovement = MovementIdl as Movement;
 const systemSpawnFood = SpawnFoodIdl as SpawnFood;
-const systemSpawnPlayer  = SpawnPlayerIdl as SpawnPlayer;
+const systemSpawnPlayer = SpawnPlayerIdl as SpawnPlayer;
 
 export const COMPONENT_ANTEROOM_ID = new PublicKey(componentAnteroom.address);
 export const COMPONENT_MAP_ID = new PublicKey(componentMap.address);

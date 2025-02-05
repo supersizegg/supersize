@@ -2,7 +2,6 @@ import React from "react";
 import "./Footer.css";
 
 const Footer: React.FC = () => {
-
   const openDocs = () => {
     window.open("https://docs.supersize.gg/", "_blank");
   };
@@ -17,18 +16,11 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="footerContainer">
-      <span className="footerCopyright">
-        © Supersize Inc. 2025
-      </span>
+      <span className="footerCopyright">© Supersize Inc. 2025</span>
 
       <div className="footerIcons">
-
         <div className="footerIcon" onClick={openDocs}>
-          <img
-            src={`${process.env.PUBLIC_URL}/GitBook.png`}
-            alt="GitBook"
-            className="footerIconImg"
-          />
+          <img src={`${process.env.PUBLIC_URL}/GitBook.png`} alt="GitBook" className="footerIconImg" />
           <img
             src={`${process.env.PUBLIC_URL}/GitBookhighlight.png`}
             alt="GitBook hover"
@@ -37,11 +29,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="footerIcon" onClick={openX}>
-          <img
-            src={`${process.env.PUBLIC_URL}/x-logo.png`}
-            alt="X"
-            className="footerIconImg"
-          />
+          <img src={`${process.env.PUBLIC_URL}/x-logo.png`} alt="X" className="footerIconImg" />
           <img
             src={`${process.env.PUBLIC_URL}/x-logo-highlight.png`}
             alt="X hover"
@@ -50,11 +38,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="footerIcon" onClick={openTG}>
-          <img
-            src={`${process.env.PUBLIC_URL}/tg2.png`}
-            alt="Telegram"
-            className="footerIconImg"
-          />
+          <img src={`${process.env.PUBLIC_URL}/tg2.png`} alt="Telegram" className="footerIconImg" />
           <img
             src={`${process.env.PUBLIC_URL}/tg.png`}
             alt="Telegram hover"

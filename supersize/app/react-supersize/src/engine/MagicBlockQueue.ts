@@ -15,10 +15,7 @@ export class MagicBlockQueue {
     return this.engine.getSessionPayer();
   }
 
-  async processSessionEphemTransaction(
-    name: string,
-    transaction: Transaction
-  ): Promise<string> {
+  async processSessionEphemTransaction(name: string, transaction: Transaction): Promise<string> {
     const engine = this.engine;
     const last = this.last;
     const next = (async function () {
@@ -26,17 +23,12 @@ export class MagicBlockQueue {
         if (last !== undefined) {
           await last;
         }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         // The error should be handled by another awaiter (from the return)
       }
-      const expiration = new Promise<string>((resolve) =>
-        setTimeout(() => resolve(""), 1000)
-      );
-      const execution = engine.processSessionEphemTransaction(
-        name,
-        transaction
-      );
+      const expiration = new Promise<string>((resolve) => setTimeout(() => resolve(""), 1000));
+      const execution = engine.processSessionEphemTransaction(name, transaction);
       return await Promise.race([expiration, execution]);
     })();
 

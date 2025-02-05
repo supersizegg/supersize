@@ -1,18 +1,10 @@
 import { Idl, Program, AnchorProvider } from "@coral-xyz/anchor";
 import { WalletContextState } from "@solana/wallet-adapter-react";
-import {
-  AccountInfo,
-  Commitment,
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { AccountInfo, Commitment, Connection, Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { WalletName } from "@solana/wallet-adapter-base";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import * as anchor from "@coral-xyz/anchor";
-import {endpoints, NETWORK, RPC_CONNECTION } from "@utils/constants";
+import { endpoints, NETWORK, RPC_CONNECTION } from "@utils/constants";
 
 const ENDPOINT_CHAIN_RPC = RPC_CONNECTION[NETWORK]; //"https://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
 const ENDPOINT_CHAIN_WS = ENDPOINT_CHAIN_RPC.replace("http", "ws"); //"wss://proud-late-lambo.solana-devnet.quiknode.pro/ec12ab7b183190f9cfd274049f6ab83396c22e7d";
@@ -50,11 +42,7 @@ export class MagicBlockEngine {
   private provider: AnchorProvider;
   private providerEphemeralRollup: AnchorProvider;
 
-  constructor(
-    walletContext: WalletContextState,
-    sessionKey: Keypair,
-    sessionConfig: SessionConfig
-  ) {
+  constructor(walletContext: WalletContextState, sessionKey: Keypair, sessionConfig: SessionConfig) {
     this.walletContext = walletContext;
     this.sessionKey = sessionKey;
     this.sessionConfig = sessionConfig;
@@ -62,19 +50,15 @@ export class MagicBlockEngine {
     this.connectionEphem = new Connection(this.endpointEphemRpc, {
       wsEndpoint: this.endpointEphemRpc.replace("http", "ws"),
     });
-    this.provider = new AnchorProvider(
-      connectionChain,
-      new NodeWallet(this.sessionKey),
-      { preflightCommitment: "processed" }
-    );
+    this.provider = new AnchorProvider(connectionChain, new NodeWallet(this.sessionKey), {
+      preflightCommitment: "processed",
+    });
 
-    anchor.setProvider(this.provider); 
+    anchor.setProvider(this.provider);
 
-    this.providerEphemeralRollup = new AnchorProvider(
-      this.connectionEphem,
-      new NodeWallet(this.sessionKey),
-      { preflightCommitment: "processed" }
-    );
+    this.providerEphemeralRollup = new AnchorProvider(this.connectionEphem, new NodeWallet(this.sessionKey), {
+      preflightCommitment: "processed",
+    });
   }
 
   public setEndpointEphemRpc(endpoint: string): void {
@@ -82,11 +66,9 @@ export class MagicBlockEngine {
     this.connectionEphem = new Connection(endpoint, {
       wsEndpoint: endpoint.replace("http", "ws"),
     });
-    this.providerEphemeralRollup = new AnchorProvider(
-      this.connectionEphem,
-      new NodeWallet(this.sessionKey),
-      { preflightCommitment: "processed" }
-    );
+    this.providerEphemeralRollup = new AnchorProvider(this.connectionEphem, new NodeWallet(this.sessionKey), {
+      preflightCommitment: "processed",
+    });
   }
 
   public getEndpointEphemRpc(): string {
@@ -133,73 +115,35 @@ export class MagicBlockEngine {
     return this.providerEphemeralRollup;
   }
 
-  async processWalletTransaction(
-    name: string,
-    transaction: Transaction
-  ): Promise<string> {
+  async processWalletTransaction(name: string, transaction: Transaction): Promise<string> {
     console.log(name, "sending");
-    const signature = await this.walletContext.sendTransaction(
-      transaction,
-      connectionChain
-    );
-    await this.waitSignatureConfirmation(
-      name,
-      signature,
-      connectionChain,
-      "confirmed"
-    );
+    const signature = await this.walletContext.sendTransaction(transaction, connectionChain);
+    await this.waitSignatureConfirmation(name, signature, connectionChain, "confirmed");
     return signature;
   }
 
-  async processSessionChainTransaction(
-    name: string,
-    transaction: Transaction
-  ): Promise<string> {
+  async processSessionChainTransaction(name: string, transaction: Transaction): Promise<string> {
     console.log(name, "sending");
-    const signature = await connectionChain.sendTransaction(
-      transaction,
-      [this.sessionKey],
-      { skipPreflight: true }
-    );
-    await this.waitSignatureConfirmation(
-      name,
-      signature,
-      connectionChain,
-      "confirmed"
-    );
+    const signature = await connectionChain.sendTransaction(transaction, [this.sessionKey], { skipPreflight: true });
+    await this.waitSignatureConfirmation(name, signature, connectionChain, "confirmed");
     return signature;
   }
 
-  async processSessionEphemTransaction(
-    name: string,
-    transaction: Transaction
-  ): Promise<string> {
+  async processSessionEphemTransaction(name: string, transaction: Transaction): Promise<string> {
     console.log(name, "sending");
     // transaction.compileMessage;
-    const signature = await this.connectionEphem.sendTransaction(
-      transaction,
-      [this.sessionKey],
-      { skipPreflight: true }
-    );
-    await this.waitSignatureConfirmation(
-      name,
-      signature,
-      this.connectionEphem,
-      "finalized"
-    );
+    const signature = await this.connectionEphem.sendTransaction(transaction, [this.sessionKey], {
+      skipPreflight: true,
+    });
+    await this.waitSignatureConfirmation(name, signature, this.connectionEphem, "finalized");
     return signature;
   }
 
-  async processSessionEphemTransactionNoConfirm(
-    name: string,
-    transaction: Transaction
-  ): Promise<string> {
+  async processSessionEphemTransactionNoConfirm(name: string, transaction: Transaction): Promise<string> {
     // transaction.compileMessage;
-    const signature = await this.connectionEphem.sendTransaction(
-      transaction,
-      [this.sessionKey],
-      { skipPreflight: true }
-    );
+    const signature = await this.connectionEphem.sendTransaction(transaction, [this.sessionKey], {
+      skipPreflight: true,
+    });
     return signature;
   }
 
@@ -207,7 +151,7 @@ export class MagicBlockEngine {
     name: string,
     signature: string,
     connection: Connection,
-    commitment: Commitment
+    commitment: Commitment,
   ): Promise<void> {
     console.log(name, "sent", signature);
     return new Promise((resolve, reject) => {
@@ -222,7 +166,7 @@ export class MagicBlockEngine {
             resolve();
           }
         },
-        commitment
+        commitment,
       );
     });
   }
@@ -233,9 +177,7 @@ export class MagicBlockEngine {
   }
 
   async getSessionFundingMissingLamports() {
-    const accountInfo = await connectionChain.getAccountInfo(
-      this.getSessionPayer()
-    );
+    const accountInfo = await connectionChain.getAccountInfo(this.getSessionPayer());
     const currentLamports = accountInfo?.lamports ?? 0;
     if (currentLamports < this.sessionConfig.minLamports) {
       return this.sessionConfig.maxLamports - currentLamports;
@@ -246,10 +188,7 @@ export class MagicBlockEngine {
   async fundSessionFromAirdrop() {
     const missingLamports = await this.getSessionFundingMissingLamports();
     if (missingLamports > 0) {
-      await connectionChain.requestAirdrop(
-        this.sessionKey.publicKey,
-        missingLamports
-      );
+      await connectionChain.requestAirdrop(this.sessionKey.publicKey, missingLamports);
     }
   }
 
@@ -263,19 +202,16 @@ export class MagicBlockEngine {
             fromPubkey: this.getWalletPayer(),
             toPubkey: this.getSessionPayer(),
             lamports: missingLamports,
-          })
-        )
+          }),
+        ),
       );
     }
   }
 
   async defundSessionBackToWallet() {
-    const accountInfo = await connectionChain.getAccountInfo(
-      this.getSessionPayer()
-    );
+    const accountInfo = await connectionChain.getAccountInfo(this.getSessionPayer());
     if (accountInfo && accountInfo.lamports > 0) {
-      const transferableLamports =
-        accountInfo.lamports - TRANSACTION_COST_LAMPORTS;
+      const transferableLamports = accountInfo.lamports - TRANSACTION_COST_LAMPORTS;
       await this.processSessionChainTransaction(
         "DefundSessionBackToWallet",
         new Transaction().add(
@@ -283,8 +219,8 @@ export class MagicBlockEngine {
             fromPubkey: this.getSessionPayer(),
             toPubkey: this.getWalletPayer(),
             lamports: transferableLamports,
-          })
-        )
+          }),
+        ),
       );
     }
   }
@@ -297,32 +233,18 @@ export class MagicBlockEngine {
     return this.connectionEphem.getAccountInfo(address);
   }
 
-  subscribeToChainAccountInfo(
-    address: PublicKey,
-    onAccountChange: (accountInfo?: AccountInfo<Buffer>) => void
-  ) {
-    return this.subscribeToAccountInfo(
-      connectionChain,
-      address,
-      onAccountChange
-    );
+  subscribeToChainAccountInfo(address: PublicKey, onAccountChange: (accountInfo?: AccountInfo<Buffer>) => void) {
+    return this.subscribeToAccountInfo(connectionChain, address, onAccountChange);
   }
 
-  subscribeToEphemAccountInfo(
-    address: PublicKey,
-    onAccountChange: (accountInfo?: AccountInfo<Buffer>) => void
-  ) {
-    return this.subscribeToAccountInfo(
-      this.connectionEphem,
-      address,
-      onAccountChange
-    );
+  subscribeToEphemAccountInfo(address: PublicKey, onAccountChange: (accountInfo?: AccountInfo<Buffer>) => void) {
+    return this.subscribeToAccountInfo(this.connectionEphem, address, onAccountChange);
   }
 
   subscribeToAccountInfo(
     connection: Connection,
     address: PublicKey,
-    onAccountChange: (accountInfo?: AccountInfo<Buffer>) => void
+    onAccountChange: (accountInfo?: AccountInfo<Buffer>) => void,
   ) {
     let ignoreFetch = false;
     connection.getAccountInfo(address).then(
@@ -340,7 +262,7 @@ export class MagicBlockEngine {
       (error) => {
         console.log("Error fetching accountInfo", error);
         onAccountChange(undefined);
-      }
+      },
     );
     const subscription = connection.onAccountChange(address, (accountInfo) => {
       ignoreFetch = true;

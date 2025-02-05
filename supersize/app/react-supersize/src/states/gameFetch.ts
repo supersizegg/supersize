@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
-import { getComponentAnteroomOnEphem,
+import {
+  getComponentAnteroomOnEphem,
   getComponentAnteroomOnChain,
   getComponentMapOnChain,
   getComponentMapOnEphem,
@@ -8,7 +9,7 @@ import { getComponentAnteroomOnEphem,
   getComponentPlayerOnEphem,
   getComponentSectionOnChain,
   getComponentSectionOnEphem,
- } from "./gamePrograms";
+} from "./gamePrograms";
 
 export async function anteroomFetchOnChain(engine: MagicBlockEngine, gamePda: PublicKey) {
   const componentAnteroom = getComponentAnteroomOnChain(engine);

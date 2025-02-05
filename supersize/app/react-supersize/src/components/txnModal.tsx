@@ -138,7 +138,7 @@ const TxnModal: React.FC<TxnModalProps> = ({
             <div className="footer-content">
               {!gameCreated ? (
                 <>
-                  <p className="info-text" style={{ marginTop: 0, marginBottom: '10px' }}>
+                  <p className="info-text" style={{ marginTop: 0, marginBottom: "10px" }}>
                     Deployment process can take 2-3 minutes. Please wait...
                   </p>
                   <button

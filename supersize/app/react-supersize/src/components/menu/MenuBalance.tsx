@@ -6,13 +6,7 @@ import { useMagicBlockEngine } from "../../engine/MagicBlockEngineProvider";
 
 import { Button } from "../util/Button";
 
-export function MenuBalance({
-  name,
-  publicKey,
-}: {
-  name: string;
-  publicKey: PublicKey;
-}) {
+export function MenuBalance({ name, publicKey }: { name: string; publicKey: PublicKey }) {
   const engine = useMagicBlockEngine();
 
   const [lamports, setLamports] = React.useState<number | undefined>(undefined);
@@ -23,8 +17,7 @@ export function MenuBalance({
   }, [engine]);
 
   const abbreviation = publicKey.toBase58().substring(0, 8);
-  const sols =
-    lamports !== undefined ? (lamports / 1_000_000_000).toFixed(3) : 0;
+  const sols = lamports !== undefined ? (lamports / 1_000_000_000).toFixed(3) : 0;
 
   return (
     <Button

@@ -9,40 +9,36 @@ const HowToPlay: React.FC = () => {
       <MenuBar />
 
       <div className="how-to-play-container">
-
         <div className="head-block">
-            <h1>
-              Supersize is a high-stakes eat or be eaten multiplayer game on Solana
-            </h1>
-          </div>
+          <h1>Supersize is a high-stakes eat or be eaten multiplayer game on Solana</h1>
+        </div>
 
         <div className="top-blocks-row">
           <div className="block block1">
             <h2>Join a Game</h2>
             <p>
-              Every Supersize game has a token and a buy-in range. Choose your buy-in, pay, then spawn as a blob with size equal to your buy-in.
+              Every Supersize game has a token and a buy-in range. Choose your buy-in, pay, then spawn as a blob with
+              size equal to your buy-in.
             </p>
           </div>
 
           <div className="block block2">
             <h2>Gameplay Basics</h2>
             <p>
-              Your blob follows your mouse. Bigger players move slower than smaller players but can expend tokens to boost forward. Use
-              the <b>left click to boost</b>.
+              Your blob follows your mouse. Bigger players move slower than smaller players but can expend tokens to
+              boost forward. Use the <b>left click to boost</b>.
             </p>
           </div>
 
           <div className="block block3">
-          <div className="block3-text">
-            <h2>Size Matters</h2>
-            <p>
-            Your size represents tokens. For example, if you have size 5 on the USDC map, you have $5.
-            </p>
+            <div className="block3-text">
+              <h2>Size Matters</h2>
+              <p>Your size represents tokens. For example, if you have size 5 on the USDC map, you have $5.</p>
+            </div>
+            <div className="block3-image">
+              <img src={`${process.env.PUBLIC_URL}/size-meme.png`} alt="Your size is not size" />
+            </div>
           </div>
-          <div className="block3-image">
-            <img src={`${process.env.PUBLIC_URL}/size-meme.png`} alt="Your size is not size" />
-          </div>
-        </div>
         </div>
 
         <div className="top-blocks-row">
@@ -55,20 +51,18 @@ const HowToPlay: React.FC = () => {
 
           <div className="block block2">
             <h2>Eat Players</h2>
-            <p>
-              Bigger players can eat smaller players to gain their mass and steal their tokens.
-            </p>
+            <p>Bigger players can eat smaller players to gain their mass and steal their tokens.</p>
           </div>
 
           <div className="block block2">
             <h2>Cash Out</h2>
             <p>
-              Exit the game anytime to cash out your tokens. There is a 5 second delay on exit and a 2% fee on cash out. 
+              Exit the game anytime to cash out your tokens. There is a 5 second delay on exit and a 2% fee on cash out.
             </p>
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );

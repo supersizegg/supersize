@@ -2,11 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { ApplySystem } from "@magicblock-labs/bolt-sdk";
 
 import { MagicBlockEngine } from "../engine/MagicBlockEngine";
-import {
-    COMPONENT_MAP_ID,
-    SYSTEM_INIT_ANTEROOM_ID,
-    COMPONENT_ANTEROOM_ID,
-  } from "./gamePrograms";
+import { COMPONENT_MAP_ID, SYSTEM_INIT_ANTEROOM_ID, COMPONENT_ANTEROOM_ID } from "./gamePrograms";
 
 export async function gameSystemInitAnteroom(
   engine: MagicBlockEngine,
@@ -18,31 +14,27 @@ export async function gameSystemInitAnteroom(
   decimals: number,
   owner_token_account: PublicKey,
 ) {
-    const initAnteroom = await ApplySystem({
-        authority: engine.getSessionPayer(),
-        world: worldPda,
-        entities: [
-            {
-                entity: newanteentityPda,
-                components: [{ componentId: COMPONENT_ANTEROOM_ID }],
-            },
-            {
-                entity: newmapentityPda,
-                components: [{ componentId: COMPONENT_MAP_ID }],
-            },
-        ],
-        systemId: SYSTEM_INIT_ANTEROOM_ID,
-        args: {
-            vault_token_account_string: tokenVault.toString(),
-            token_string: mint_of_token.toString(),
-            token_decimals: decimals,
-            gamemaster_wallet_string: owner_token_account.toString(),
-        },
-    });
+  const initAnteroom = await ApplySystem({
+    authority: engine.getSessionPayer(),
+    world: worldPda,
+    entities: [
+      {
+        entity: newanteentityPda,
+        components: [{ componentId: COMPONENT_ANTEROOM_ID }],
+      },
+      {
+        entity: newmapentityPda,
+        components: [{ componentId: COMPONENT_MAP_ID }],
+      },
+    ],
+    systemId: SYSTEM_INIT_ANTEROOM_ID,
+    args: {
+      vault_token_account_string: tokenVault.toString(),
+      token_string: mint_of_token.toString(),
+      token_decimals: decimals,
+      gamemaster_wallet_string: owner_token_account.toString(),
+    },
+  });
 
-    
-    return await engine.processSessionChainTransaction(
-      "initanteroom:" + newanteentityPda,
-      initAnteroom.transaction
-    );
+  return await engine.processSessionChainTransaction("initanteroom:" + newanteentityPda, initAnteroom.transaction);
 }

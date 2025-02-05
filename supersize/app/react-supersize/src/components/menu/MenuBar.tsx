@@ -44,7 +44,7 @@ export function MenuBar() {
           <NavLink to="/leaderboard" onClick={closeMobileMenu}>
             Leaderboard
           </NavLink>
-          <NavLink to="/profile" style={{display: 'none'}} onClick={closeMobileMenu}>
+          <NavLink to="/profile" style={{ display: "none" }} onClick={closeMobileMenu}>
             Profile
           </NavLink>
         </nav>

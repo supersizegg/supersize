@@ -28,7 +28,7 @@ const Graph: React.FC<GraphProps> = ({ maxPlayers, foodInWallet, setCurrentFoodT
 
   const k = calculateK(maxPlayers, epsilon);
 
-  const foodInWalletValues = Array.from({ length: 30000 }, (_, i) => i); 
+  const foodInWalletValues = Array.from({ length: 30000 }, (_, i) => i);
   const foodToAddValues = foodInWalletValues.map((x) => calculateY(x, k) * 10);
 
   const currentFoodToAdd = Math.floor(calculateY(foodInWallet, k)) * 10;
@@ -82,8 +82,8 @@ const Graph: React.FC<GraphProps> = ({ maxPlayers, foodInWallet, setCurrentFoodT
           display: true,
           text: "Food to Add",
         },
-        min: 0, 
-        max: Math.max(...foodToAddValues) + 10, 
+        min: 0,
+        max: Math.max(...foodToAddValues) + 10,
       },
     },
   };

@@ -14,10 +14,12 @@ import { activeGamesList, NETWORK } from "@utils/constants";
 import * as anchor from "@coral-xyz/anchor";
 
 const AppRoutes = () => {
-    const [selectedGame, setSelectedGame] = useState<ActiveGame | null>(null);
-    const [activeGamesLoaded, setActiveGamesLoaded] = useState<FetchedGame[]>(activeGamesList[NETWORK].map((world: { worldId: anchor.BN; worldPda: PublicKey, endpoint: string }) => 
+  const [selectedGame, setSelectedGame] = useState<ActiveGame | null>(null);
+  const [activeGamesLoaded, setActiveGamesLoaded] = useState<FetchedGame[]>(
+    activeGamesList[NETWORK].map(
+      (world: { worldId: anchor.BN; worldPda: PublicKey; endpoint: string }) =>
         ({
-        activeGame: {
+          activeGame: {
             isLoaded: false,
             worldId: world.worldId,
             worldPda: world.worldPda,
@@ -32,30 +34,45 @@ const AppRoutes = () => {
             max_buyin: 0,
             endpoint: world.endpoint,
             ping: 0,
-        },
-        playerInfo: {
+          },
+          playerInfo: {
             playerStatus: "new_player",
             need_to_delegate: false,
             need_to_undelegate: false,
-            newplayerEntityPda: new PublicKey(0)
+            newplayerEntityPda: new PublicKey(0),
+          },
+        }) as FetchedGame,
+    ),
+  );
+  const [myPlayerEntityPda, setMyPlayerEntityPda] = useState<PublicKey | null>(null);
+
+  return (
+    <Routes>
+      <Route
+        index
+        element={
+          <Home
+            selectedGame={selectedGame}
+            setSelectedGame={setSelectedGame}
+            setMyPlayerEntityPda={setMyPlayerEntityPda}
+            activeGamesLoaded={activeGamesLoaded}
+            setActiveGamesLoaded={setActiveGamesLoaded}
+          />
         }
-    } as FetchedGame)));
-    const [myPlayerEntityPda, setMyPlayerEntityPda] = useState<PublicKey | null>(null);
-    
-    return (
-        <Routes>
-            <Route index element={<Home selectedGame={selectedGame} setSelectedGame={setSelectedGame}  setMyPlayerEntityPda={setMyPlayerEntityPda}
-            activeGamesLoaded={activeGamesLoaded} setActiveGamesLoaded={setActiveGamesLoaded}/>} />
-            <Route path="/create-game" element={<CreateGame activeGamesLoaded={activeGamesLoaded} setActiveGamesLoaded={setActiveGamesLoaded} />} />
-            {selectedGame && (
-                <Route path="/game" element={<Game gameInfo={selectedGame} myPlayerEntityPda={myPlayerEntityPda} />} />
-            )}
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/about" element={<HowToPlay />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="*" element={<NotFound />} />
-        </Routes>
-    );
+      />
+      <Route
+        path="/create-game"
+        element={<CreateGame activeGamesLoaded={activeGamesLoaded} setActiveGamesLoaded={setActiveGamesLoaded} />}
+      />
+      {selectedGame && (
+        <Route path="/game" element={<Game gameInfo={selectedGame} myPlayerEntityPda={myPlayerEntityPda} />} />
+      )}
+      <Route path="/leaderboard" element={<Leaderboard />} />
+      <Route path="/about" element={<HowToPlay />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 };
 
 export default AppRoutes;
