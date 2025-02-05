@@ -288,7 +288,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
       setAllFood,
       setFoodListLen,
     );
-  }, [engine, gameInfo]);
+  }, [gameInfo]);
 
   const endGame = async () => {
     if (currentPlayer && Math.sqrt(currentPlayer.mass) == 0 && currentPlayerEntity.current && anteroomEntity.current) {
