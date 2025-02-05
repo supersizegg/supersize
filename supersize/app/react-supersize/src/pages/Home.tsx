@@ -91,6 +91,7 @@ const Home = ({
         }
 
         const worldPda = await FindWorldPda(worldId);
+        // console.log(`Game ID: ${inputValue}. World PDA:`, worldPda.toString());
         const newGameInfo: ActiveGame = {
           worldId: worldId.worldId,
           worldPda: worldPda,

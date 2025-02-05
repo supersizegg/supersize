@@ -624,7 +624,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
               <p className=" p-0 m-1 text-center text-white text-xl inline">
                 <b>Game over.</b> You got eaten!
               </p>
-              <button id="returnButton" onClick={() => navigate("/")}>
+              <button id="returnButton" onClick={() => window.location.href = '/'}>
                 Return home
               </button>
             </div>
@@ -727,7 +727,7 @@ const Game = ({ gameInfo, myPlayerEntityPda }: gameProps) => {
                 )}
               </div>
               {cashoutTx !== null && cashoutTx !== "error" && (
-                <button id="returnButton" onClick={() => navigate("/")}>
+                <button id="returnButton" onClick={() => window.location.href = '/' }>
                   Return home
                 </button>
               )}
