@@ -135,12 +135,16 @@ export const activeGamesList: { [key: string]: { worldId: anchor.BN; worldPda: P
 
 export const options = ["Europe", "America", "Asia"];
 
-export const cachedTokenMetadata: Record<string, { name: string; symbol: string; image: string; network: string }> = {
+export const cachedTokenMetadata: Record<
+  string,
+  { name: string; symbol: string; image: string; network: string; raydium?: boolean }
+> = {
   "7dnMwS2yE6NE1PX81B9Xpm7zUhFXmQABqUiHHzWXiEBn": {
     name: "Adventure Gold (Wormhole)",
     symbol: "AGLD",
     image: `${process.env.PUBLIC_URL}/agld.jpg`,
     network: "mainnet",
+    raydium: true,
   },
   EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: {
     name: "USD Coin",

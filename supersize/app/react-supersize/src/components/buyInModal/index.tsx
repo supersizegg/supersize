@@ -9,6 +9,7 @@ import { getMyPlayerStatus, stringToUint8Array } from "@utils/helper";
 import { anchor, createDelegateInstruction, FindComponentPda, FindEntityPda } from "@magicblock-labs/bolt-sdk";
 import { gameSystemJoin } from "@states/gameSystemJoin";
 import { PlayerInfo } from "@utils/types";
+import { cachedTokenMetadata } from "@utils/constants";
 import { playerFetchOnChain } from "@states/gameFetch";
 import { COMPONENT_PLAYER_ID } from "@states/gamePrograms";
 import { gameSystemCashOut } from "@states/gameSystemCashOut";
@@ -77,6 +78,35 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
 
     fetchTokenBalance();
   }, [activeGame, engine]);
+
+  function BalanceWarning() {
+    const tokenMint = activeGame?.tokenMint?.toString();
+    const tokenMetadata = tokenMint ? cachedTokenMetadata[tokenMint] : null;
+
+    let swapLink = "";
+    let swapText = "";
+
+    if (tokenMint) {
+      if (tokenMetadata?.raydium) {
+        swapLink = `https://raydium.io/swap/?inputMint=sol&outputMint=${tokenMint}`;
+        swapText = "Buy some on Raydium.";
+      } else {
+        swapLink = `https://jup.ag/swap/SOL-${tokenMint}`;
+        swapText = "Buy some on Jupiter.";
+      }
+    }
+
+    return (
+      <div className="balance-warning">
+        Your token balance <b>{tokenBalance >= 0 ? tokenBalance : ""}</b> is below the buy-in amount.{" "}
+        {swapLink && (
+          <a href={swapLink} target="_blank" rel="noopener noreferrer">
+            {swapText}
+          </a>
+        )}
+      </div>
+    );
+  }
 
   function isPlayerStatus(
     result:
@@ -404,18 +434,7 @@ const BuyInModal: React.FC<BuyInModalProps> = ({
               />
             </div>
 
-            {(hasInsufficientTokenBalance || (tokenBalance !== -1 && tokenBalance < buyIn)) && (
-              <div className="balance-warning">
-                Your token balance <b>{tokenBalance >= 0 ? tokenBalance : ""}</b> is below the buy-in amount.{" "}
-                <a
-                  href={`https://jup.ag/swap/SOL-${activeGame.tokenMint?.toString()}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Buy some on Jupiter.
-                </a>
-              </div>
-            )}
+            {(hasInsufficientTokenBalance || (tokenBalance !== -1 && tokenBalance < buyIn)) && BalanceWarning()}
 
             <div className="button-group">
               <button className="cancel-button" onClick={() => setIsBuyInModalOpen(false)} disabled={isSubmitting}>
