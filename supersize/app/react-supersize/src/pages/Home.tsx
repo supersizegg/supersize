@@ -167,11 +167,21 @@ const Home = ({
             let playerStatus = "new_player";
 
             if (isPlayerStatus(result)) {
-              activeplayers = result.activeplayers;
-              need_to_delegate = result.need_to_delegate;
-              need_to_undelegate = result.need_to_undelegate;
-              newplayerEntityPda = result.newplayerEntityPda;
-              playerStatus = result.playerStatus;
+              if(result.playerStatus == "error"){
+                console.log("Error fetching player status");
+                activeplayers = result.activeplayers;
+                if(activeplayers == mapParsedData.maxPlayers){
+                  playerStatus = "Game Full";
+                } else {
+                  playerStatus = result.playerStatus;
+                }
+              } else {
+                activeplayers = result.activeplayers;
+                need_to_delegate = result.need_to_delegate;
+                need_to_undelegate = result.need_to_undelegate;
+                newplayerEntityPda = result.newplayerEntityPda;
+                playerStatus = result.playerStatus;
+              }
             } else {
               console.error("Error fetching player status");
             }
@@ -298,11 +308,21 @@ const Home = ({
             activeGamesLoaded[index].activeGame.max_players,
           );
           if (isPlayerStatus(result)) {
-            need_to_delegate = result.need_to_delegate;
-            need_to_undelegate = result.need_to_undelegate;
-            playerStatus = result.playerStatus;
-            activeplayers = result.activeplayers;
-            newplayerEntityPda = result.newplayerEntityPda;
+            if(result.playerStatus == "error"){
+                console.log("Error fetching player status");
+                activeplayers = result.activeplayers;
+                if(activeplayers == activeGamesLoaded[index].activeGame.max_players){
+                  playerStatus = "Game Full";
+                } else {
+                  playerStatus = result.playerStatus;
+                }
+              } else {
+                need_to_delegate = result.need_to_delegate;
+                need_to_undelegate = result.need_to_undelegate;
+                playerStatus = result.playerStatus;
+                activeplayers = result.activeplayers;
+                newplayerEntityPda = result.newplayerEntityPda;
+              }
           } else {
             console.log("Error fetching player status");
           }
@@ -428,15 +448,25 @@ const Home = ({
                 mapParsedData.maxPlayers,
               );
               if (isPlayerStatus(result)) {
-                activeplayers = result.activeplayers;
-                need_to_delegate = result.need_to_delegate;
-                need_to_undelegate = result.need_to_undelegate;
-                newplayerEntityPda = result.newplayerEntityPda;
-                playerStatus = result.playerStatus;
+                if(result.playerStatus == "error"){
+                    console.log("Error fetching player status");
+                    activeplayers = result.activeplayers;
+                    if(activeplayers == mapParsedData.maxPlayers){
+                      playerStatus = "Game Full";
+                    } else {
+                      playerStatus = result.playerStatus;
+                    }
+                  } else {
+                    activeplayers = result.activeplayers;
+                    need_to_delegate = result.need_to_delegate;
+                    need_to_undelegate = result.need_to_undelegate;
+                    newplayerEntityPda = result.newplayerEntityPda;
+                    playerStatus = result.playerStatus;
+                  }
               } else {
                 console.log("Error fetching player status");
               }
-
+            console.log("activeplayers", activeplayers);
             const newgame: FetchedGame = {
               activeGame: {
                 ...filteredGames[i].activeGame,
@@ -834,6 +864,8 @@ const Home = ({
                       className="btn-play"
                       disabled={
                         !row.activeGame.isLoaded || row.activeGame.ping < 0 || row.activeGame.active_players < 0
+                        || row.playerInfo.playerStatus == "error"
+                        || row.playerInfo.playerStatus == "Game Full"
                       }
                       onClick={() => {
                         handlePlayButtonClick(row);
