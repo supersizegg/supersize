@@ -266,11 +266,11 @@ export const checkPlayerDistances = (
 ) => {
   if (currentPlayer?.radius && currentPlayer?.authority) {
     for (const player of visiblePlayers) {
-        const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
-        const sizeAdjust = 1000 / player.mass;
-        if (distance < currentPlayer.radius * sizeAdjust) {
-          return player.authority;
-        }
+      const distance = Math.sqrt((player.x - currentPlayer.x) ** 2 + (player.y - currentPlayer.y) ** 2);
+      const sizeAdjust = 1000 / player.mass;
+      if (distance < currentPlayer.radius * sizeAdjust) {
+        return player.authority;
+      }
     }
   }
   return null;

@@ -39,7 +39,7 @@ export function MenuBar() {
             Lobby
           </NavLink>
           <NavLink to="/about" onClick={closeMobileMenu}>
-            About
+            About Supersize
           </NavLink>
           <NavLink to="/leaderboard" onClick={closeMobileMenu}>
             Leaderboard
@@ -47,6 +47,9 @@ export function MenuBar() {
           <NavLink to="/profile" style={{ display: "none" }} onClick={closeMobileMenu}>
             Profile
           </NavLink>
+          <a href="https://x.com/SUPERSIZEgg" target="_blank" rel="noreferrer">
+            ⎋ Follow on X
+          </a>
         </nav>
       </div>
     </header>

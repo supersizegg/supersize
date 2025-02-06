@@ -8,11 +8,7 @@ import "./Home.scss";
 import { ActiveGame } from "@utils/types";
 import { NETWORK, options } from "@utils/constants";
 
-import {
-  fetchTokenMetadata,
-  getMyPlayerStatus,
-  formatBuyIn,
-} from "@utils/helper";
+import { fetchTokenMetadata, getMyPlayerStatus, formatBuyIn } from "@utils/helper";
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
@@ -702,13 +698,7 @@ const Home = ({
                 await fetchAndLogMapData(engine, clearPingGames, thisServer, pingResults.pingResults, true);
                 const checkActiveGamesLoaded = setInterval(async () => {
                   if (activeGamesRef.current.filter((row) => row.activeGame.ping > 0).length == 0) {
-                    await fetchAndLogMapData(
-                      engine,
-                      activeGamesRef.current,
-                      thisServer,
-                      pingResults.pingResults,
-                      true,
-                    );
+                    await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, pingResults.pingResults, true);
                   } else {
                     clearInterval(checkActiveGamesLoaded);
                     setIsLoadingCurrentGames(false);
@@ -859,7 +849,7 @@ const Home = ({
                     )}
                   </td>
 
-                  <td>
+                  <td className="desktop-only">
                     <button
                       className="btn-play"
                       disabled={
@@ -879,11 +869,10 @@ const Home = ({
                       }[row.playerInfo.playerStatus] || row.playerInfo.playerStatus}
                     </button>
                   </td>
-                  <td>
+                  <td className="desktop-only">
                     <button
                       data-tooltip-id={`refresh-game-${idx}`}
                       data-tooltip-content="Refresh game"
-                      className="desktop-only"
                       onClick={async () => {
                         try {
                           setLoadingGameNum(idx);
