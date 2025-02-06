@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="footerContainer">
+    <footer className="footerContainer desktop-only">
       <span className="footerCopyright">© Supersize Inc. 2025</span>
 
       <div className="footerIcons">

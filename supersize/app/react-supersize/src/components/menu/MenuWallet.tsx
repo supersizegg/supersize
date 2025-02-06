@@ -49,7 +49,7 @@ function MenuWalletDisconnected() {
   const closeDrawer = () => setIsDrawerOpen(false);
 
   return (
-    <div className="wallet-disconnected deskop-only">
+    <div className="wallet-disconnected desktop-only">
       {!isDrawerOpen && <Button text="Connect Wallet" className="connect-wallet-button" onClick={openDrawer} />}
 
       {isDrawerOpen && (

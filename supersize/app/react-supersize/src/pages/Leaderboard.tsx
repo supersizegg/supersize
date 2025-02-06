@@ -131,14 +131,14 @@ const Leaderboard: React.FC = () => {
 
       <div className="leaderboard-container">
         <div className="top-stats-row">
-          <div className="stat-box rank-box">
+          <div className="stat-box rank-box desktop-only">
             <p className="stat-label">Your Rank</p>
             <p className="stat-value">
               {userInfo.position} / {usersLen.current}
             </p>
           </div>
 
-          <div className="stat-box winnings-box">
+          <div className="stat-box winnings-box desktop-only">
             <p className="stat-label">Your Winnings</p>
             <p className="stat-value">{userInfo.points.toFixed(3)}</p>
           </div>

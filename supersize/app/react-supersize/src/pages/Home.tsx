@@ -8,11 +8,7 @@ import "./Home.scss";
 import { ActiveGame } from "@utils/types";
 import { NETWORK, options } from "@utils/constants";
 
-import {
-  fetchTokenMetadata,
-  getMyPlayerStatus,
-  formatBuyIn,
-} from "@utils/helper";
+import { fetchTokenMetadata, getMyPlayerStatus, formatBuyIn } from "@utils/helper";
 import { FindEntityPda, FindComponentPda, FindWorldPda, createDelegateInstruction } from "@magicblock-labs/bolt-sdk";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
@@ -292,20 +288,20 @@ const Home = ({
       let newplayerEntityPda = new PublicKey(0);
       let playerStatus = "new_player";
 
-        const result = await getMyPlayerStatus(
-            engine,
-            activeGamesLoaded[index].activeGame.worldId,
-            activeGamesLoaded[index].activeGame.max_players,
-          );
-          if (isPlayerStatus(result)) {
-            need_to_delegate = result.need_to_delegate;
-            need_to_undelegate = result.need_to_undelegate;
-            playerStatus = result.playerStatus;
-            activeplayers = result.activeplayers;
-            newplayerEntityPda = result.newplayerEntityPda;
-          } else {
-            console.log("Error fetching player status");
-          }
+      const result = await getMyPlayerStatus(
+        engine,
+        activeGamesLoaded[index].activeGame.worldId,
+        activeGamesLoaded[index].activeGame.max_players,
+      );
+      if (isPlayerStatus(result)) {
+        need_to_delegate = result.need_to_delegate;
+        need_to_undelegate = result.need_to_undelegate;
+        playerStatus = result.playerStatus;
+        activeplayers = result.activeplayers;
+        newplayerEntityPda = result.newplayerEntityPda;
+      } else {
+        console.log("Error fetching player status");
+      }
 
       const newgame: FetchedGame = {
         activeGame: {
@@ -422,20 +418,20 @@ const Home = ({
             let newplayerEntityPda: PublicKey | null = new PublicKey(0);
             let playerStatus = "new_player";
 
-              const result = await getMyPlayerStatus(
-                engine,
-                filteredGames[i].activeGame.worldId,
-                mapParsedData.maxPlayers,
-              );
-              if (isPlayerStatus(result)) {
-                activeplayers = result.activeplayers;
-                need_to_delegate = result.need_to_delegate;
-                need_to_undelegate = result.need_to_undelegate;
-                newplayerEntityPda = result.newplayerEntityPda;
-                playerStatus = result.playerStatus;
-              } else {
-                console.log("Error fetching player status");
-              }
+            const result = await getMyPlayerStatus(
+              engine,
+              filteredGames[i].activeGame.worldId,
+              mapParsedData.maxPlayers,
+            );
+            if (isPlayerStatus(result)) {
+              activeplayers = result.activeplayers;
+              need_to_delegate = result.need_to_delegate;
+              need_to_undelegate = result.need_to_undelegate;
+              newplayerEntityPda = result.newplayerEntityPda;
+              playerStatus = result.playerStatus;
+            } else {
+              console.log("Error fetching player status");
+            }
 
             const newgame: FetchedGame = {
               activeGame: {
@@ -672,13 +668,7 @@ const Home = ({
                 await fetchAndLogMapData(engine, clearPingGames, thisServer, pingResults.pingResults, true);
                 const checkActiveGamesLoaded = setInterval(async () => {
                   if (activeGamesRef.current.filter((row) => row.activeGame.ping > 0).length == 0) {
-                    await fetchAndLogMapData(
-                      engine,
-                      activeGamesRef.current,
-                      thisServer,
-                      pingResults.pingResults,
-                      true,
-                    );
+                    await fetchAndLogMapData(engine, activeGamesRef.current, thisServer, pingResults.pingResults, true);
                   } else {
                     clearInterval(checkActiveGamesLoaded);
                     setIsLoadingCurrentGames(false);
@@ -829,7 +819,7 @@ const Home = ({
                     )}
                   </td>
 
-                  <td>
+                  <td className="desktop-only">
                     <button
                       className="btn-play"
                       disabled={
@@ -847,11 +837,10 @@ const Home = ({
                       }[row.playerInfo.playerStatus] || row.playerInfo.playerStatus}
                     </button>
                   </td>
-                  <td>
+                  <td className="desktop-only">
                     <button
                       data-tooltip-id={`refresh-game-${idx}`}
                       data-tooltip-content="Refresh game"
-                      className="desktop-only"
                       onClick={async () => {
                         try {
                           setLoadingGameNum(idx);
