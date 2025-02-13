@@ -1,7 +1,7 @@
 use bolt_lang::*;
-use std::f64::consts::E; 
-use player::Player;
 use map::Map;
+use player::Player;
+use std::f64::consts::E;
 
 declare_id!("DViN676ajvuWryjWHxk2EF7MvQLgHNqhj4m32p1xLBDB");
 
@@ -17,15 +17,15 @@ pub enum SupersizeError {
 
 pub fn calculate_k(z: f64, epsilon: f64) -> f64 {
     let numerator = epsilon / (100.0 - 0.6);
-    let log_value = numerator.ln(); 
-    let k = -log_value / (z * 1000.0); 
-    k
+    let log_value = numerator.ln();
+
+    -log_value / (z * 1000.0)
 }
 
 pub fn calculate_y(x: f64, k: f64) -> f64 {
     let exponent = -(k / 4.0) * x;
-    let y = 100.0 - (100.0 - 0.6) * E.powf(exponent);
-    y
+
+    100.0 - (100.0 - 0.6) * E.powf(exponent)
 }
 
 pub fn xorshift64(seed: u64) -> u64 {
@@ -40,21 +40,26 @@ pub fn xorshift64(seed: u64) -> u64 {
 pub mod spawn_player {
 
     pub fn execute(ctx: Context<Components>, args: Args) -> Result<Components> {
-
         let map = &mut ctx.accounts.map;
         let player = &mut ctx.accounts.player;
         let authority = *ctx.accounts.authority.key;
 
-        require!(map.key() == player.map.expect("Player map key not set"), SupersizeError::MapKeyMismatch);
-        
+        require!(
+            map.key() == player.map.expect("Player map key not set"),
+            SupersizeError::MapKeyMismatch
+        );
+
         require!(player.mass == 0, SupersizeError::AlreadyInGame);
         require!(player.score == 0.0, SupersizeError::AlreadyInGame);
-        require!(player.authority == Some(authority), SupersizeError::NotOwner);
-        
+        require!(
+            player.authority == Some(authority),
+            SupersizeError::NotOwner
+        );
+
         let playername = args.name as String;
         let slot = Clock::get()?.slot;
         let xorshift_output = xorshift64(slot);
-        let player_x = (xorshift_output % map.width as u64) + 1; 
+        let player_x = (xorshift_output % map.width as u64) + 1;
         let player_y = (xorshift_output % map.height as u64) + 1;
         let player_buyin = player.buy_in;
         let start_mass = 1000.0 / map.base_buyin * player_buyin;
@@ -72,19 +77,19 @@ pub mod spawn_player {
 
         let mut food_to_add = 100.0;
         let mut player_tax = 100.0;
-        let mut food_in_wallet = wallet_balance as f64 - map.total_active_buyins;
-        food_in_wallet = food_in_wallet - (map.food_queue as f64 * map.base_buyin / 1000.0);
-        food_in_wallet = food_in_wallet - (map.total_food_on_map as f64 * map.base_buyin / 1000.0);
+        let mut food_in_wallet = wallet_balance - map.total_active_buyins;
+        food_in_wallet -= map.food_queue as f64 * map.base_buyin / 1000.0;
+        food_in_wallet -= map.total_food_on_map as f64 * map.base_buyin / 1000.0;
         let ten_food_unit = map.base_buyin / 100.0;
-        food_in_wallet = food_in_wallet / ten_food_unit;
+        food_in_wallet /= ten_food_unit;
         let epsilon = 0.01;
         let k = calculate_k(map.max_players as f64, epsilon);
-        let y = calculate_y(food_in_wallet as f64, k).floor();
+        let y = calculate_y(food_in_wallet, k).floor();
         if y >= 10.0 {
             food_to_add = y * 10.0;
             player_tax = 0.0;
-        }else{
-            player_tax = player_tax - y * 10.0;
+        } else {
+            player_tax -= y * 10.0;
         }
         let mut food_to_add_scaled = food_to_add;
         let mut tax_scaled = (player_tax / 1000.0) * map.base_buyin;
@@ -96,8 +101,8 @@ pub mod spawn_player {
         player.tax = tax_scaled;
         let updated_queue = map.food_queue + food_to_add_scaled as u64;
         map.food_queue = updated_queue;
-        map.total_active_buyins = map.total_active_buyins + player_buyin;
-                
+        map.total_active_buyins += player_buyin;
+
         Ok(ctx.accounts)
     }
 
@@ -111,5 +116,4 @@ pub mod spawn_player {
     struct Args {
         name: String,
     }
-    
 }

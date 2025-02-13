@@ -1,6 +1,6 @@
 use bolt_lang::*;
-use player::Player;
 use map::Map;
+use player::Player;
 
 declare_id!("58N5j49P3u351T6DSFKhPeKwBiXGnXwaYE1nWjtVkRZQ");
 
@@ -19,7 +19,7 @@ pub mod init_player {
         let player = &mut ctx.accounts.player;
         let map = &mut ctx.accounts.map;
         let user_authority = *ctx.accounts.authority.key;
-        
+
         match map.authority {
             Some(authority) => {
                 require!(user_authority == authority, SupersizeError::NotAuthorized);
@@ -29,7 +29,7 @@ pub mod init_player {
             }
         }
 
-        player.map = Some(map.key()); 
+        player.map = Some(map.key());
 
         Ok(ctx.accounts)
     }

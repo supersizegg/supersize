@@ -1,6 +1,6 @@
 use bolt_lang::*;
-use section::Section;
 use map::Map;
+use section::Section;
 
 declare_id!("4euz4ceqv5ugh1x6wZP3BsLNZHqBxQwXcK59psw5KeQw");
 
@@ -19,7 +19,7 @@ pub mod init_section {
         let section = &mut ctx.accounts.section;
         let map = &mut ctx.accounts.map;
         let user_authority = *ctx.accounts.authority.key;
-        
+
         match map.authority {
             Some(authority) => {
                 require!(user_authority == authority, SupersizeError::NotAuthorized);
@@ -29,7 +29,7 @@ pub mod init_section {
             }
         }
 
-        section.map = Some(map.key()); 
+        section.map = Some(map.key());
         section.top_left_x = args.top_left_x;
         section.top_left_y = args.top_left_y;
 

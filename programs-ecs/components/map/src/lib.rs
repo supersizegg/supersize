@@ -21,13 +21,13 @@ pub struct Map {
 }
 
 #[component_deserialize(delegate)]
-pub struct Food{
-    pub data: [u8; 4]
+pub struct Food {
+    pub data: [u8; 4],
 }
 
 impl Default for Map {
     fn default() -> Self {
-        Self::new(MapInit{
+        Self::new(MapInit {
             name: "ffa".to_string(),
             authority: None,
             width: 4000,
@@ -38,7 +38,7 @@ impl Default for Map {
             max_players: 20,
             total_active_buyins: 0.0,
             total_food_on_map: 0,
-            food_queue: 0, 
+            food_queue: 0,
             next_food: None,
             frozen: false,
         })

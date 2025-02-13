@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
-use bolt_lang::*;
-use anteroom::Anteroom;
-use player::Player;
 use anchor_spl::token::{TokenAccount, Transfer};
+use anteroom::Anteroom;
+use bolt_lang::*;
+use player::Player;
 
 declare_id!("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
 
@@ -37,15 +35,19 @@ pub enum SupersizeError {
 
 pub fn get_amounts(final_score: f64, is_referred: bool) -> (f64, f64, f64, f64) {
     if is_referred {
-        ( (final_score * 98.0) / 100.0,
-        (final_score * 0.9) / 100.0,
-        (final_score * 0.9) / 100.0,
-        (final_score * 0.2) / 100.0)
+        (
+            (final_score * 98.0) / 100.0,
+            (final_score * 0.9) / 100.0,
+            (final_score * 0.9) / 100.0,
+            (final_score * 0.2) / 100.0,
+        )
     } else {
-        ( (final_score * 98.0) / 100.0,
-        (final_score * 1.0) / 100.0,
-        (final_score * 1.0) / 100.0,
-        0f64)
+        (
+            (final_score * 98.0) / 100.0,
+            (final_score * 1.0) / 100.0,
+            (final_score * 1.0) / 100.0,
+            0f64,
+        )
     }
 }
 
@@ -55,37 +57,49 @@ pub const BUDDY_LINK_PROGRAM_ID: &str = "BUDDYtQp7Di1xfojiCSVDksiYLQx511DPdj2nbt
 pub mod cash_out {
 
     pub fn execute(ctx: Context<Components>, args: Args) -> Result<Components> {
-
-        let authority = *ctx.accounts.authority.key;
+        let _authority = *ctx.accounts.authority.key;
 
         //require!(ctx.accounts.player.authority == Some(authority), SupersizeError::NotOwner);
-        require!(ctx.accounts.player.map == ctx.accounts.anteroom.map, SupersizeError::MapKeyMismatch);
+        require!(
+            ctx.accounts.player.map == ctx.accounts.anteroom.map,
+            SupersizeError::MapKeyMismatch
+        );
         require!(ctx.accounts.player.mass == 0, SupersizeError::StillInGame);
 
-        let player_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
-            &mut (ctx.sender_token_account()?.to_account_info().data.borrow()).as_ref()
+        let _player_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
+            &mut (ctx.sender_token_account()?.to_account_info().data.borrow()).as_ref(),
         )?;
         /*require!(
             player_token_account.owner == authority,
             SupersizeError::NotOwner
         );*/
         require!(
-            ctx.sender_token_account()?.key() == ctx.accounts.player.payout_token_account.expect("Player payout account not set"),
+            ctx.sender_token_account()?.key()
+                == ctx
+                    .accounts
+                    .player
+                    .payout_token_account
+                    .expect("Player payout account not set"),
             SupersizeError::InvalidPayoutAccount
         );
         require!(
-            ctx.accounts.anteroom.vault_token_account.expect("Vault token account not set") == ctx.vault_token_account()?.key(),
+            ctx.accounts
+                .anteroom
+                .vault_token_account
+                .expect("Vault token account not set")
+                == ctx.vault_token_account()?.key(),
             SupersizeError::InvalidGameVault
         );
 
         let vault_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
-            &mut (ctx.vault_token_account()?.to_account_info().data.borrow()).as_ref()
+            &mut (ctx.vault_token_account()?.to_account_info().data.borrow()).as_ref(),
         )?;
-        let exit_pid: Pubkey = pubkey!("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr"); 
+        let exit_pid: Pubkey = pubkey!("BAP315i1xoAXqbJcTT1LrUS45N3tAQnNnPuNQkCcvbAr");
         let map_pubkey = ctx.accounts.anteroom.map.expect("Anteroom map key not set");
         let token_account_owner_pda_seeds = &[b"token_account_owner_pda", map_pubkey.as_ref()];
-        let (derived_token_account_owner_pda, bump) = Pubkey::find_program_address(token_account_owner_pda_seeds, &exit_pid);
-        
+        let (derived_token_account_owner_pda, bump) =
+            Pubkey::find_program_address(token_account_owner_pda_seeds, &exit_pid);
+
         require!(
             derived_token_account_owner_pda == ctx.token_account_owner_pda()?.key(),
             SupersizeError::InvalidPda
@@ -99,61 +113,86 @@ pub mod cash_out {
             SupersizeError::InvalidMint
         );
 
-        let supersize_parent_account: Pubkey = pubkey!("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB");
+        let supersize_parent_account: Pubkey =
+            pubkey!("DdGB1EpmshJvCq48W1LvB1csrDnC4uataLnQbUVhp6XB");
         let supersize_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
-            &mut (ctx.supersize_token_account()?.to_account_info().data.borrow()).as_ref()
+            &mut (ctx
+                .supersize_token_account()?
+                .to_account_info()
+                .data
+                .borrow())
+            .as_ref(),
         )?;
         require!(
             supersize_parent_account == supersize_token_account.owner,
             SupersizeError::InvalidSupersizeTokenAccount
         );
         require!(
-            ctx.game_owner_token_account()?.key() == ctx.accounts.anteroom.gamemaster_token_account.expect("Game owner token account not set"),
+            ctx.game_owner_token_account()?.key()
+                == ctx
+                    .accounts
+                    .anteroom
+                    .gamemaster_token_account
+                    .expect("Game owner token account not set"),
             SupersizeError::InvalidGameOwnerTokenAccount
         );
 
-        let seeds = &[b"token_account_owner_pda".as_ref(), map_pubkey.as_ref(), &[bump]];
+        let seeds = &[
+            b"token_account_owner_pda".as_ref(),
+            map_pubkey.as_ref(),
+            &[bump],
+        ];
         let pda_signer = &[&seeds[..]];
-        
-        let decimals = ctx.accounts.anteroom.token_decimals.ok_or(SupersizeError::MissingTokenDecimals)?;
+
+        let decimals = ctx
+            .accounts
+            .anteroom
+            .token_decimals
+            .ok_or(SupersizeError::MissingTokenDecimals)?;
         let scale_factor = 10_u64.pow(decimals);
         let final_score = ctx.accounts.player.score;
         /*
         let player_amount = (final_score * 98.0) / 100.0;
         let game_owner_amount = (final_score * 1.0) / 100.0;
         let supersize_amount = (final_score * 1.0) / 100.0;
-        let scaled_final_score = (player_amount * scale_factor as f64).round() as u64;  
-        let scaled_game_owner_amount = (game_owner_amount * scale_factor as f64).round() as u64;  
-        let scaled_supersize_amount = (supersize_amount * scale_factor as f64).round() as u64;  
+        let scaled_final_score = (player_amount * scale_factor as f64).round() as u64;
+        let scaled_game_owner_amount = (game_owner_amount * scale_factor as f64).round() as u64;
+        let scaled_supersize_amount = (supersize_amount * scale_factor as f64).round() as u64;
         */
 
-        let (player_amount, game_owner_amount, supersize_amount, referrer_amount) = get_amounts(final_score, args.referred);
+        let (player_amount, game_owner_amount, supersize_amount, referrer_amount) =
+            get_amounts(final_score, args.referred);
 
-        let (scaled_final_score, scaled_game_owner_amount, scaled_supersize_amount, scaled_referrer_amount) = 
-            ((player_amount * scale_factor as f64).round() as u64,
+        let (
+            scaled_final_score,
+            scaled_game_owner_amount,
+            scaled_supersize_amount,
+            _scaled_referrer_amount,
+        ) = (
+            (player_amount * scale_factor as f64).round() as u64,
             (game_owner_amount * scale_factor as f64).round() as u64,
             (supersize_amount * scale_factor as f64).round() as u64,
-            (referrer_amount * scale_factor as f64).round() as u64);
-
+            (referrer_amount * scale_factor as f64).round() as u64,
+        );
 
         let transfer_instruction_player = Transfer {
             from: ctx.vault_token_account()?.to_account_info(),
             to: ctx.sender_token_account()?.to_account_info(),
             authority: ctx.token_account_owner_pda()?.to_account_info(),
         };
-    
+
         let cpi_ctx_player = CpiContext::new_with_signer(
             ctx.token_program()?.to_account_info(),
             transfer_instruction_player,
             pda_signer,
         );
-        
+
         let transfer_instruction_owner = Transfer {
             from: ctx.vault_token_account()?.to_account_info(),
             to: ctx.game_owner_token_account()?.to_account_info(),
             authority: ctx.token_account_owner_pda()?.to_account_info(),
         };
-    
+
         let cpi_ctx_owner = CpiContext::new_with_signer(
             ctx.token_program()?.to_account_info(),
             transfer_instruction_owner,
@@ -165,7 +204,7 @@ pub mod cash_out {
             to: ctx.supersize_token_account()?.to_account_info(),
             authority: ctx.token_account_owner_pda()?.to_account_info(),
         };
-    
+
         let cpi_ctx_supersize = CpiContext::new_with_signer(
             ctx.token_program()?.to_account_info(),
             transfer_instruction_supersize,
@@ -196,7 +235,7 @@ pub mod cash_out {
                     referee_buddy: ctx.referee_buddy()?.to_account_info(),
                 },
             );
-            
+
             let _ = buddy_link::cpi::transfer_checked_global_only_reward(
                 cpi_context,
                 scaled_referrer_amount,
