@@ -1,4 +1,4 @@
-use std::str::FromStr;
+
 
 use bolt_lang::*;
 use anteroom::Anteroom;
@@ -56,13 +56,13 @@ pub mod cash_out {
 
     pub fn execute(ctx: Context<Components>, args: Args) -> Result<Components> {
 
-        let authority = *ctx.accounts.authority.key;
+        let _authority = *ctx.accounts.authority.key;
 
         //require!(ctx.accounts.player.authority == Some(authority), SupersizeError::NotOwner);
         require!(ctx.accounts.player.map == ctx.accounts.anteroom.map, SupersizeError::MapKeyMismatch);
         require!(ctx.accounts.player.mass == 0, SupersizeError::StillInGame);
 
-        let player_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
+        let _player_token_account: TokenAccount = TokenAccount::try_deserialize_unchecked(
             &mut (ctx.sender_token_account()?.to_account_info().data.borrow()).as_ref()
         )?;
         /*require!(
@@ -129,7 +129,7 @@ pub mod cash_out {
 
         let (player_amount, game_owner_amount, supersize_amount, referrer_amount) = get_amounts(final_score, args.referred);
 
-        let (scaled_final_score, scaled_game_owner_amount, scaled_supersize_amount, scaled_referrer_amount) = 
+        let (scaled_final_score, scaled_game_owner_amount, scaled_supersize_amount, _scaled_referrer_amount) = 
             ((player_amount * scale_factor as f64).round() as u64,
             (game_owner_amount * scale_factor as f64).round() as u64,
             (supersize_amount * scale_factor as f64).round() as u64,

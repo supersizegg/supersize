@@ -60,13 +60,13 @@ pub mod eat_player {
             let dx = (player_x as i16 - player2.x as i16).abs();
             let dy = (player_y as i16 - player2.y as i16).abs();
             if dx < player_radius.ceil() as i16 && dy < player_radius.ceil() as i16 {
-                let distance = (((dx as f64).powf(2.0) + (dy as f64).powf(2.0))).sqrt();
+                let distance = ((dx as f64).powf(2.0) + (dy as f64).powf(2.0)).sqrt();
                 if distance < player_radius && player_mass > player2.mass as f64 * 0.105{
 
                     player1.score += player2.score;
-                    player1.mass = (player1.score * 1000.0 / map.base_buyin as f64).ceil() as u64;
+                    player1.mass = (player1.score * 1000.0 / map.base_buyin).ceil() as u64;
 
-                    map.total_active_buyins = map.total_active_buyins  - player2.buy_in;
+                    map.total_active_buyins -= player2.buy_in;
                     
                     player2.authority = None;
                     player2.buy_in = 0.0;

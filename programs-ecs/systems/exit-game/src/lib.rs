@@ -41,9 +41,9 @@ pub mod exit_game {
                         player.payout_token_account = None;
                     }
                     else{
-                        player.score = player.score - player.tax;
+                        player.score -= player.tax;
                     }
-                    map.total_active_buyins = map.total_active_buyins  - player.buy_in;
+                    map.total_active_buyins -= player.buy_in;
 
                     player.mass = 0;
                     player.x = 50000;

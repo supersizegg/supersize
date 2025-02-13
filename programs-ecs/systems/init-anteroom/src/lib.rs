@@ -36,10 +36,7 @@ pub mod init_anteroom {
         anteroom.base_buyin = map.base_buyin;
         anteroom.max_buyin = map.max_buyin;
         anteroom.min_buyin = map.min_buyin;
-        anteroom.token_decimals = match args.token_decimals {
-            Some(token_decimals) => Some(token_decimals as u32),
-            None => None,
-        };
+        anteroom.token_decimals = args.token_decimals.map(|token_decimals| token_decimals as u32);
         anteroom.vault_token_account = match args.vault_token_account_string {
             Some(ref vault_token_account_str) => Some(Pubkey::from_str(vault_token_account_str).map_err(|_| SupersizeError::AccountNotFound)?),
             None => None,

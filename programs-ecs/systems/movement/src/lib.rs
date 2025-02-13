@@ -29,8 +29,8 @@ pub fn encode_food(x: u16, y: u16, food_value: u16) -> [u8; 4] {
     assert!(food_value < 16, "z out of range");
 
     let packed = ((food_value as u32) << 28) | ((y as u32) << 14) | (x as u32);
-    let data = packed.to_le_bytes(); 
-    data
+     
+    packed.to_le_bytes()
 }
 
 #[system]
@@ -79,7 +79,7 @@ pub mod movement {
 
         let mut slow_down : f64 = 1.0;
         if player.speed <= 6.25 {
-            slow_down = (effective_mass as f64/10.0).ln() / 1.504 - 0.531;
+            slow_down = (effective_mass/10.0).ln() / 1.504 - 0.531;
         }
         
         if player.mass >= 100 {
@@ -96,13 +96,13 @@ pub mod movement {
                 player.speed = boosted_speed as f32;
 
                 let difference = -player.score * 0.002;
-                player.score = player.score + difference;
+                player.score += difference;
 
                 let step_unit = (player.mass as f64 / 1000.0).floor().clamp(1.0, 10.0) as u64;
-                let steps = ((player.mass as f64 - player.score * 1000.0 / entry_fee)).floor() as u64;
+                let steps = (player.mass as f64 - player.score * 1000.0 / entry_fee).floor() as u64;
                 let steps_to_take = steps / step_unit;
                 if steps_to_take >= 1 {
-                    player.mass = player.mass - (steps_to_take * step_unit);
+                    player.mass -= steps_to_take * step_unit;
                     let unit_x = dx / dist;
                     let unit_y = dy / dist;
 
@@ -113,13 +113,13 @@ pub mod movement {
                     let free_space = 100 - section.food.len() as u64;
                     let steps_to_add = if steps_to_take < free_space { steps_to_take } else { free_space };
                     let remaining_steps = steps_to_take - steps_to_add;
-                    map.food_queue += (remaining_steps * step_unit) as u64;
+                    map.food_queue += remaining_steps * step_unit;
 
                     for n in 0..steps_to_add {
-                        let hardvarx: u64 = xorshift_output.wrapping_mul(free_space as u64 + n + 1);
-                        let hardvary: u64 = xorshift_output.wrapping_mul(free_space as u64 + n + 1).wrapping_shl(random_shift as u32);
-                        let seedx = (hardvarx % 100) as u64;
-                        let seedy = (hardvary % 100) as u64;
+                        let hardvarx: u64 = xorshift_output.wrapping_mul(free_space + n + 1);
+                        let hardvary: u64 = xorshift_output.wrapping_mul(free_space + n + 1).wrapping_shl(random_shift as u32);
+                        let seedx = hardvarx % 100;
+                        let seedy = hardvary % 100;
                         let pseudo_random_float_x: f64 = (seedx as f64 / 200.0) + 1.2;
                         let pseudo_random_float_y: f64 = (seedy as f64 / 200.0) + 1.2;
                         let offset_x = -unit_x * player_radius * pseudo_random_float_x;
@@ -134,9 +134,9 @@ pub mod movement {
                             let encoded_data = encode_food(clamped_food_x, clamped_food_y, step_unit as u16);
                             let newfood = section::Food { data: encoded_data };
                             section.food.push(newfood);
-                            map.total_food_on_map += step_unit as u64;
+                            map.total_food_on_map += step_unit;
                         } else {
-                            map.food_queue += step_unit as u64;
+                            map.food_queue += step_unit;
                         }
                     }
                 }

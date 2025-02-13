@@ -73,7 +73,7 @@ pub mod buy_in {
         let wallet_balance = vault_token_account.amount / 10_u64.pow(decimals);
         let player_payout_account = Some(ctx.payout_token_account()?.key());
 
-       if !(**ctx.refferal_pda_account()?.to_account_info().try_borrow_lamports()? > 0) &&
+       if **ctx.refferal_pda_account()?.to_account_info().try_borrow_lamports()? == 0 &&
        (**ctx.buddy_member_pda_account()?.to_account_info().try_borrow_lamports()? > 0){
             let buddy_link_pid: Pubkey = pubkey!("BUDDYtQp7Di1xfojiCSVDksiYLQx511DPdj2nbtG9Yu5");
             let member_name_string = args.member_name.expect("Member name not provided");

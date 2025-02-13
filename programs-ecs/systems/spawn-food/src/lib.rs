@@ -26,8 +26,8 @@ pub fn encode_food(x: u16, y: u16, food_value: u16) -> [u8; 4] {
     assert!(food_value < 16, "z out of range");
 
     let packed = ((food_value as u32) << 28) | ((y as u32) << 14) | (x as u32);
-    let data = packed.to_le_bytes(); 
-    data
+     
+    packed.to_le_bytes()
 }
 
 pub fn decode_food(data: [u8; 4]) -> (u16, u16, u16) {
@@ -68,7 +68,7 @@ pub mod spawn_food {
         if queue_len > 0 {
             let slot = Clock::get()?.slot;
             let xorshift_output = xorshift64(slot);
-            let hardvar : u64 = queue_len as u64 + 1;
+            let hardvar : u64 = queue_len + 1;
             let random_shift = (xorshift_output % 13) + 3; 
             let mixed_value_food_x = (xorshift_output.wrapping_mul(hardvar * 3).wrapping_add(xorshift_output)) ^ (hardvar * 3).wrapping_shl(5);
             let mixed_value_food_y = (xorshift_output.wrapping_mul(hardvar * 5).wrapping_add(xorshift_output)) ^ (hardvar * 5).wrapping_shl(random_shift as u32);

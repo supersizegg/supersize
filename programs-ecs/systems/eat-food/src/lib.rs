@@ -52,7 +52,7 @@ pub mod eat_food {
                     let distance = ((dx as f64).powf(2.0) + (dy as f64).powf(2.0)).sqrt();
                     if distance < player_radius {
                         player.mass += decoded_food_value as u64;
-                        player.score += decoded_food_value as f64 * (map.base_buyin as f64 / 1000.0);
+                        player.score += decoded_food_value as f64 * (map.base_buyin / 1000.0);
                         map.total_food_on_map -= decoded_food_value as u64;
                         false 
                     } else {
