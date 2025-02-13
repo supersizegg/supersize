@@ -25,8 +25,12 @@ pub mod init_map {
         require!(!map.frozen, SupersizeError::MapFrozen);
 
         match map.authority {
-            Some(authority) => {require!(user_authority == authority, SupersizeError::NotAuthorized);}
-            None => {map.authority = Some(user_authority);}
+            Some(authority) => {
+                require!(user_authority == authority, SupersizeError::NotAuthorized);
+            }
+            None => {
+                map.authority = Some(user_authority);
+            }
         }
 
         require!(
@@ -38,9 +42,9 @@ pub mod init_map {
             4000 => 20,
             6000 => 45,
             8000 => 80,
-            _ => return Err(SupersizeError::BadMapSize.into()), 
+            _ => return Err(SupersizeError::BadMapSize.into()),
         };
-        
+
         map.name = args.name;
         map.width = args.size;
         map.height = args.size;

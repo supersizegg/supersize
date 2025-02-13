@@ -26,7 +26,7 @@ pub struct Player {
 
 impl Default for Player {
     fn default() -> Self {
-        Self::new(PlayerInit{
+        Self::new(PlayerInit {
             name: "unnamed".to_string(),
             authority: None,
             map: None,
@@ -34,7 +34,7 @@ impl Default for Player {
             payout_token_account: None,
             current_game_wallet_balance: 0.0,
             tax: 0.0,
-            join_time: 0, 
+            join_time: 0,
             x: 50000,
             y: 50000,
             target_x: None,
@@ -47,4 +47,3 @@ impl Default for Player {
         })
     }
 }
-
